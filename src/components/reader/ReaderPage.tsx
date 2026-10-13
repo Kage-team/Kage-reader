@@ -1,20 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { resolveReaderMode } from "../../lib/reader/mode";
 import {
   getBlob,
   getChapter,
   getProgress,
+  getSeries,
   listPages,
   putProgress,
+  putSeries,
 } from "../../lib/storage/db";
-import type { Chapter, Page } from "../../lib/storage/types";
+import type { Chapter, Page, ReaderMode } from "../../lib/storage/types";
 
 export function ReaderPage() {
   const { chapterId } = useParams();
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [pages, setPages] = useState<Page[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [pageUrls, setPageUrls] = useState<string[]>([]);
+  const [readerMode, setReaderMode] = useState<ReaderMode>("flip");
 
   useEffect(() => {
     if (!chapterId) {
@@ -22,14 +26,21 @@ export function ReaderPage() {
     }
 
     void (async () => {
+      const decodedChapterId = decodeURIComponent(chapterId);
       const [chapterRecord, pageRows, progress] = await Promise.all([
-        getChapter(decodeURIComponent(chapterId)),
-        listPages(decodeURIComponent(chapterId)),
-        getProgress(decodeURIComponent(chapterId)),
+        getChapter(decodedChapterId),
+        listPages(decodedChapterId),
+        getProgress(decodedChapterId),
       ]);
 
       setChapter(chapterRecord ?? null);
       setPages(pageRows);
+
+      if (chapterRecord) {
+        const seriesRecord = await getSeries(chapterRecord.seriesId);
+        setReaderMode(resolveReaderMode(seriesRecord?.preferredMode));
+      }
+
       if (
         progress &&
         progress.pageIndex >= 0 &&
@@ -39,6 +50,43 @@ export function ReaderPage() {
       }
     })();
   }, [chapterId]);
+
+  useEffect(() => {
+    if (!chapterId || pages.length === 0) {
+      setPageUrls([]);
+      return;
+    }
+
+    let isCancelled = false;
+    let objectUrls: string[] = [];
+
+    void (async () => {
+      const loadedUrls = await Promise.all(
+        pages.map(async (page) => {
+          const blob = await getBlob(page.storageKey);
+          if (!blob) {
+            return null;
+          }
+          return URL.createObjectURL(blob);
+        }),
+      );
+
+      if (isCancelled) {
+        loadedUrls
+          .filter((url): url is string => Boolean(url))
+          .forEach((url) => URL.revokeObjectURL(url));
+        return;
+      }
+
+      objectUrls = loadedUrls.filter((url): url is string => Boolean(url));
+      setPageUrls(objectUrls);
+    })();
+
+    return () => {
+      isCancelled = true;
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [chapterId, pages]);
 
   useEffect(() => {
     if (!chapterId || pages.length === 0) {
@@ -54,40 +102,6 @@ export function ReaderPage() {
       updatedAt: Date.now(),
     });
   }, [chapterId, currentPage, pages.length]);
-
-  useEffect(() => {
-    if (pages.length === 0) {
-      setImageUrl(null);
-      return;
-    }
-
-    const safeIndex = Math.min(Math.max(currentPage, 0), pages.length - 1);
-    const page = pages[safeIndex];
-    let isCancelled = false;
-    let objectUrl: string | null = null;
-
-    void (async () => {
-      const blob = await getBlob(page.storageKey);
-      if (isCancelled || !blob) {
-        return;
-      }
-
-      objectUrl = URL.createObjectURL(blob);
-      setImageUrl((previousUrl) => {
-        if (previousUrl) {
-          URL.revokeObjectURL(previousUrl);
-        }
-        return objectUrl;
-      });
-    })();
-
-    return () => {
-      isCancelled = true;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [currentPage, pages]);
 
   useEffect(() => {
     if (!chapterId || pages.length === 0) {
@@ -109,6 +123,24 @@ export function ReaderPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [chapterId, pages.length]);
 
+  async function persistReaderMode(nextMode: ReaderMode): Promise<void> {
+    if (!chapter) {
+      return;
+    }
+
+    setReaderMode(nextMode);
+    const seriesRecord = await getSeries(chapter.seriesId);
+    if (!seriesRecord) {
+      return;
+    }
+
+    await putSeries({
+      ...seriesRecord,
+      preferredMode: nextMode,
+      updatedAt: Date.now(),
+    });
+  }
+
   if (!chapter) {
     return (
       <main style={styles.page}>
@@ -124,6 +156,7 @@ export function ReaderPage() {
 
   const totalPages = pages.length;
   const currentIndex = Math.min(Math.max(currentPage, 0), totalPages - 1);
+  const modeOptions: ReaderMode[] = ["flip", "webtoon", "novel"];
 
   return (
     <main style={styles.page}>
@@ -133,53 +166,94 @@ export function ReaderPage() {
             <p style={styles.kicker}>Reader</p>
             <h1 style={styles.title}>{chapter.title}</h1>
           </div>
-          <Link
-            to={`/series/${encodeURIComponent(chapter.seriesId)}`}
-            style={styles.linkButton}
-          >
-            Back to series
-          </Link>
+          <div style={styles.actionRow}>
+            <Link
+              to={`/series/${encodeURIComponent(chapter.seriesId)}`}
+              style={styles.linkButton}
+            >
+              Back to series
+            </Link>
+          </div>
         </header>
 
         <div style={styles.toolbar}>
-          <button
-            type="button"
-            onClick={() =>
-              setCurrentPage((previous) => Math.max(previous - 1, 0))
-            }
-            disabled={currentIndex === 0}
-            style={{
-              ...styles.navButton,
-              opacity: currentIndex === 0 ? 0.45 : 1,
-            }}
-          >
-            Previous
-          </button>
-          <span style={styles.pageIndicator}>
-            {currentIndex + 1} / {totalPages || 1}
-          </span>
-          <button
-            type="button"
-            onClick={() =>
-              setCurrentPage((previous) =>
-                Math.min(previous + 1, totalPages - 1),
-              )
-            }
-            disabled={totalPages === 0 || currentIndex >= totalPages - 1}
-            style={{
-              ...styles.navButton,
-              opacity:
-                totalPages === 0 || currentIndex >= totalPages - 1 ? 0.45 : 1,
-            }}
-          >
-            Next
-          </button>
+          <div style={styles.modeButtons}>
+            {modeOptions.map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => void persistReaderMode(mode)}
+                style={{
+                  ...styles.modeButton,
+                  ...(readerMode === mode ? styles.activeModeButton : {}),
+                }}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+
+          {readerMode !== "webtoon" ? (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((previous) => Math.max(previous - 1, 0))
+                }
+                disabled={currentIndex === 0}
+                style={{
+                  ...styles.navButton,
+                  opacity: currentIndex === 0 ? 0.45 : 1,
+                }}
+              >
+                Previous
+              </button>
+              <span style={styles.pageIndicator}>
+                {currentIndex + 1} / {totalPages || 1}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((previous) =>
+                    Math.min(previous + 1, totalPages - 1),
+                  )
+                }
+                disabled={totalPages === 0 || currentIndex >= totalPages - 1}
+                style={{
+                  ...styles.navButton,
+                  opacity:
+                    totalPages === 0 || currentIndex >= totalPages - 1
+                      ? 0.45
+                      : 1,
+                }}
+              >
+                Next
+              </button>
+            </>
+          ) : (
+            <span style={styles.pageIndicator}>{totalPages} pages</span>
+          )}
         </div>
 
         <div style={styles.viewerFrame}>
-          {imageUrl ? (
+          {readerMode === "webtoon" ? (
+            pageUrls.length > 0 ? (
+              <div style={styles.webtoonStrip}>
+                {pageUrls.map((url, index) => (
+                  <img
+                    key={`${chapter.id}:${index}`}
+                    src={url}
+                    alt={`${chapter.title} page ${index + 1}`}
+                    style={styles.webtoonImage}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div style={styles.emptyViewer}>Loading pages...</div>
+            )
+          ) : pageUrls[currentIndex] ? (
             <img
-              src={imageUrl}
+              src={pageUrls[currentIndex]}
               alt={`${chapter.title} page ${currentIndex + 1}`}
               style={styles.image}
             />
@@ -212,6 +286,11 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "end",
     gap: 16,
   },
+  actionRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+  },
   kicker: {
     margin: 0,
     letterSpacing: "0.16em",
@@ -239,6 +318,26 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 8,
     background: "rgba(255, 255, 255, 0.03)",
     borderRadius: 12,
+    flexWrap: "wrap",
+  },
+  modeButtons: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  modeButton: {
+    border: "1px solid rgba(143, 196, 154, 0.3)",
+    borderRadius: 999,
+    padding: "8px 12px",
+    background: "transparent",
+    color: "#e6f2e8",
+    textTransform: "capitalize",
+    cursor: "pointer",
+  },
+  activeModeButton: {
+    background: "#8fc49a",
+    color: "#0b1210",
+    borderColor: "transparent",
   },
   navButton: {
     border: "none",
@@ -266,6 +365,18 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: "100%",
     maxHeight: "75vh",
     objectFit: "contain",
+    borderRadius: 12,
+    background: "#0b1210",
+  },
+  webtoonStrip: {
+    width: "100%",
+    display: "grid",
+    gap: 12,
+  },
+  webtoonImage: {
+    width: "100%",
+    maxWidth: 720,
+    margin: "0 auto",
     borderRadius: 12,
     background: "#0b1210",
   },

@@ -1,27 +1,77 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { importArchiveSources } from "../../lib/import/importer";
+import type { ImportProgressEvent } from "../../lib/import/types";
 import {
   buildLibraryEntries,
   type LibraryEntry,
 } from "../../lib/library/summary";
 import { listAllChapters, listSeries } from "../../lib/storage/db";
 
+type ImportLogItem = ImportProgressEvent & { key: string };
+
+function toArchiveSources(
+  files: FileList | File[],
+): Array<{ name: string; blob: Blob }> {
+  return Array.from(files, (file) => ({ name: file.name, blob: file }));
+}
+
 export function LibraryPage() {
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
+  const [statusItems, setStatusItems] = useState<ImportLogItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
+
+  async function loadEntries(): Promise<void> {
+    const [series, chapters] = await Promise.all([
+      listSeries(),
+      listAllChapters(),
+    ]);
+    setEntries(buildLibraryEntries(series, chapters));
+    setIsLoading(false);
+  }
 
   useEffect(() => {
-    async function loadEntries(): Promise<void> {
-      const [series, chapters] = await Promise.all([
-        listSeries(),
-        listAllChapters(),
-      ]);
-      setEntries(buildLibraryEntries(series, chapters));
-      setIsLoading(false);
-    }
-
     void loadEntries();
   }, []);
+
+  async function handleFiles(files: FileList | File[]): Promise<void> {
+    const sources = toArchiveSources(files);
+    if (sources.length === 0) {
+      return;
+    }
+
+    setIsImporting(true);
+    const startedAt = Date.now();
+    setStatusItems([]);
+
+    const result = await importArchiveSources(sources, (event) => {
+      setStatusItems((current) => [
+        ...current,
+        {
+          ...event,
+          key: `${event.fileName}:${event.index}:${event.state}:${startedAt}`,
+        },
+      ]);
+    });
+
+    if (result.errors.length > 0) {
+      setStatusItems((current) => [
+        ...current,
+        ...result.errors.map((message, index) => ({
+          fileName: `Error ${index + 1}`,
+          index: index + 1,
+          total: result.errors.length,
+          state: "error" as const,
+          message,
+          key: `${startedAt}:error:${index}`,
+        })),
+      ]);
+    }
+
+    await loadEntries();
+    setIsImporting(false);
+  }
 
   return (
     <main style={styles.page}>
@@ -31,10 +81,55 @@ export function LibraryPage() {
             <p style={styles.kicker}>Library</p>
             <h1 style={styles.title}>Your collection</h1>
           </div>
-          <Link to="/" style={styles.linkButton}>
+          <Link
+            to="/"
+            style={styles.linkButton}
+            onClick={() => void loadEntries()}
+          >
             Refresh
           </Link>
         </header>
+
+        <label
+          style={styles.dropZone}
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            void handleFiles(event.dataTransfer.files);
+          }}
+        >
+          <input
+            aria-label="Import archives"
+            accept=".cbz,.zip"
+            multiple
+            onChange={(event) => {
+              const files = event.currentTarget.files;
+              if (files) {
+                void handleFiles(files);
+              }
+            }}
+            style={styles.fileInput}
+            type="file"
+          />
+          <strong>Drop archives here</strong>
+          <span>{isImporting ? "Importing..." : "or choose files"}</span>
+        </label>
+
+        {statusItems.length > 0 ? (
+          <section>
+            <h2 style={styles.sectionTitle}>Import status</h2>
+            <ul style={styles.list}>
+              {statusItems.map((item) => (
+                <li key={item.key} style={styles.listItem}>
+                  <span>{item.fileName}</span>
+                  <span>{item.state}</span>
+                  {item.pageCount ? <span>{item.pageCount} pages</span> : null}
+                  {item.message ? <span>{item.message}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         {isLoading ? (
           <p style={styles.emptyText}>Loading series...</p>
@@ -79,6 +174,41 @@ const styles: Record<string, React.CSSProperties> = {
     margin: "0 auto",
     display: "grid",
     gap: 24,
+  },
+  dropZone: {
+    border: "1px dashed #40604a",
+    borderRadius: 20,
+    padding: 24,
+    display: "grid",
+    gap: 8,
+    placeItems: "center",
+    background: "rgba(255, 255, 255, 0.03)",
+    cursor: "pointer",
+  },
+  fileInput: {
+    position: "absolute",
+    width: 1,
+    height: 1,
+    opacity: 0,
+    pointerEvents: "none",
+  },
+  sectionTitle: {
+    margin: "0 0 8px",
+    fontSize: 20,
+  },
+  list: {
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+    display: "grid",
+    gap: 8,
+  },
+  listItem: {
+    display: "grid",
+    gap: 4,
+    padding: 12,
+    borderRadius: 12,
+    background: "rgba(255, 255, 255, 0.05)",
   },
   headerRow: {
     display: "flex",
