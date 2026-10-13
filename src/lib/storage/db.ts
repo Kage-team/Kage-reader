@@ -153,62 +153,6 @@ async function deleteBlobFromOpfs(key: string): Promise<void> {
   }
 }
 
-function rehydrateFallbackBlob(bytes: ArrayBuffer, type: string): Blob {
-  const blobPrototype = Blob.prototype as Blob & {
-    text?: unknown;
-    arrayBuffer?: unknown;
-  };
-
-  if (
-    typeof blobPrototype.text === "function" &&
-    typeof blobPrototype.arrayBuffer === "function"
-  ) {
-    return {
-      size: bytes.byteLength,
-      type,
-      async text() {
-        const textDecoder = new TextDecoder();
-        return textDecoder.decode(bytes);
-      },
-      async arrayBuffer() {
-        return bytes;
-      },
-      slice(start?: number, end?: number, contentType = type) {
-        return rehydrateFallbackBlob(bytes.slice(start, end), contentType);
-      },
-      stream() {
-        return new Response(bytes).body ?? new ReadableStream();
-      },
-      get [Symbol.toStringTag]() {
-        return "Blob";
-      },
-    } as unknown as Blob;
-  }
-
-  const textDecoder = new TextDecoder();
-  const buffer = bytes.slice(0);
-
-  return {
-    size: buffer.byteLength,
-    type,
-    async text() {
-      return textDecoder.decode(buffer.slice(0));
-    },
-    async arrayBuffer() {
-      return buffer.slice(0);
-    },
-    slice(start?: number, end?: number, contentType = type) {
-      return rehydrateFallbackBlob(buffer.slice(start, end), contentType);
-    },
-    stream() {
-      return new Response(buffer.slice(0)).body ?? new ReadableStream();
-    },
-    get [Symbol.toStringTag]() {
-      return "Blob";
-    },
-  } as unknown as Blob;
-}
-
 export async function getMeta(): Promise<Meta> {
   const db = await openKageDb();
   const meta = await db.get("meta", "singleton");
@@ -245,7 +189,7 @@ export async function getBlob(key: string): Promise<Blob | undefined> {
     return undefined;
   }
 
-  return rehydrateFallbackBlob(record.blob, record.type);
+  return new Blob([record.blob], { type: record.type });
 }
 
 export async function deleteBlob(key: string): Promise<void> {

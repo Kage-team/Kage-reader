@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   deleteBlob,
@@ -14,7 +15,7 @@ beforeEach(async () => {
 });
 
 describe("blob storage", () => {
-  it("uses the IndexedDB fallback when OPFS is unavailable", async () => {
+  it("round-trips through IndexedDB when OPFS is unavailable", async () => {
     const key = "series/chapter/page-1";
     const blob = new Blob(["hello world"], { type: "text/plain" });
 
@@ -22,6 +23,12 @@ describe("blob storage", () => {
 
     const stored = await getBlob(key);
     expect(stored).toBeDefined();
+    expect(stored?.size).toBe(blob.size);
+    expect(stored?.type).toBe(blob.type);
+
+    const storedBytes = new Uint8Array(await stored!.arrayBuffer());
+    const expectedBytes = new Uint8Array(await blob.arrayBuffer());
+    expect(Array.from(storedBytes)).toEqual(Array.from(expectedBytes));
 
     await deleteBlob(key);
     await expect(getBlob(key)).resolves.toBeUndefined();
