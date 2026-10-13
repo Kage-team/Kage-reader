@@ -3,12 +3,16 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   deleteBlob,
   deleteBookmark,
+  clearLibraryData,
   getBookmark,
   getProgress,
   getBlob,
   getSeries,
   listChapters,
+  listAllChapters,
+  listBookmarks,
   listPages,
+  listProgress,
   listSeries,
   putChapter,
   putBookmark,
@@ -126,5 +130,60 @@ describe("blob storage", () => {
 
     await deleteBookmark(bookmark.chapterId);
     await expect(getBookmark(bookmark.chapterId)).resolves.toBeUndefined();
+  });
+
+  it("clears all library records and stored page blobs", async () => {
+    const chapterId = "chapter:clear";
+    const storageKey = `${chapterId}/0`;
+    await putSeries({
+      schemaVersion: 2,
+      id: "series:clear",
+      title: "Clear me",
+      type: "manga",
+      addedAt: 1,
+      updatedAt: 1,
+    });
+    await putChapter({
+      schemaVersion: 2,
+      id: chapterId,
+      seriesId: "series:clear",
+      title: "Chapter 1",
+      order: 0,
+      pageCount: 1,
+      sourceName: "clear.cbz",
+      hash: "clear-hash",
+      addedAt: 1,
+    });
+    await putPage({
+      schemaVersion: 2,
+      id: "page:clear",
+      chapterId,
+      index: 0,
+      storageKey,
+      mime: "text/plain",
+    });
+    await putProgress({
+      schemaVersion: 2,
+      chapterId,
+      pageIndex: 0,
+      scrollRatio: 0,
+      updatedAt: 1,
+    });
+    await putBookmark({
+      schemaVersion: 2,
+      chapterId,
+      pageIndex: 0,
+      createdAt: 1,
+    });
+    await saveBlob(storageKey, new Blob(["page"]));
+
+    await clearLibraryData();
+
+    await expect(listSeries()).resolves.toEqual([]);
+    await expect(listAllChapters()).resolves.toEqual([]);
+    await expect(listPages(chapterId)).resolves.toEqual([]);
+    await expect(listProgress()).resolves.toEqual([]);
+    await expect(listBookmarks()).resolves.toEqual([]);
+    await expect(getBlob(storageKey)).resolves.toBeUndefined();
   });
 });

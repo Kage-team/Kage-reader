@@ -350,9 +350,42 @@ export async function getBookmark(
   return db.get("bookmarks", chapterId);
 }
 
+export async function listBookmarks(): Promise<Bookmark[]> {
+  const db = await openKageDb();
+  return db.getAll("bookmarks");
+}
+
 export async function deleteBookmark(chapterId: string): Promise<void> {
   const db = await openKageDb();
   await db.delete("bookmarks", chapterId);
+}
+
+export async function clearLibraryData(): Promise<void> {
+  const db = await openKageDb();
+  const transaction = db.transaction(
+    ["series", "chapters", "pages", "progress", "bookmarks", "blobs"],
+    "readwrite",
+  );
+  await Promise.all([
+    transaction.objectStore("series").clear(),
+    transaction.objectStore("chapters").clear(),
+    transaction.objectStore("pages").clear(),
+    transaction.objectStore("progress").clear(),
+    transaction.objectStore("bookmarks").clear(),
+    transaction.objectStore("blobs").clear(),
+  ]);
+  await transaction.done;
+
+  const root = await getOpfsDirectory();
+  if (root) {
+    try {
+      await root.removeEntry(OPFS_ROOT, { recursive: true });
+    } catch (error) {
+      if (!(error instanceof DOMException) || error.name !== "NotFoundError") {
+        throw error;
+      }
+    }
+  }
 }
 
 export async function wipeDatabase(): Promise<void> {

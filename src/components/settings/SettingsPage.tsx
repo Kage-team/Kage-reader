@@ -5,12 +5,24 @@ import {
   savePreferences,
   type Preferences,
 } from "../../lib/preferences/preferences";
+import {
+  createLibraryBackup,
+  restoreLibraryBackup,
+} from "../../lib/storage/backup";
+import { clearLibraryData } from "../../lib/storage/db";
+import type { PwaInstallPrompt } from "../../lib/pwa/install";
 import type { ReaderMode } from "../../lib/storage/types";
 
 type StorageStatus = {
   usage?: number;
   quota?: number;
   persistent?: boolean;
+};
+
+type SettingsPageProps = {
+  installPrompt: PwaInstallPrompt | null;
+  isInstalled: boolean;
+  onInstallPromptConsumed: () => void;
 };
 
 function formatBytes(bytes?: number): string {
@@ -23,11 +35,20 @@ function formatBytes(bytes?: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function SettingsPage() {
+export function SettingsPage({
+  installPrompt,
+  isInstalled,
+  onInstallPromptConsumed,
+}: SettingsPageProps) {
   const [preferences, setPreferences] = useState<Preferences>(getPreferences);
   const [storageStatus, setStorageStatus] = useState<StorageStatus>({});
   const [storageMessage, setStorageMessage] = useState("");
   const [isRequestingPersistence, setIsRequestingPersistence] = useState(false);
+  const [backupMessage, setBackupMessage] = useState("");
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [installMessage, setInstallMessage] = useState("");
 
   useEffect(() => {
     const storageManager = navigator.storage;
@@ -77,6 +98,103 @@ export function SettingsPage() {
       setStorageMessage("Could not request persistent storage.");
     } finally {
       setIsRequestingPersistence(false);
+    }
+  }
+
+  async function downloadBackup(): Promise<void> {
+    setIsBackingUp(true);
+    setBackupMessage("");
+    try {
+      const backup = await createLibraryBackup();
+      const downloadUrl = URL.createObjectURL(backup);
+      const anchor = document.createElement("a");
+      anchor.href = downloadUrl;
+      anchor.download = `kage-reader-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      setBackupMessage("Backup downloaded.");
+    } catch (error) {
+      setBackupMessage(
+        error instanceof Error ? error.message : "Could not create backup.",
+      );
+    } finally {
+      setIsBackingUp(false);
+    }
+  }
+
+  async function restoreBackup(file: File): Promise<void> {
+    setIsRestoring(true);
+    setBackupMessage("");
+    try {
+      const result = await restoreLibraryBackup(file);
+      setBackupMessage(
+        `Merged ${result.seriesCount} series, ${result.chapterCount} chapters, and ${result.pageCount} pages.`,
+      );
+      const estimate = await navigator.storage?.estimate();
+      if (estimate) {
+        setStorageStatus((current) => ({
+          ...current,
+          usage: estimate.usage,
+          quota: estimate.quota,
+        }));
+      }
+    } catch (error) {
+      setBackupMessage(
+        error instanceof Error ? error.message : "Could not restore backup.",
+      );
+    } finally {
+      setIsRestoring(false);
+    }
+  }
+
+  async function clearLibrary(): Promise<void> {
+    const confirmed = window.confirm(
+      "Delete every imported series, page, bookmark, and reading position from this device? This cannot be undone.",
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setIsClearing(true);
+    setBackupMessage("");
+    try {
+      await clearLibraryData();
+      setBackupMessage("Local library cleared.");
+      const estimate = await navigator.storage?.estimate();
+      if (estimate) {
+        setStorageStatus((current) => ({
+          ...current,
+          usage: estimate.usage,
+          quota: estimate.quota,
+        }));
+      }
+    } catch (error) {
+      setBackupMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not clear local library.",
+      );
+    } finally {
+      setIsClearing(false);
+    }
+  }
+
+  async function installApp(): Promise<void> {
+    if (!installPrompt) {
+      setInstallMessage("Installation is not available in this browser yet.");
+      return;
+    }
+    try {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      onInstallPromptConsumed();
+      setInstallMessage(
+        choice.outcome === "accepted"
+          ? "Installation started."
+          : "Installation was dismissed.",
+      );
+    } catch {
+      setInstallMessage("Could not open the installation prompt.");
     }
   }
 
@@ -209,6 +327,86 @@ export function SettingsPage() {
             </p>
           ) : null}
         </section>
+
+        <section style={styles.section} aria-labelledby="backup-heading">
+          <div>
+            <h2 id="backup-heading" style={styles.sectionTitle}>
+              Backup and recovery
+            </h2>
+            <p style={styles.description}>
+              Backups include your local series, reading positions, bookmarks,
+              and preferences. Restoring merges records and replaces matching
+              IDs.
+            </p>
+          </div>
+          <div style={styles.backupActions}>
+            <button
+              type="button"
+              onClick={() => void downloadBackup()}
+              disabled={isBackingUp || isRestoring || isClearing}
+              style={styles.secondaryButton}
+            >
+              {isBackingUp ? "Preparing backup..." : "Download backup"}
+            </button>
+            <label style={styles.fileButton}>
+              {isRestoring ? "Restoring..." : "Restore backup"}
+              <input
+                type="file"
+                accept=".zip,application/zip"
+                disabled={isBackingUp || isRestoring || isClearing}
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  if (file) {
+                    void restoreBackup(file);
+                  }
+                  event.currentTarget.value = "";
+                }}
+                style={styles.hiddenFileInput}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => void clearLibrary()}
+              disabled={isBackingUp || isRestoring || isClearing}
+              style={styles.dangerButton}
+            >
+              {isClearing ? "Clearing..." : "Clear local library"}
+            </button>
+          </div>
+          {backupMessage ? (
+            <p role="status" style={styles.description}>
+              {backupMessage}
+            </p>
+          ) : null}
+        </section>
+
+        <section style={styles.section} aria-labelledby="install-heading">
+          <div>
+            <h2 id="install-heading" style={styles.sectionTitle}>
+              App installation
+            </h2>
+            <p style={styles.description}>
+              {isInstalled
+                ? "Kage Reader is installed on this device."
+                : "Install Kage Reader for a standalone app window and offline access."}
+            </p>
+          </div>
+          {!isInstalled ? (
+            <button
+              type="button"
+              onClick={() => void installApp()}
+              disabled={!installPrompt}
+              style={styles.secondaryButton}
+            >
+              Install app
+            </button>
+          ) : null}
+          {installMessage ? (
+            <p role="status" style={styles.description}>
+              {installMessage}
+            </p>
+          ) : null}
+        </section>
       </section>
     </main>
   );
@@ -292,6 +490,39 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#e6f2e8",
     background: "rgba(255, 255, 255, 0.06)",
     border: "1px solid rgba(143, 196, 154, 0.3)",
+    borderRadius: 6,
+    padding: "10px 14px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  backupActions: {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 10,
+  },
+  fileButton: {
+    position: "relative",
+    color: "#e6f2e8",
+    background: "rgba(255, 255, 255, 0.06)",
+    border: "1px solid rgba(143, 196, 154, 0.3)",
+    borderRadius: 6,
+    padding: "10px 14px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  hiddenFileInput: {
+    position: "absolute",
+    inset: 0,
+    width: "100%",
+    height: "100%",
+    opacity: 0,
+    cursor: "pointer",
+  },
+  dangerButton: {
+    color: "#ffe5e1",
+    background: "#702e2e",
+    border: "1px solid #a54b45",
     borderRadius: 6,
     padding: "10px 14px",
     fontWeight: 700,
