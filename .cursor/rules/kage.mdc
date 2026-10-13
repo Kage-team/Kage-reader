@@ -1,0 +1,34 @@
+---
+description: Kage Reader phase rules
+alwaysApply: true
+---
+
+- Client-only. No backend, accounts, scraping, hosted content, or network calls except the app shell.
+- Stack: Vite, React, TypeScript strict, react-router, fflate, idb, vite-plugin-pwa, vitest. Ask before any other dependency.
+- Heavy work such as unzip, hashing, and parsing belongs in Web Workers.
+- Do not load whole archives into memory when avoidable. Prefer streaming or async APIs and revoke object URLs when done.
+- Keep modules small and focused under `src/lib/import`, `src/lib/storage`, `src/lib/epub`, `src/components/library`, and `src/components/reader`.
+- Every storage record carries `schemaVersion`. Add migrations instead of changing storage shape in place.
+- After every task, run `npm run build`, `npm run lint` if present, and `npm test`, then summarize the result briefly.
+- Do not refactor code unrelated to the current phase.
+
+---
+
+description: Kage Reader project rules
+alwaysApply: true
+
+---
+
+- Client-only app. No backend, no accounts, no network requests except loading the app shell.
+- No scraping, downloading from sites, or hosted content. Users import files they already own.
+- Stack: Vite, React, TypeScript (strict), react-router, fflate, idb, vite-plugin-pwa, vitest.
+  Ask before adding any other dependency.
+- Heavy work (unzip, hashing, parsing) runs in Web Workers. Never block the UI thread.
+- Never load a whole archive into memory when it can be avoided. Prefer fflate's async or
+  streaming APIs and extract entries on demand. Revoke object URLs when done.
+- Keep modules small: src/lib/import, src/lib/storage, src/lib/epub, src/components/library,
+  src/components/reader.
+- After every task: run `npm run build`, `npm run lint` (if present) and `npm test`, fix
+  failures, then summarize what changed in at most 5 bullets.
+- Do not refactor code unrelated to the current task.
+- Every storage record carries a schemaVersion. Never change the schema without a migration.
