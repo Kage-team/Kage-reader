@@ -11,7 +11,14 @@ const SUPPORTED_IMAGE_EXTENSIONS = new Map([
   [".gif", "image/gif"],
 ]);
 
-const TEXT_EXTENSION = ".txt";
+const TEXT_EXTENSIONS = new Set([
+  ".txt",
+  ".html",
+  ".htm",
+  ".xhtml",
+  ".xml",
+  ".md",
+]);
 
 function normalizeEntryName(name: string): string {
   return name.replaceAll("\\", "/");
@@ -50,14 +57,26 @@ export function isSupportedArchiveEntry(name: string): boolean {
 
   const extension = getExtension(name);
   return (
-    SUPPORTED_IMAGE_EXTENSIONS.has(extension) || extension === TEXT_EXTENSION
+    SUPPORTED_IMAGE_EXTENSIONS.has(extension) || TEXT_EXTENSIONS.has(extension)
   );
 }
 
 export function mimeTypeForArchiveEntry(name: string): string {
   const extension = getExtension(name);
-  if (extension === TEXT_EXTENSION) {
+  if (extension === ".txt") {
     return "text/plain;charset=utf-8";
+  }
+  if (extension === ".html" || extension === ".htm") {
+    return "text/html;charset=utf-8";
+  }
+  if (extension === ".xhtml") {
+    return "application/xhtml+xml;charset=utf-8";
+  }
+  if (extension === ".xml") {
+    return "application/xml;charset=utf-8";
+  }
+  if (extension === ".md") {
+    return "text/markdown;charset=utf-8";
   }
 
   return (
@@ -106,11 +125,9 @@ function readArchiveEntry(file: UnzipFile): Promise<ArchiveEntry> {
   });
 }
 
-function isComicInfoEntry(name: string): boolean {
-  return (
-    name.replaceAll("\\", "/").split("/").pop()?.toLowerCase() ===
-    "comicinfo.xml"
-  );
+function isMetadataEntry(name: string): boolean {
+  const fileName = name.replaceAll("\\", "/").split("/").pop()?.toLowerCase();
+  return fileName === "comicinfo.xml" || fileName === "package.opf";
 }
 
 function readArchiveTextEntry(file: UnzipFile): Promise<string> {
@@ -150,7 +167,7 @@ export async function extractArchiveBundle(
   const metadataEntries: Promise<void>[] = [];
   let comicInfoXml: string | undefined;
   const unzipper = new Unzip((file) => {
-    if (isComicInfoEntry(file.name)) {
+    if (isMetadataEntry(file.name)) {
       metadataEntries.push(
         readArchiveTextEntry(file).then((text) => {
           comicInfoXml = text;

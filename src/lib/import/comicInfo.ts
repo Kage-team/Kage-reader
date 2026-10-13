@@ -51,23 +51,52 @@ function parseCoverIndex(document: Document): number | undefined {
   return undefined;
 }
 
+function readXmlTag(xml: string, ...selectors: RegExp[]): string | undefined {
+  for (const selector of selectors) {
+    const match = xml.match(selector);
+    if (match?.[1]) {
+      return match[1].replace(/<[^>]+>/g, "").trim() || undefined;
+    }
+  }
+
+  return undefined;
+}
+
 export function parseComicInfoXml(xml: string): ComicInfoMetadata {
   const document = new DOMParser().parseFromString(xml, "application/xml");
+  if (document.querySelector("ComicInfo")) {
+    const volumeText = textContent(document, "ComicInfo > Volume");
+    const volume = volumeText ? Number.parseInt(volumeText, 10) : Number.NaN;
+
+    const title = textContent(document, "ComicInfo > Title");
+    const series = textContent(document, "ComicInfo > Series");
+
+    return {
+      title,
+      series,
+      number: textContent(document, "ComicInfo > Number"),
+      volume: Number.isFinite(volume) ? volume : undefined,
+      writer: textContent(document, "ComicInfo > Writer"),
+      tags: collectTextList(textContent(document, "ComicInfo > Tags")),
+      ageRating: textContent(document, "ComicInfo > AgeRating"),
+      coverPageIndex: parseCoverIndex(document),
+    };
+  }
+
   if (document.querySelector("parsererror")) {
     return { tags: [] };
   }
 
-  const volumeText = textContent(document, "ComicInfo > Volume");
-  const volume = volumeText ? Number.parseInt(volumeText, 10) : Number.NaN;
+  const title =
+    readXmlTag(xml, /<dc:title[^>]*>([\s\S]*?)<\/dc:title>/i) ??
+    readXmlTag(xml, /<title[^>]*>([\s\S]*?)<\/title>/i);
+  const series =
+    readXmlTag(xml, /<dc:creator[^>]*>([\s\S]*?)<\/dc:creator>/i) ?? title;
 
   return {
-    title: textContent(document, "ComicInfo > Title"),
-    series: textContent(document, "ComicInfo > Series"),
-    number: textContent(document, "ComicInfo > Number"),
-    volume: Number.isFinite(volume) ? volume : undefined,
-    writer: textContent(document, "ComicInfo > Writer"),
-    tags: collectTextList(textContent(document, "ComicInfo > Tags")),
-    ageRating: textContent(document, "ComicInfo > AgeRating"),
-    coverPageIndex: parseCoverIndex(document),
+    title,
+    series,
+    writer: readXmlTag(xml, /<dc:creator[^>]*>([\s\S]*?)<\/dc:creator>/i),
+    tags: [],
   };
 }

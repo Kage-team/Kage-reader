@@ -29,6 +29,11 @@ async function saveArchiveAsChapter(
   const comicInfo = bundle.comicInfoXml
     ? parseComicInfoXml(bundle.comicInfoXml)
     : { tags: [] };
+  const isNovelArchive =
+    /\.epub$/i.test(source.name) ||
+    bundle.entries.some((entry) =>
+      /\.(xhtml|html|htm|xml|txt|md)$/i.test(entry.name),
+    );
   const imageEntries = bundle.entries.filter((entry) =>
     entry.mime.startsWith("image/"),
   );
@@ -43,7 +48,7 @@ async function saveArchiveAsChapter(
     schemaVersion: 1,
     id: seriesId,
     title: seriesTitle,
-    type: "manga",
+    type: isNovelArchive ? "novel" : "manga",
     addedAt: now,
     updatedAt: now,
   };
@@ -114,7 +119,8 @@ async function saveArchiveAsChapter(
     }
   }
 
-  const existingSeriesType = existingSeries?.type ?? "manga";
+  const existingSeriesType =
+    existingSeries?.type ?? (isNovelArchive ? "novel" : "manga");
   const existingTags = existingSeries?.tags ?? [];
   const tags = Array.from(
     new Set([...(comicInfo.tags ?? []), ...existingTags]),
@@ -155,7 +161,7 @@ async function saveArchiveAsChapter(
 }
 
 function isSupportedArchiveName(name: string): boolean {
-  return /\.(cbz|zip)$/i.test(name);
+  return /\.(cbz|zip|epub)$/i.test(name);
 }
 
 export async function importArchiveSources(

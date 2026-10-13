@@ -49,7 +49,10 @@ class ComicInfoDocument {
       const attributes = new Map<string, string>();
       const attributePattern = /(\w+)=(?:"([^"]*)"|'([^']*)')/g;
       for (const attributeMatch of match[1].matchAll(attributePattern)) {
-        attributes.set(attributeMatch[1], attributeMatch[2] ?? attributeMatch[3] ?? "");
+        attributes.set(
+          attributeMatch[1],
+          attributeMatch[2] ?? attributeMatch[3] ?? "",
+        );
       }
 
       nodes.push({
@@ -134,6 +137,24 @@ describe("importer metadata and grouping", () => {
     const chapters = await listAllChapters();
     expect(chapters).toHaveLength(2);
     expect(new Set(chapters.map((chapter) => chapter.seriesId)).size).toBe(1);
+  });
+
+  it("accepts EPUB novels alongside comic archives", async () => {
+    const result = await importArchiveSources([await loadFixture("book.epub")]);
+
+    expect(result.imported).toHaveLength(1);
+
+    const series = await listSeries();
+    const novelSeries = series.find((entry) => entry.type === "novel");
+    expect(novelSeries?.title).toBe("Sample EPUB");
+    expect(novelSeries?.type).toBe("novel");
+
+    const chapters = await listAllChapters();
+    expect(
+      chapters.some(
+        (chapter) => chapter.seriesId === novelSeries?.id && chapter.pageCount > 0,
+      ),
+    ).toBe(true);
   });
 
   it("skips duplicate reimports", async () => {

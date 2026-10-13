@@ -18,6 +18,7 @@ export function ReaderPage() {
   const [pages, setPages] = useState<Page[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageUrls, setPageUrls] = useState<string[]>([]);
+  const [pageTexts, setPageTexts] = useState<string[]>([]);
   const [readerMode, setReaderMode] = useState<ReaderMode>("flip");
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export function ReaderPage() {
   useEffect(() => {
     if (!chapterId || pages.length === 0) {
       setPageUrls([]);
+      setPageTexts([]);
       return;
     }
 
@@ -61,15 +63,25 @@ export function ReaderPage() {
     let objectUrls: string[] = [];
 
     void (async () => {
-      const loadedUrls = await Promise.all(
-        pages.map(async (page) => {
-          const blob = await getBlob(page.storageKey);
-          if (!blob) {
-            return null;
-          }
-          return URL.createObjectURL(blob);
-        }),
-      );
+      const loadedUrls: Array<string | null> = [];
+      const loadedTexts: string[] = [];
+
+      for (const page of pages) {
+        const blob = await getBlob(page.storageKey);
+        if (!blob) {
+          loadedUrls.push(null);
+          continue;
+        }
+
+        if (page.mime.startsWith("image/")) {
+          const objectUrl = URL.createObjectURL(blob);
+          loadedUrls.push(objectUrl);
+          continue;
+        }
+
+        loadedUrls.push(null);
+        loadedTexts.push(await blob.text());
+      }
 
       if (isCancelled) {
         loadedUrls
@@ -80,6 +92,7 @@ export function ReaderPage() {
 
       objectUrls = loadedUrls.filter((url): url is string => Boolean(url));
       setPageUrls(objectUrls);
+      setPageTexts(loadedTexts);
     })();
 
     return () => {
@@ -156,6 +169,8 @@ export function ReaderPage() {
 
   const totalPages = pages.length;
   const currentIndex = Math.min(Math.max(currentPage, 0), totalPages - 1);
+  const currentPageMime = pages[currentIndex]?.mime ?? "";
+  const currentTextPage = pageTexts[currentIndex] ?? "";
   const modeOptions: ReaderMode[] = ["flip", "webtoon", "novel"];
 
   return (
@@ -236,7 +251,14 @@ export function ReaderPage() {
         </div>
 
         <div style={styles.viewerFrame}>
-          {readerMode === "webtoon" ? (
+          {currentPageMime.startsWith("text/") ||
+          currentPageMime.includes("html") ||
+          currentPageMime.includes("xml") ? (
+            <article
+              style={styles.textPage}
+              dangerouslySetInnerHTML={{ __html: currentTextPage }}
+            />
+          ) : readerMode === "webtoon" ? (
             pageUrls.length > 0 ? (
               <div style={styles.webtoonStrip}>
                 {pageUrls.map((url, index) => (
@@ -379,6 +401,16 @@ const styles: Record<string, React.CSSProperties> = {
     margin: "0 auto",
     borderRadius: 12,
     background: "#0b1210",
+  },
+  textPage: {
+    width: "100%",
+    maxWidth: 760,
+    lineHeight: 1.7,
+    color: "#ebf3eb",
+    background: "rgba(12, 18, 16, 0.75)",
+    borderRadius: 12,
+    padding: "20px 24px",
+    overflowWrap: "anywhere",
   },
   emptyViewer: {
     color: "#9db0a1",

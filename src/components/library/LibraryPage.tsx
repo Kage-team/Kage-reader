@@ -100,7 +100,7 @@ export function LibraryPage() {
         >
           <input
             aria-label="Import archives"
-            accept=".cbz,.zip"
+            accept=".cbz,.zip,.epub"
             multiple
             onChange={(event) => {
               const files = event.currentTarget.files;
