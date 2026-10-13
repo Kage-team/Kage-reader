@@ -291,10 +291,71 @@ export async function getChapterByHash(
   return db.getFromIndex("chapters", "by-hash", hash);
 }
 
+function getChapterReadingPosition(chapter: Chapter): {
+  volume: number;
+  category: number;
+  number?: number;
+} {
+  const title = `${chapter.title} ${chapter.sourceName}`.toLocaleLowerCase();
+  const chapterMatches = Array.from(
+    chapter.sourceName.matchAll(
+      /(?:^|[^a-z0-9])(?:chapter|chap|ch|episode|ep|c)\s*[._#-]*0*(\d+(?:\.\d+)?)(?=$|[^0-9])/gi,
+    ),
+  );
+  const titleChapterMatch = chapter.title.match(
+    /\b(?:chapter|chap|ch|episode|ep|c)\s*[._#-]*0*(\d+(?:\.\d+)?)/i,
+  );
+  const chapterNumber =
+    chapter.number ??
+    (chapterMatches.length > 0
+      ? Number(chapterMatches[chapterMatches.length - 1]?.[1])
+      : titleChapterMatch?.[1]
+        ? Number(titleChapterMatch[1])
+        : undefined);
+  const number =
+    chapterNumber !== undefined && Number.isFinite(chapterNumber)
+      ? chapterNumber
+      : undefined;
+  const volumeMatches = Array.from(
+    chapter.sourceName.matchAll(
+      /(?:^|[^a-z0-9])(?:volume|vol|v)\s*[._#-]*0*(\d+(?:\.\d+)?)(?=$|[^0-9])/gi,
+    ),
+  );
+  const parsedVolume = volumeMatches.length
+    ? Number(volumeMatches[volumeMatches.length - 1]?.[1])
+    : undefined;
+  const volume = chapter.volume ?? parsedVolume;
+
+  return {
+    volume: volume !== undefined && Number.isFinite(volume) ? volume : 1,
+    category: /\b(prologue|prelude)\b/i.test(title)
+      ? 0
+      : /\b(epilogue|afterword)\b/i.test(title)
+        ? 3
+        : number !== undefined
+          ? 1
+          : 2,
+    number,
+  };
+}
+
+function compareChaptersForReading(left: Chapter, right: Chapter): number {
+  const leftPosition = getChapterReadingPosition(left);
+  const rightPosition = getChapterReadingPosition(right);
+  return (
+    leftPosition.volume - rightPosition.volume ||
+    leftPosition.category - rightPosition.category ||
+    (leftPosition.number ?? 0) - (rightPosition.number ?? 0) ||
+    left.order - right.order ||
+    left.addedAt - right.addedAt ||
+    left.title.localeCompare(right.title)
+  );
+}
+
 export async function listChapters(seriesId: string): Promise<Chapter[]> {
   const db = await openKageDb();
   const rows = await db.getAllFromIndex("chapters", "by-series", seriesId);
-  return rows.sort((a, b) => a.order - b.order || a.addedAt - b.addedAt);
+  return rows.sort(compareChaptersForReading);
 }
 
 export async function listAllChapters(): Promise<Chapter[]> {

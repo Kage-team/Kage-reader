@@ -135,7 +135,9 @@ export function ReaderPage() {
     null,
   );
   const [bookmarkError, setBookmarkError] = useState("");
-  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(
+    () => getPreferences().readerZoom / 100,
+  );
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPageGridOpen, setIsPageGridOpen] = useState(false);
   const [isContentsOpen, setIsContentsOpen] = useState(false);
@@ -146,7 +148,15 @@ export function ReaderPage() {
   const [readerPreferences, setReaderPreferences] = useState<Preferences>(() =>
     getPreferences(),
   );
+  const readerRootRef = useRef<HTMLElement>(null);
   const viewerFrameRef = useRef<HTMLDivElement>(null);
+  const pointerPositionsRef = useRef(
+    new Map<number, { x: number; y: number }>(),
+  );
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(null);
+  const zoomPersistTimerRef = useRef<number | undefined>(undefined);
+  const chromeHideTimerRef = useRef<number | undefined>(undefined);
   const novelProgressSavedAtRef = useRef(0);
   const novelScrollRatioRef = useRef(0);
 
@@ -166,7 +176,7 @@ export function ReaderPage() {
       setLoadedChapterId(null);
       setCurrentPage(0);
       setBookmarkPageIndex(null);
-      setZoomLevel(1);
+      setZoomLevel(getPreferences().readerZoom / 100);
       const [chapterRecord, pageRows, progress, bookmark] = await Promise.all([
         getChapter(decodedChapterId),
         listPages(decodedChapterId),
@@ -226,41 +236,60 @@ export function ReaderPage() {
   }, [chapterId]);
 
   useEffect(() => {
-    if (!isImmersive || isReaderSettingsOpen) {
+    const keepChromeVisible =
+      !readerPreferences.readerAutoHide ||
+      isReaderSettingsOpen ||
+      isPageGridOpen ||
+      isContentsOpen;
+    if (keepChromeVisible) {
       setIsUiVisible(true);
       return;
     }
 
-    let hideTimer: number | undefined;
-    const revealUi = () => {
+    const root = readerRootRef.current;
+    const scheduleHide = () => {
       setIsUiVisible(true);
-      if (hideTimer) {
-        window.clearTimeout(hideTimer);
+      if (chromeHideTimerRef.current !== undefined) {
+        window.clearTimeout(chromeHideTimerRef.current);
       }
-      hideTimer = window.setTimeout(() => {
-        setIsUiVisible(false);
-      }, 1800);
+      chromeHideTimerRef.current = window.setTimeout(
+        () => setIsUiVisible(false),
+        readerPreferences.readerAutoHideDelay,
+      );
     };
 
-    const frame = viewerFrameRef.current;
-    if (frame) {
-      frame.addEventListener("pointermove", revealUi);
-      frame.addEventListener("pointerdown", revealUi);
-      frame.addEventListener("scroll", revealUi, { passive: true });
-      hideTimer = window.setTimeout(() => setIsUiVisible(false), 1500);
-    }
+    scheduleHide();
+    root?.addEventListener("pointermove", scheduleHide);
+    root?.addEventListener("pointerdown", scheduleHide);
+    root?.addEventListener("scroll", scheduleHide, true);
 
     return () => {
-      if (frame) {
-        frame.removeEventListener("pointermove", revealUi);
-        frame.removeEventListener("pointerdown", revealUi);
-        frame.removeEventListener("scroll", revealUi);
-      }
-      if (hideTimer) {
-        window.clearTimeout(hideTimer);
+      root?.removeEventListener("pointermove", scheduleHide);
+      root?.removeEventListener("pointerdown", scheduleHide);
+      root?.removeEventListener("scroll", scheduleHide, true);
+      if (chromeHideTimerRef.current !== undefined) {
+        window.clearTimeout(chromeHideTimerRef.current);
+        chromeHideTimerRef.current = undefined;
       }
     };
-  }, [chapterId, isImmersive, isReaderSettingsOpen, pages.length]);
+  }, [
+    chapterId,
+    isContentsOpen,
+    isPageGridOpen,
+    isReaderSettingsOpen,
+    pages.length,
+    readerPreferences.readerAutoHide,
+    readerPreferences.readerAutoHideDelay,
+  ]);
+
+  useEffect(
+    () => () => {
+      if (zoomPersistTimerRef.current !== undefined) {
+        window.clearTimeout(zoomPersistTimerRef.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!chapterId || pages.length === 0) {
@@ -448,9 +477,42 @@ export function ReaderPage() {
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.target instanceof HTMLElement &&
+        event.target.closest(
+          "input, select, textarea, [contenteditable='true']",
+        )
+      ) {
+        return;
+      }
+      setIsUiVisible(true);
+      if (chromeHideTimerRef.current !== undefined) {
+        window.clearTimeout(chromeHideTimerRef.current);
+      }
+      if (readerPreferences.readerAutoHide) {
+        chromeHideTimerRef.current = window.setTimeout(
+          () => setIsUiVisible(false),
+          readerPreferences.readerAutoHideDelay,
+        );
+      }
       if (event.key.toLowerCase() === "g") {
         event.preventDefault();
         setIsPageGridOpen((current) => !current);
+        return;
+      }
+      if (event.key === "+" || event.key === "=" || event.key === "Add") {
+        event.preventDefault();
+        changeZoom(zoomLevel + 0.1);
+        return;
+      }
+      if (event.key === "-") {
+        event.preventDefault();
+        changeZoom(zoomLevel - 0.1);
+        return;
+      }
+      if (event.key === "0") {
+        event.preventDefault();
+        changeZoom(1);
         return;
       }
       if (event.key.toLowerCase() === "f") {
@@ -478,7 +540,14 @@ export function ReaderPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [chapterId, pages.length, readingDirection]);
+  }, [
+    chapterId,
+    pages.length,
+    readingDirection,
+    readerPreferences.readerAutoHide,
+    readerPreferences.readerAutoHideDelay,
+    zoomLevel,
+  ]);
 
   useEffect(() => {
     const updateFullscreenState = () =>
@@ -492,6 +561,21 @@ export function ReaderPage() {
     const next = savePreferences({ ...readerPreferences, ...update });
     setReaderPreferences(next);
     return next;
+  }
+
+  function changeZoom(nextZoom: number): void {
+    setZoomLevel(Math.min(3, Math.max(0.5, nextZoom)));
+    if (zoomPersistTimerRef.current !== undefined) {
+      window.clearTimeout(zoomPersistTimerRef.current);
+    }
+    zoomPersistTimerRef.current = window.setTimeout(() => {
+      const preferences = getPreferences();
+      const nextPreferences = savePreferences({
+        ...preferences,
+        readerZoom: Math.round(nextZoom * 10) * 10,
+      });
+      setReaderPreferences(nextPreferences);
+    }, 350);
   }
 
   async function persistReaderMode(nextMode: ReaderMode): Promise<void> {
@@ -572,6 +656,93 @@ export function ReaderPage() {
     } catch {
       setBookmarkError("Fullscreen is unavailable in this browser.");
     }
+  }
+
+  function handleReaderPointerDown(
+    event: React.PointerEvent<HTMLDivElement>,
+  ): void {
+    if (event.pointerType !== "touch") return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const point = { x: event.clientX, y: event.clientY };
+    if (pointerPositionsRef.current.size === 0) swipeStartRef.current = point;
+    pointerPositionsRef.current.set(event.pointerId, point);
+    if (pointerPositionsRef.current.size === 2) {
+      swipeStartRef.current = null;
+      const [first, second] = Array.from(pointerPositionsRef.current.values());
+      pinchStartRef.current = {
+        distance: Math.hypot(second.x - first.x, second.y - first.y),
+        zoom: zoomLevel,
+      };
+    }
+  }
+
+  function handleReaderPointerMove(
+    event: React.PointerEvent<HTMLDivElement>,
+  ): void {
+    const previous = pointerPositionsRef.current.get(event.pointerId);
+    if (!previous) return;
+    event.preventDefault();
+    const point = { x: event.clientX, y: event.clientY };
+    pointerPositionsRef.current.set(event.pointerId, point);
+
+    if (pointerPositionsRef.current.size >= 2) {
+      const [first, second] = Array.from(pointerPositionsRef.current.values());
+      const start = pinchStartRef.current;
+      if (start?.distance) {
+        changeZoom(
+          start.zoom *
+            (Math.hypot(second.x - first.x, second.y - first.y) /
+              start.distance),
+        );
+      }
+      return;
+    }
+
+    const frame = viewerFrameRef.current;
+    if (!frame) return;
+    const deltaX = point.x - previous.x;
+    const deltaY = point.y - previous.y;
+    if (
+      zoomLevel > 1.01 ||
+      (readerMode === "webtoon" && readerPreferences.comicInfiniteScroll)
+    ) {
+      frame.scrollBy({ left: -deltaX, top: -deltaY, behavior: "instant" });
+    }
+  }
+
+  function handleReaderPointerEnd(
+    event: React.PointerEvent<HTMLDivElement>,
+  ): void {
+    if (!pointerPositionsRef.current.has(event.pointerId)) return;
+    const start = swipeStartRef.current;
+    if (
+      start &&
+      pointerPositionsRef.current.size === 1 &&
+      !pinchStartRef.current &&
+      zoomLevel <= 1.01 &&
+      readerMode === "flip" &&
+      Math.abs(start.x - event.clientX) >= 48 &&
+      Math.abs(start.x - event.clientX) > Math.abs(start.y - event.clientY)
+    ) {
+      const swipedLeft = event.clientX < start.x;
+      const nextPage =
+        swipedLeft === (readingDirection === "ltr")
+          ? currentPage + 1
+          : currentPage - 1;
+      setCurrentPage(Math.min(Math.max(nextPage, 0), pages.length - 1));
+    }
+    pointerPositionsRef.current.delete(event.pointerId);
+    if (pointerPositionsRef.current.size === 0) swipeStartRef.current = null;
+    if (pointerPositionsRef.current.size < 2) pinchStartRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  function handleReaderWheel(event: React.WheelEvent<HTMLDivElement>): void {
+    if (!event.ctrlKey && !event.metaKey) return;
+    event.preventDefault();
+    changeZoom(zoomLevel + (event.deltaY < 0 ? 0.1 : -0.1));
   }
 
   function toggleImmersiveMode(): void {
@@ -692,12 +863,12 @@ export function ReaderPage() {
   const isNovel = seriesType === "novel" || readerMode === "novel";
   const viewportWidth = window.innerWidth || 1280;
   const maxViewportReaderWidth = Math.min(
-    Math.max(720, viewportWidth - 64),
+    Math.max(280, viewportWidth - 32),
     1800,
   );
   const sliderRangeMin = 60;
   const sliderRangeMax = 100;
-  const minimumReaderWidth = Math.min(720, maxViewportReaderWidth);
+  const minimumReaderWidth = Math.min(280, maxViewportReaderWidth);
   const normalizedReaderWidth = Math.min(
     Math.max(readerPreferences.readerWidth, minimumReaderWidth),
     maxViewportReaderWidth,
@@ -823,13 +994,13 @@ export function ReaderPage() {
   })();
 
   return (
-    <main style={styles.page}>
+    <main ref={readerRootRef} className="readerPageRoot" style={styles.page}>
       <section style={styles.panel}>
         <header
+          className={`readerChrome readerHeader${readerPreferences.readerAutoHide && !isUiVisible ? " readerChromeHidden" : ""}`}
           style={{
             ...styles.headerRow,
             ...(isImmersive ? styles.headerRowImmersive : {}),
-            ...(isImmersive && !isUiVisible ? styles.headerHidden : {}),
           }}
         >
           <div style={styles.readerTitleGroup}>
@@ -875,6 +1046,7 @@ export function ReaderPage() {
 
         {!isNovel ? (
           <div
+            className={`readerChrome readerProgress${readerPreferences.readerAutoHide && !isUiVisible ? " readerChromeHidden" : ""}`}
             style={{
               ...styles.readerProgressTrack,
               ...(isImmersive ? styles.readerProgressTrackImmersive : {}),
@@ -895,10 +1067,10 @@ export function ReaderPage() {
         ) : null}
 
         <div
+          className={`readerChrome readerToolbar${readerPreferences.readerAutoHide && !isUiVisible ? " readerChromeHidden" : ""}`}
           style={{
             ...styles.toolbar,
             ...(isImmersive ? styles.toolbarImmersive : {}),
-            ...(isImmersive && !isUiVisible ? styles.toolbarHidden : {}),
           }}
         >
           <div style={styles.chapterNav}>
@@ -934,7 +1106,7 @@ export function ReaderPage() {
             </button>
           </div>
           {!isNovel ? (
-            <div style={styles.modeButtons}>
+            <div className="readerModeButtons" style={styles.modeButtons}>
               {modeOptions.map((mode) => (
                 <button
                   key={mode.value}
@@ -1014,55 +1186,80 @@ export function ReaderPage() {
               onChange={(event) =>
                 selectReaderPage(Number(event.currentTarget.value))
               }
+              className="readerPageScrubber"
               style={styles.pageScrubber}
             />
           ) : null}
 
-          {!isContinuousReader && !isNovel ? (
-            <>
-              {currentPageMime.startsWith("image/") ? (
-                <div
-                  style={styles.zoomControls}
-                  role="group"
-                  aria-label="Page zoom"
-                >
-                  <button
-                    type="button"
-                    aria-label="Zoom out"
-                    disabled={zoomLevel <= 0.5}
-                    onClick={() =>
-                      setZoomLevel((level) => Math.max(0.5, level - 0.25))
-                    }
-                    style={styles.bookmarkButton}
-                  >
-                    -
-                  </button>
-                  <span style={styles.pageIndicator}>
-                    {Math.round(zoomLevel * 100)}%
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="Zoom in"
-                    disabled={zoomLevel >= 2.5}
-                    onClick={() =>
-                      setZoomLevel((level) => Math.min(2.5, level + 0.25))
-                    }
-                    style={styles.bookmarkButton}
-                  >
-                    +
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Reset zoom"
-                    onClick={() => setZoomLevel(1)}
-                    style={styles.bookmarkButton}
-                  >
-                    Reset
-                  </button>
-                </div>
-              ) : null}
+          {!isNovel && currentPageMime.startsWith("image/") ? (
+            <div
+              style={styles.zoomControls}
+              role="group"
+              aria-label="Page zoom"
+            >
               <button
                 type="button"
+                aria-label="Zoom out"
+                title="Zoom out"
+                disabled={zoomLevel <= 0.5}
+                onClick={() => changeZoom(zoomLevel - 0.25)}
+                style={styles.bookmarkButton}
+              >
+                <Minus size={15} />
+              </button>
+              <span style={styles.pageIndicator}>
+                {Math.round(zoomLevel * 100)}%
+              </span>
+              <button
+                type="button"
+                aria-label="Zoom in"
+                title="Zoom in"
+                disabled={zoomLevel >= 3}
+                onClick={() => changeZoom(zoomLevel + 0.25)}
+                style={styles.bookmarkButton}
+              >
+                <Plus size={15} />
+              </button>
+              <button
+                type="button"
+                aria-label="Reset zoom"
+                title="Reset zoom"
+                onClick={() => {
+                  changeZoom(1);
+                  viewerFrameRef.current?.scrollTo({
+                    top: 0,
+                    left: 0,
+                    behavior: "smooth",
+                  });
+                }}
+                style={styles.bookmarkButton}
+              >
+                Reset
+              </button>
+              <select
+                aria-label="Page fit"
+                value={readerPreferences.readerPageFit}
+                onChange={(event) =>
+                  updateReaderPreferences({
+                    readerPageFit: event.currentTarget
+                      .value as Preferences["readerPageFit"],
+                  })
+                }
+                className="readerFitSelect"
+                style={styles.settingsSelect}
+              >
+                <option value="screen">Fit screen</option>
+                <option value="width">Fit width</option>
+                <option value="height">Fit height</option>
+              </select>
+            </div>
+          ) : null}
+
+          {!isContinuousReader && !isNovel ? (
+            <>
+              <button
+                type="button"
+                aria-label="Previous page"
                 onClick={() =>
                   setCurrentPage((previous) => Math.max(previous - 1, 0))
                 }
@@ -1072,13 +1269,15 @@ export function ReaderPage() {
                   opacity: currentIndex === 0 ? 0.45 : 1,
                 }}
               >
-                <ChevronLeft size={16} /> Previous page
+                <ChevronLeft size={16} />
+                <span className="readerButtonLabel">Previous page</span>
               </button>
               <span style={styles.pageIndicator}>
                 {currentIndex + 1} / {totalPages || 1}
               </span>
               <button
                 type="button"
+                aria-label="Next page"
                 onClick={() =>
                   setCurrentPage((previous) =>
                     Math.min(previous + 1, totalPages - 1),
@@ -1093,7 +1292,8 @@ export function ReaderPage() {
                       : 1,
                 }}
               >
-                Next page <ChevronRight size={16} />
+                <span className="readerButtonLabel">Next page</span>
+                <ChevronRight size={16} />
               </button>
             </>
           ) : (
@@ -1150,6 +1350,7 @@ export function ReaderPage() {
                 top: settingsPanelPosition.top,
                 transform: settingsPanelPosition.transform,
               }}
+              className="readerSettingsPanel"
               role="dialog"
               aria-modal="true"
             >
@@ -1381,6 +1582,7 @@ export function ReaderPage() {
                               event.currentTarget.value === "on",
                           })
                         }
+                        className="readerFitSelect"
                         style={styles.settingsSelect}
                       >
                         <option value="off">None</option>
@@ -1531,6 +1733,70 @@ export function ReaderPage() {
                       </button>
                     ))}
                   </div>
+
+                  <label style={styles.settingsToggleRow}>
+                    <div>
+                      <div style={styles.settingsToggleHeading}>
+                        Hide controls while reading
+                      </div>
+                      <p style={styles.settingsToggleBody}>
+                        Reveal the reader dock when you tap or move, then hide
+                        it after a pause.
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={readerPreferences.readerAutoHide}
+                      onChange={(event) =>
+                        updateReaderPreferences({
+                          readerAutoHide: event.currentTarget.checked,
+                        })
+                      }
+                      style={styles.settingsToggleInput}
+                    />
+                  </label>
+
+                  <label style={styles.settingsDirectionRow}>
+                    <span style={styles.settingsSliderLabel}>
+                      Hide controls after
+                    </span>
+                    <select
+                      aria-label="Reader controls hide delay"
+                      value={readerPreferences.readerAutoHideDelay}
+                      onChange={(event) =>
+                        updateReaderPreferences({
+                          readerAutoHideDelay: Number(
+                            event.currentTarget.value,
+                          ),
+                        })
+                      }
+                      style={styles.settingsSelect}
+                    >
+                      <option value={1500}>1.5 seconds</option>
+                      <option value={2500}>2.5 seconds</option>
+                      <option value={4000}>4 seconds</option>
+                      <option value={6000}>6 seconds</option>
+                    </select>
+                  </label>
+
+                  <label style={styles.settingsDirectionRow}>
+                    <span style={styles.settingsSliderLabel}>Image fit</span>
+                    <select
+                      aria-label="Comic image fit"
+                      value={readerPreferences.readerPageFit}
+                      onChange={(event) =>
+                        updateReaderPreferences({
+                          readerPageFit: event.currentTarget
+                            .value as Preferences["readerPageFit"],
+                        })
+                      }
+                      style={styles.settingsSelect}
+                    >
+                      <option value="screen">Fit screen</option>
+                      <option value="width">Fit width</option>
+                      <option value="height">Fit height</option>
+                    </select>
+                  </label>
 
                   <div style={styles.settingsSliderRow}>
                     <span style={styles.settingsSliderLabel}>
@@ -1781,18 +2047,22 @@ export function ReaderPage() {
 
         <div
           ref={viewerFrameRef}
+          className="readerViewport"
           onScroll={handleViewerScroll}
+          onPointerDown={handleReaderPointerDown}
+          onPointerMove={handleReaderPointerMove}
+          onPointerUp={handleReaderPointerEnd}
+          onPointerCancel={handleReaderPointerEnd}
+          onWheel={handleReaderWheel}
           style={{
             ...styles.viewerFrame,
             ...(isNovel ? styles.novelViewerFrame : {}),
             width: "100%",
-            maxWidth: isNovel ? "none" : normalizedReaderWidth,
+            height: "100dvh",
+            minHeight: 0,
+            maxWidth: "none",
             margin: "0 auto",
-            padding: isNovel
-              ? 0
-              : isImmersive
-                ? "8px 8px 36px"
-                : styles.viewerFrame.padding,
+            padding: 0,
             background: isNovel
               ? selectedNovelTheme.swatch
               : isImmersive
@@ -1803,6 +2073,7 @@ export function ReaderPage() {
               : isImmersive
                 ? "1px solid rgba(255,255,255,0.12)"
                 : styles.viewerFrame.border,
+            touchAction: "none",
           }}
         >
           {isNovelContinuous ? (
@@ -1879,6 +2150,8 @@ export function ReaderPage() {
               <div
                 style={{
                   ...styles.webtoonStrip,
+                  maxWidth: normalizedReaderWidth,
+                  margin: "0 auto",
                   gap: `${readerPreferences.comicPageGap}px`,
                 }}
               >
@@ -1889,7 +2162,15 @@ export function ReaderPage() {
                       data-reader-page-index={index}
                       src={url}
                       alt={`${chapter.title} page ${index + 1}`}
-                      style={styles.webtoonImage}
+                      style={
+                        index === currentIndex
+                          ? {
+                              ...styles.webtoonImage,
+                              width: `${zoomLevel * 100}%`,
+                              maxWidth: "none",
+                            }
+                          : styles.webtoonImage
+                      }
                     />
                   ) : null,
                 )}
@@ -1904,8 +2185,20 @@ export function ReaderPage() {
               data-reader-page-index={currentIndex}
               style={{
                 ...styles.image,
-                transform: `scale(${zoomLevel})`,
-                transformOrigin: "center",
+                width:
+                  readerPreferences.readerPageFit === "screen"
+                    ? `${Math.min(normalizedReaderWidth, viewportWidth) * zoomLevel}px`
+                    : readerPreferences.readerPageFit === "width"
+                      ? `${Math.min(normalizedReaderWidth, viewportWidth) * zoomLevel}px`
+                      : "auto",
+                height:
+                  readerPreferences.readerPageFit === "screen"
+                    ? `${window.innerHeight * zoomLevel}px`
+                    : readerPreferences.readerPageFit === "height"
+                      ? `${window.innerHeight * zoomLevel}px`
+                      : "auto",
+                maxWidth: "none",
+                maxHeight: "none",
               }}
             />
           ) : (
@@ -1984,19 +2277,24 @@ export function ReaderPage() {
 
 const styles: Record<string, React.CSSProperties> = {
   page: {
-    minHeight: "100vh",
+    position: "fixed",
+    inset: 0,
+    zIndex: 20,
+    minHeight: "100dvh",
+    overflow: "hidden",
     background: "var(--app-bg)",
     color: "var(--app-text)",
-    padding: "clamp(10px, 2vw, 24px)",
+    padding: 0,
     fontFamily: "var(--font-body)",
   },
   panel: {
-    display: "grid",
+    position: "relative",
+    display: "block",
     width: "100%",
-    maxWidth: 2200,
-    minHeight: "calc(100vh - 48px)",
-    gap: 12,
-    margin: "0 auto",
+    height: "100dvh",
+    minHeight: 0,
+    maxWidth: "none",
+    margin: 0,
   },
   headerRow: {
     display: "flex",
@@ -2221,7 +2519,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     width: "100%",
     minWidth: 0,
-    minHeight: "min(68vh, 900px)",
+    minHeight: "100dvh",
+    height: "100dvh",
     placeItems: "center",
     overflow: "auto",
     border: "1px solid rgba(255,255,255,0.08)",
@@ -2253,9 +2552,10 @@ const styles: Record<string, React.CSSProperties> = {
     overflowWrap: "anywhere",
   },
   image: {
-    width: "100%",
+    width: "auto",
     maxWidth: "100%",
     height: "auto",
+    maxHeight: "100dvh",
     objectFit: "contain",
     borderRadius: 3,
     background: "#090c0a",

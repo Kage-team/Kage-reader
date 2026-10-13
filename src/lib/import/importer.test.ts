@@ -168,6 +168,39 @@ describe("importer metadata and grouping", () => {
     ).toBe(true);
   });
 
+  it("uses the OPF-declared image for a novel series cover", async () => {
+    const epub = zipSync({
+      "META-INF/container.xml": new TextEncoder().encode(
+        '<container><rootfile full-path="OEBPS/package.opf"/></container>',
+      ),
+      "OEBPS/package.opf": new TextEncoder().encode(
+        '<package><metadata><meta name="cover" content="cover-image"/></metadata><manifest><item id="cover-image" href="cover.jpg" media-type="image/jpeg"/><item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/></manifest></package>',
+      ),
+      "OEBPS/cover.jpg": new Uint8Array([255, 216, 255, 217]),
+      "OEBPS/chapter.xhtml": new TextEncoder().encode(
+        "<html><body><p>Chapter text</p></body></html>",
+      ),
+    });
+
+    await importArchiveSources([
+      {
+        name: "Novel with cover.epub",
+        blob: new Blob([epub], { type: "application/epub+zip" }),
+      },
+    ]);
+
+    const novel = (await listSeries()).find((entry) => entry.type === "novel");
+    const chapter = (await listAllChapters()).find(
+      (entry) => entry.seriesId === novel?.id,
+    );
+    const chapterPages = chapter ? await listPages(chapter.id) : [];
+    const coverPage = chapterPages.find(
+      (page) => `${page.chapterId}/${page.index}` === novel?.coverPageKey,
+    );
+
+    expect(coverPage?.mime).toBe("image/jpeg");
+  });
+
   it("skips duplicate reimports", async () => {
     const source = await loadFixture("ok.cbz");
 

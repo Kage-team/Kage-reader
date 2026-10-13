@@ -813,3 +813,222 @@ select:focus-visible {
     grid-column: 2;
   }
 }
+
+.readerPageRoot {
+  isolation: isolate;
+}
+
+.readerHeader {
+  position: fixed !important;
+  z-index: 22;
+  top: 10px;
+  right: 10px;
+  left: 10px;
+  width: calc(100% - 20px);
+  max-width: 2200px;
+  margin: 0 auto;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    visibility 180ms ease;
+}
+
+.readerProgress {
+  position: fixed;
+  z-index: 21;
+  top: 88px;
+  right: 18px;
+  left: 18px;
+  transition:
+    opacity 180ms ease,
+    visibility 180ms ease;
+}
+
+.readerToolbar {
+  position: fixed !important;
+  z-index: 23;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50% !important;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  transform: translateX(-50%) !important;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    visibility 180ms ease;
+}
+
+.readerChromeHidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+.readerChrome:has(:focus-visible) {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+}
+
+.readerHeader.readerChromeHidden {
+  transform: translateY(-14px) !important;
+}
+
+.readerHeader:has(:focus-visible) {
+  transform: none !important;
+}
+
+.readerToolbar.readerChromeHidden {
+  transform: translate(-50%, 14px) !important;
+}
+
+.readerToolbar:has(:focus-visible) {
+  transform: translateX(-50%) !important;
+}
+
+.readerViewport {
+  position: fixed !important;
+  z-index: 0;
+  inset: 0;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  margin: 0 !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  scroll-behavior: smooth;
+}
+
+.readerViewport::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.readerToolbar button,
+.readerToolbar select {
+  flex: 0 0 auto;
+}
+
+.readerSettingsPanel {
+  overflow: hidden;
+}
+
+@media (max-width: 700px) {
+  .readerHeader {
+    top: max(7px, env(safe-area-inset-top));
+    right: 7px;
+    left: 7px;
+    width: calc(100% - 14px);
+    gap: 8px;
+    padding: 7px 9px;
+    border-radius: 9px;
+  }
+
+  .readerHeader .title {
+    font-size: 15px !important;
+    line-height: 1.15;
+  }
+
+  .readerHeader .backLink {
+    font-size: 10px;
+  }
+
+  .readerHeader .actionRow {
+    gap: 6px;
+  }
+
+  .readerHeader .chapterSelectLabel {
+    min-width: 0;
+  }
+
+  .readerHeader .chapterSelect {
+    width: min(34vw, 150px);
+    padding: 7px 5px;
+  }
+
+  .readerHeader .iconButton {
+    width: 40px;
+    height: 40px;
+  }
+
+  .readerProgress {
+    top: calc(max(7px, env(safe-area-inset-top)) + 67px);
+    right: 12px;
+    left: 12px;
+  }
+
+  .readerToolbar {
+    bottom: max(7px, env(safe-area-inset-bottom));
+    width: calc(100vw - 14px);
+    max-width: none;
+    max-height: min(30dvh, 190px);
+    justify-content: center;
+    gap: 4px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 6px;
+    border-radius: 10px;
+  }
+
+  .readerToolbar button,
+  .readerToolbar select {
+    min-height: 40px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .readerToolbar .readerModeButtons {
+    padding: 2px;
+  }
+
+  .readerToolbar .modeButton {
+    min-height: 36px;
+    padding: 6px 8px;
+  }
+
+  .readerToolbar .pageScrubber {
+    width: 100%;
+    min-width: 0;
+    order: 5;
+  }
+
+  .readerToolbar .readerButtonLabel {
+    display: none;
+  }
+
+  .readerToolbar .settingsSelect {
+    width: 96px;
+    min-width: 0;
+  }
+
+  .readerToolbar .readerFitSelect {
+    width: 96px !important;
+  }
+
+  .readerToolbar .readerPageScrubber {
+    width: 100% !important;
+  }
+
+  .readerSettingsPanel {
+    inset: auto 8px max(8px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-height: min(86dvh, 760px) !important;
+    border-radius: 14px 14px 8px 8px;
+  }
+
+  .readerSettingsPanel .settingsSection {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .readerHeader,
+  .readerProgress,
+  .readerToolbar {
+    transition: none;
+  }
+}

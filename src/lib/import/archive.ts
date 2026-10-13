@@ -145,6 +145,7 @@ export function sortArchiveEntries(entries: ArchiveEntry[]): ArchiveEntry[] {
 export type ArchiveBundle = {
   entries: ArchiveEntry[];
   comicInfoXml?: string;
+  coverImageName?: string;
 };
 
 function readArchiveEntry(
@@ -191,6 +192,62 @@ function readArchiveEntry(
 function isMetadataEntry(name: string): boolean {
   const fileName = name.replaceAll("\\", "/").split("/").pop()?.toLowerCase();
   return fileName === "comicinfo.xml" || fileName === "package.opf";
+}
+
+function parseXmlAttributes(tag: string): Map<string, string> {
+  const attributes = new Map<string, string>();
+  const pattern = /([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+  for (const match of tag.matchAll(pattern)) {
+    attributes.set(
+      match[1].toLowerCase(),
+      (match[2] ?? match[3] ?? "").replaceAll("&amp;", "&"),
+    );
+  }
+  return attributes;
+}
+
+function resolvePackageHref(packagePath: string, href: string): string {
+  let decodedHref = href.split(/[?#]/, 1)[0] ?? "";
+  try {
+    decodedHref = decodeURIComponent(decodedHref);
+  } catch {
+    // Keep the original href if it contains malformed percent escapes.
+  }
+  const packageDirectory = packagePath
+    .replaceAll("\\", "/")
+    .split("/")
+    .slice(0, -1);
+  const parts = decodedHref.startsWith("/")
+    ? decodedHref.replace(/^\/+/, "").split("/")
+    : [...packageDirectory, ...decodedHref.replaceAll("\\", "/").split("/")];
+  const resolved: string[] = [];
+  for (const part of parts) {
+    if (!part || part === ".") continue;
+    if (part === "..") resolved.pop();
+    else resolved.push(part);
+  }
+  return resolved.join("/");
+}
+
+function findEpubCoverImageName(
+  packagePath: string,
+  packageXml: string,
+): string | undefined {
+  const metaTags = packageXml.match(/<meta\b[^>]*>/gi) ?? [];
+  const coverId = metaTags
+    .map(parseXmlAttributes)
+    .find((attributes) => attributes.get("name")?.toLowerCase() === "cover")
+    ?.get("content");
+  const items = (packageXml.match(/<item\b[^>]*>/gi) ?? []).map((tag) => ({
+    tag,
+    attributes: parseXmlAttributes(tag),
+  }));
+  const coverItem =
+    items.find(({ attributes }) =>
+      attributes.get("properties")?.split(/\s+/).includes("cover-image"),
+    ) ?? items.find(({ attributes }) => attributes.get("id") === coverId);
+  const href = coverItem?.attributes.get("href");
+  return href ? resolvePackageHref(packagePath, href) : undefined;
 }
 
 function readArchiveTextEntry(file: UnzipFile): Promise<string> {
@@ -263,6 +320,7 @@ export async function extractArchiveBundle(
   const reportProgress = createProgressReporter(source.name, onProgress);
   let discoveredEntries = 0;
   let comicInfoXml: string | undefined;
+  let coverImageName: string | undefined;
   const unzipper = new Unzip((file) => {
     discoveredEntries += 1;
     if (discoveredEntries === 1 || discoveredEntries % 10 === 0) {
@@ -274,7 +332,12 @@ export async function extractArchiveBundle(
     if (isMetadataEntry(file.name)) {
       metadataEntries.push(
         readArchiveTextEntry(file).then((text) => {
-          comicInfoXml = text;
+          if (/comicinfo\.xml$/i.test(file.name)) {
+            comicInfoXml = text;
+          } else if (/package\.opf$/i.test(file.name)) {
+            comicInfoXml ??= text;
+            coverImageName ??= findEpubCoverImageName(file.name, text);
+          }
         }),
       );
       return;
@@ -374,6 +437,9 @@ export async function extractArchiveBundle(
         name: joinEntryPath(prefix, page.name),
       })),
       comicInfoXml: nested.comicInfoXml,
+      coverImageName: nested.coverImageName
+        ? joinEntryPath(prefix, nested.coverImageName)
+        : undefined,
     });
   }
   const entries = sortArchiveEntries([
@@ -382,6 +448,8 @@ export async function extractArchiveBundle(
   ]);
   comicInfoXml ??=
     nestedBundles.length === 1 ? nestedBundles[0]?.comicInfoXml : undefined;
+  coverImageName ??=
+    nestedBundles.length === 1 ? nestedBundles[0]?.coverImageName : undefined;
   if (entries.length === 0) {
     const found = ignoredNames.slice(0, 6).join(", ");
     throw new Error(
@@ -391,7 +459,7 @@ export async function extractArchiveBundle(
 
   reportProgress(`Extracted ${entries.length} readable files.`, true);
 
-  return { entries, comicInfoXml };
+  return { entries, comicInfoXml, coverImageName };
 }
 
 async function processExtractedFiles(
@@ -403,6 +471,7 @@ async function processExtractedFiles(
   const entries: ArchiveEntry[] = [];
   const nestedBundles: ArchiveBundle[] = [];
   let comicInfoXml: string | undefined;
+  let coverImageName: string | undefined;
   const ignoredNames: string[] = [];
 
   for (const [fileIndex, file] of files.entries()) {
@@ -414,6 +483,10 @@ async function processExtractedFiles(
     if (isMetadataEntry(file.name)) {
       if (file.name.toLowerCase().endsWith("comicinfo.xml")) {
         comicInfoXml ??= await file.blob.text();
+      } else if (file.name.toLowerCase().endsWith("package.opf")) {
+        const packageXml = await file.blob.text();
+        comicInfoXml ??= packageXml;
+        coverImageName ??= findEpubCoverImageName(file.name, packageXml);
       }
       continue;
     }
@@ -455,7 +528,12 @@ async function processExtractedFiles(
         name: joinEntryPath(prefix, entry.name),
       })),
     );
-    if (nestedBundles.length === 1) comicInfoXml ??= bundle.comicInfoXml;
+    if (nestedBundles.length === 1) {
+      comicInfoXml ??= bundle.comicInfoXml;
+      coverImageName ??= bundle.coverImageName
+        ? joinEntryPath(prefix, bundle.coverImageName)
+        : undefined;
+    }
   }
 
   if (entries.length === 0) {
@@ -466,7 +544,11 @@ async function processExtractedFiles(
   }
 
   onProgress?.(`${sourceName}: Extracted ${entries.length} readable files.`);
-  return { entries: sortArchiveEntries(entries), comicInfoXml };
+  return {
+    entries: sortArchiveEntries(entries),
+    comicInfoXml,
+    coverImageName,
+  };
 }
 
 export async function extractArchiveEntries(

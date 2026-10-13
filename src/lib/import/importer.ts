@@ -45,6 +45,9 @@ async function saveArchiveAsChapter(
   const imageEntries = bundle.entries.filter((entry) =>
     entry.mime.startsWith("image/"),
   );
+  const preferredCoverEntry = bundle.coverImageName
+    ? imageEntries.find((entry) => entry.name === bundle.coverImageName)
+    : undefined;
   const chapterGroups = groupArchiveEntries(bundle.entries, isNovelArchive);
   const derivedSeriesTitle = deriveSeriesTitle(source.name, comicInfo);
   const seriesId = targetSeriesId ?? deriveSeriesId(source.name, comicInfo);
@@ -157,9 +160,11 @@ async function saveArchiveAsChapter(
 
     if (!coverPageKey) {
       const coverEntry =
-        comicInfo.coverPageIndex !== undefined
+        (comicInfo.coverPageIndex !== undefined
           ? imageEntries[comicInfo.coverPageIndex]
-          : chapterGroup.entries[0];
+          : undefined) ??
+        preferredCoverEntry ??
+        imageEntries[0];
       if (coverEntry) {
         const pageIndex = chapterGroup.entries.findIndex(
           (entry) => entry.name === coverEntry.name,

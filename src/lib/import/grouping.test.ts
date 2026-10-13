@@ -55,6 +55,18 @@ describe("chapter grouping", () => {
     ]);
   });
 
+  it("keeps prologue labels when a prologue includes a chapter number", () => {
+    const groups = groupArchiveEntries([
+      image("Berserk/Chapter 1/001.jpg"),
+      image("Berserk/Chapter 135 Prologue/001.jpg"),
+    ]);
+
+    expect(groups.map(({ title, number }) => [title, number])).toEqual([
+      ["Chapter 1", 1],
+      ["Prologue", 135],
+    ]);
+  });
+
   it("uses paired numeric filename prefixes only when multiple groups are evident", () => {
     const splitGroups = groupArchiveEntries([
       image("001-001.jpg"),

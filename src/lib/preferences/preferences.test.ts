@@ -56,6 +56,10 @@ describe("preferences", () => {
         comicInfiniteScroll: false,
         novelInfiniteScroll: false,
         immersiveMode: true,
+        readerAutoHide: false,
+        readerAutoHideDelay: 4000,
+        readerPageFit: "width",
+        readerZoom: 140,
       },
       storage,
     );
@@ -82,6 +86,10 @@ describe("preferences", () => {
       comicInfiniteScroll: false,
       novelInfiniteScroll: false,
       immersiveMode: true,
+      readerAutoHide: false,
+      readerAutoHideDelay: 4000,
+      readerPageFit: "width",
+      readerZoom: 140,
     });
     expect(getPreferences(storage)).toEqual(updated);
   });
@@ -94,6 +102,23 @@ describe("preferences", () => {
     expect(getPreferences(storage)).toEqual({
       ...DEFAULT_PREFERENCES,
       textScale: 150,
+    });
+  });
+
+  it("normalizes reader chrome and zoom preferences", () => {
+    const storage = createStorage(
+      JSON.stringify({
+        readerAutoHideDelay: 8750,
+        readerPageFit: "invalid",
+        readerZoom: 327,
+      }),
+    );
+
+    expect(getPreferences(storage)).toMatchObject({
+      readerAutoHide: true,
+      readerAutoHideDelay: 6000,
+      readerPageFit: "screen",
+      readerZoom: 300,
     });
   });
 });

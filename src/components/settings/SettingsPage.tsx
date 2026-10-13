@@ -534,6 +534,86 @@ export function SettingsPage({
             </select>
           </label>
 
+          <label style={styles.toggleRow}>
+            <span>
+              <span style={styles.fieldLabel}>Hide reader controls</span>
+              <span style={styles.description}>
+                Fade the header and reading dock after you stop interacting. Tap
+                or move to bring them back.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={preferences.readerAutoHide}
+              onChange={(event) =>
+                updatePreferences({
+                  readerAutoHide: event.currentTarget.checked,
+                })
+              }
+            />
+          </label>
+
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>Hide controls after</span>
+            <select
+              aria-label="Reader controls hide delay"
+              value={preferences.readerAutoHideDelay}
+              onChange={(event) =>
+                updatePreferences({
+                  readerAutoHideDelay: Number(event.currentTarget.value),
+                })
+              }
+              style={styles.select}
+            >
+              <option value={1500}>1.5 seconds</option>
+              <option value={2500}>2.5 seconds</option>
+              <option value={4000}>4 seconds</option>
+              <option value={6000}>6 seconds</option>
+            </select>
+          </label>
+
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>Comic page fit</span>
+            <select
+              aria-label="Default comic page fit"
+              value={preferences.readerPageFit}
+              onChange={(event) =>
+                updatePreferences({
+                  readerPageFit: event.currentTarget
+                    .value as Preferences["readerPageFit"],
+                })
+              }
+              style={styles.select}
+            >
+              <option value="screen">Fit screen</option>
+              <option value="width">Fit width</option>
+              <option value="height">Fit height</option>
+            </select>
+          </label>
+
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>Default comic zoom</span>
+            <span style={styles.rangeRow}>
+              <input
+                aria-label="Default comic zoom"
+                type="range"
+                min="50"
+                max="200"
+                step="10"
+                value={preferences.readerZoom}
+                onChange={(event) =>
+                  updatePreferences({
+                    readerZoom: Number(event.currentTarget.value),
+                  })
+                }
+                style={styles.range}
+              />
+              <output style={styles.rangeOutput}>
+                {preferences.readerZoom}%
+              </output>
+            </span>
+          </label>
+
           <label style={styles.field}>
             <span style={styles.fieldLabel}>Reading width</span>
             <span style={styles.rangeRow}>
@@ -549,11 +629,13 @@ export function SettingsPage({
                     60,
                     Math.round(
                       60 +
-                        ((preferences.readerWidth - 720) /
+                        ((preferences.readerWidth - 280) /
                           Math.max(
                             1,
-                            Math.min(1800, (window.innerWidth || 1280) - 64) -
-                              720,
+                            Math.min(
+                              1800,
+                              Math.max(280, (window.innerWidth || 1280) - 32),
+                            ) - 280,
                           )) *
                           40,
                     ),
@@ -563,10 +645,10 @@ export function SettingsPage({
                   const percent = Number(event.currentTarget.value);
                   const maxWidth = Math.min(
                     1800,
-                    Math.max(720, (window.innerWidth || 1280) - 64),
+                    Math.max(280, (window.innerWidth || 1280) - 32),
                   );
                   const nextWidth = Math.round(
-                    720 + ((percent - 60) / 40) * (maxWidth - 720),
+                    280 + ((percent - 60) / 40) * (maxWidth - 280),
                   );
                   updatePreferences({ readerWidth: nextWidth });
                 }}
@@ -579,11 +661,13 @@ export function SettingsPage({
                     60,
                     Math.round(
                       60 +
-                        ((preferences.readerWidth - 720) /
+                        ((preferences.readerWidth - 280) /
                           Math.max(
                             1,
-                            Math.min(1800, (window.innerWidth || 1280) - 64) -
-                              720,
+                            Math.min(
+                              1800,
+                              Math.max(280, (window.innerWidth || 1280) - 32),
+                            ) - 280,
                           )) *
                           40,
                     ),

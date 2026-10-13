@@ -4,6 +4,7 @@ import type { ArchiveSource, ArchiveEntry } from "./types";
 export type ArchiveBundlePayload = {
   entries: ArchiveEntry[];
   comicInfoXml?: string;
+  coverImageName?: string;
 };
 
 export async function extractArchiveBundleInWorker(

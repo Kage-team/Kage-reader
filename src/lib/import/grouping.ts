@@ -129,11 +129,15 @@ function chapterMarker(name: string): ChapterMarker | undefined {
       ? `issue:${canonicalNumber(issue)}`
       : "";
   const number = chapter ?? issue;
-  const title = chapter
-    ? `Chapter ${canonicalNumber(chapter)}`
-    : issue
-      ? `Issue ${canonicalNumber(issue)}`
-      : `Volume ${canonicalNumber(volume ?? "")}`;
+  const title = /\bprologue\b/i.test(normalized)
+    ? "Prologue"
+    : /\bprelude\b/i.test(normalized)
+      ? "Prelude"
+      : chapter
+        ? `Chapter ${canonicalNumber(chapter)}`
+        : issue
+          ? `Issue ${canonicalNumber(issue)}`
+          : `Volume ${canonicalNumber(volume ?? "")}`;
 
   return {
     key: [volumeKey, chapterKey].filter(Boolean).join("/"),

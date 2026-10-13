@@ -117,6 +117,132 @@ describe("blob storage", () => {
     await expect(getBlob(page.storageKey)).resolves.toBeUndefined();
   });
 
+  it("orders chapters numerically instead of by import order", async () => {
+    const seriesId = "series:chapter-order";
+    const chapters = [
+      {
+        schemaVersion: 1,
+        id: "chapter:135",
+        seriesId,
+        title: "Chapter 135",
+        number: 135,
+        order: 0,
+        pageCount: 1,
+        sourceName: "berserk.cbz",
+        hash: "chapter-135",
+        addedAt: 1,
+      },
+      {
+        schemaVersion: 1,
+        id: "chapter:3",
+        seriesId,
+        title: "Chapter 3",
+        number: 3,
+        order: 1,
+        pageCount: 1,
+        sourceName: "vinland.cbz",
+        hash: "chapter-3",
+        addedAt: 2,
+      },
+      {
+        schemaVersion: 1,
+        id: "chapter:1",
+        seriesId,
+        title: "Chapter 1",
+        number: 1,
+        order: 2,
+        pageCount: 1,
+        sourceName: "vinland.cbz",
+        hash: "chapter-1",
+        addedAt: 3,
+      },
+      {
+        schemaVersion: 1,
+        id: "chapter:prologue",
+        seriesId,
+        title: "Prologue",
+        number: 135,
+        order: 3,
+        pageCount: 1,
+        sourceName: "berserk.cbz",
+        hash: "chapter-prologue",
+        addedAt: 4,
+      },
+    ];
+    for (const chapter of chapters) await putChapter(chapter);
+
+    await expect(listChapters(seriesId)).resolves.toMatchObject([
+      { title: "Prologue" },
+      { title: "Chapter 1" },
+      { title: "Chapter 3" },
+      { title: "Chapter 135" },
+    ]);
+
+    const volumeSeriesId = "series:volume-order";
+    await putChapter({
+      schemaVersion: 1,
+      id: "volume:2-chapter:1",
+      seriesId: volumeSeriesId,
+      title: "Chapter 1",
+      number: 1,
+      volume: 2,
+      order: 0,
+      pageCount: 1,
+      sourceName: "volume-2.cbz",
+      hash: "volume-2-chapter-1",
+      addedAt: 1,
+    });
+    await putChapter({
+      schemaVersion: 1,
+      id: "volume:1-chapter:3",
+      seriesId: volumeSeriesId,
+      title: "Chapter 3",
+      number: 3,
+      volume: 1,
+      order: 1,
+      pageCount: 1,
+      sourceName: "volume-1.cbz",
+      hash: "volume-1-chapter-3",
+      addedAt: 2,
+    });
+
+    await expect(listChapters(volumeSeriesId)).resolves.toMatchObject([
+      { title: "Chapter 3", volume: 1 },
+      { title: "Chapter 1", volume: 2 },
+    ]);
+  });
+
+  it("derives chapter order from archive names when chapter metadata is missing", async () => {
+    const seriesId = "series:filename-chapters";
+    await putChapter({
+      schemaVersion: 1,
+      id: "chapter:filename-135",
+      seriesId,
+      title: "Page 001",
+      order: 0,
+      pageCount: 1,
+      sourceName: "Berserk-ch.135.cbz",
+      hash: "filename-chapter-135",
+      addedAt: 1,
+    });
+    await putChapter({
+      schemaVersion: 1,
+      id: "chapter:filename-1",
+      seriesId,
+      title: "Page 001",
+      order: 1,
+      pageCount: 1,
+      sourceName: "Berserk-c001.cbz",
+      hash: "filename-chapter-1",
+      addedAt: 2,
+    });
+
+    await expect(listChapters(seriesId)).resolves.toMatchObject([
+      { id: "chapter:filename-1" },
+      { id: "chapter:filename-135" },
+    ]);
+  });
+
   it("persists and removes a page bookmark", async () => {
     const bookmark = {
       schemaVersion: 2,

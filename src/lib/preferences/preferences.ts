@@ -20,6 +20,7 @@ export type NovelReadingTheme =
   | "slate";
 export type NovelTextAlignment = "left" | "justify";
 export type NovelColumnWidth = "narrow" | "standard" | "wide" | "full";
+export type ReaderPageFit = "screen" | "width" | "height";
 const NOVEL_FONT_FAMILIES: NovelFontFamily[] = [
   "literary",
   "modern",
@@ -88,6 +89,10 @@ export type Preferences = {
   comicInfiniteScroll: boolean;
   novelInfiniteScroll: boolean;
   immersiveMode: boolean;
+  readerAutoHide: boolean;
+  readerAutoHideDelay: number;
+  readerPageFit: ReaderPageFit;
+  readerZoom: number;
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -111,6 +116,10 @@ export const DEFAULT_PREFERENCES: Preferences = {
   comicInfiniteScroll: true,
   novelInfiniteScroll: true,
   immersiveMode: false,
+  readerAutoHide: true,
+  readerAutoHideDelay: 2500,
+  readerPageFit: "screen",
+  readerZoom: 100,
 };
 
 function isReaderMode(value: unknown): value is ReaderMode {
@@ -236,6 +245,31 @@ function normalizePreferences(value: unknown): Preferences {
       typeof candidate.immersiveMode === "boolean"
         ? candidate.immersiveMode
         : DEFAULT_PREFERENCES.immersiveMode,
+    readerAutoHide:
+      typeof candidate.readerAutoHide === "boolean"
+        ? candidate.readerAutoHide
+        : DEFAULT_PREFERENCES.readerAutoHide,
+    readerAutoHideDelay: Number.isFinite(Number(candidate.readerAutoHideDelay))
+      ? Math.min(
+          6000,
+          Math.max(
+            1000,
+            Math.round(Number(candidate.readerAutoHideDelay) / 500) * 500,
+          ),
+        )
+      : DEFAULT_PREFERENCES.readerAutoHideDelay,
+    readerPageFit:
+      candidate.readerPageFit === "screen" ||
+      candidate.readerPageFit === "width" ||
+      candidate.readerPageFit === "height"
+        ? candidate.readerPageFit
+        : DEFAULT_PREFERENCES.readerPageFit,
+    readerZoom: Number.isFinite(Number(candidate.readerZoom))
+      ? Math.min(
+          300,
+          Math.max(50, Math.round(Number(candidate.readerZoom) / 10) * 10),
+        )
+      : DEFAULT_PREFERENCES.readerZoom,
   };
 }
 
