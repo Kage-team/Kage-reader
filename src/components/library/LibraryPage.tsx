@@ -4,9 +4,13 @@ import { importArchiveSources } from "../../lib/import/importer";
 import type { ImportProgressEvent } from "../../lib/import/types";
 import {
   buildLibraryEntries,
+  filterLibraryEntries,
   type LibraryEntry,
 } from "../../lib/library/summary";
 import { listAllChapters, listSeries } from "../../lib/storage/db";
+import type { SeriesType } from "../../lib/storage/types";
+
+const SERIES_TYPES: SeriesType[] = ["manga", "manhwa", "manhua", "oel", "novel"];
 
 type ImportLogItem = ImportProgressEvent & { key: string };
 
@@ -21,6 +25,9 @@ export function LibraryPage() {
   const [statusItems, setStatusItems] = useState<ImportLogItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
+  const [query, setQuery] = useState("");
+  const [selectedType, setSelectedType] = useState<SeriesType | "all">("all");
+  const [selectedTag, setSelectedTag] = useState("");
 
   async function loadEntries(): Promise<void> {
     const [series, chapters] = await Promise.all([
@@ -73,6 +80,14 @@ export function LibraryPage() {
     setIsImporting(false);
   }
 
+  const visibleEntries = filterLibraryEntries(entries, {
+    query,
+    type: selectedType,
+    tag: selectedTag,
+  });
+  const availableTags = Array.from(new Set(entries.flatMap((entry) => entry.tags)))
+    .sort((left, right) => left.localeCompare(right));
+
   return (
     <main style={styles.page}>
       <section style={styles.panel}>
@@ -120,6 +135,54 @@ export function LibraryPage() {
           <span>{isImporting ? "Importing..." : "or choose files"}</span>
         </label>
 
+        <section style={styles.filters} aria-label="Filter library">
+          <label style={styles.filterField}>
+            <span style={styles.filterLabel}>Search</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+              placeholder="Title or tag"
+              style={styles.filterInput}
+            />
+          </label>
+          <label style={styles.filterField}>
+            <span style={styles.filterLabel}>Content type</span>
+            <select
+              value={selectedType}
+              onChange={(event) =>
+                setSelectedType(event.currentTarget.value as SeriesType | "all")
+              }
+              style={styles.filterInput}
+            >
+              <option value="all">All types</option>
+              {SERIES_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={styles.filterField}>
+            <span style={styles.filterLabel}>Tag</span>
+            <select
+              value={selectedTag}
+              onChange={(event) => setSelectedTag(event.currentTarget.value)}
+              style={styles.filterInput}
+            >
+              <option value="">All tags</option>
+              {availableTags.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span style={styles.resultCount}>
+            {visibleEntries.length} of {entries.length}
+          </span>
+        </section>
+
         {statusItems.length > 0 ? (
           <section>
             <h2 style={styles.sectionTitle}>Import status</h2>
@@ -140,9 +203,11 @@ export function LibraryPage() {
           <p style={styles.emptyText}>Loading series...</p>
         ) : entries.length === 0 ? (
           <div style={styles.emptyCard}>No series imported yet.</div>
+        ) : visibleEntries.length === 0 ? (
+          <div style={styles.emptyCard}>No series match these filters.</div>
         ) : (
           <div style={styles.grid}>
-            {entries.map((entry) => (
+            {visibleEntries.map((entry) => (
               <Link
                 key={entry.id}
                 to={`/series/${encodeURIComponent(entry.id)}`}
@@ -153,9 +218,19 @@ export function LibraryPage() {
                 </div>
                 <div style={styles.cardBody}>
                   <h2 style={styles.seriesTitle}>{entry.title}</h2>
+                  <p style={styles.metaText}>{entry.type}</p>
                   <p style={styles.metaText}>
                     {entry.chapterCount} chapters · {entry.pageCount} pages
                   </p>
+                  {entry.tags.length > 0 ? (
+                    <ul style={styles.tagList}>
+                      {entry.tags.map((tag) => (
+                        <li key={tag} style={styles.tag}>
+                          {tag}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </div>
               </Link>
             ))}
@@ -190,6 +265,25 @@ const styles: Record<string, React.CSSProperties> = {
     background: "rgba(255, 255, 255, 0.03)",
     cursor: "pointer",
   },
+  filters: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    alignItems: "end",
+    gap: 12,
+  },
+  filterField: { display: "grid", gap: 6 },
+  filterLabel: { color: "#b5c8b8", fontSize: 13, fontWeight: 700 },
+  filterInput: {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "10px 12px",
+    border: "1px solid rgba(143, 196, 154, 0.28)",
+    borderRadius: 8,
+    background: "#17221b",
+    color: "#e6f2e8",
+    font: "inherit",
+  },
+  resultCount: { color: "#b5c8b8", paddingBottom: 10 },
   fileInput: {
     position: "absolute",
     width: 1,
@@ -283,6 +377,21 @@ const styles: Record<string, React.CSSProperties> = {
   cardBody: {
     display: "grid",
     gap: 6,
+  },
+  tagList: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6,
+    listStyle: "none",
+    padding: 0,
+    margin: "2px 0 0",
+  },
+  tag: {
+    borderRadius: 4,
+    padding: "3px 7px",
+    background: "rgba(143, 196, 154, 0.12)",
+    color: "#c8dec9",
+    fontSize: 12,
   },
   seriesTitle: {
     margin: 0,

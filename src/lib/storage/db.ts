@@ -218,6 +218,43 @@ export async function deleteSeriesRecord(id: string): Promise<void> {
   await db.delete("series", id);
 }
 
+export async function deleteSeriesWithContents(
+  seriesId: string,
+): Promise<void> {
+  const db = await openKageDb();
+  const chapters = await db.getAllFromIndex("chapters", "by-series", seriesId);
+  const pagesByChapter = await Promise.all(
+    chapters.map((chapter) =>
+      db.getAllFromIndex("pages", "by-chapter", chapter.id),
+    ),
+  );
+  const pages = pagesByChapter.flat();
+  const transaction = db.transaction(
+    ["series", "chapters", "pages", "progress", "blobs"],
+    "readwrite",
+  );
+  const operations: Promise<unknown>[] = [
+    transaction.objectStore("series").delete(seriesId),
+  ];
+
+  for (const chapter of chapters) {
+    operations.push(
+      transaction.objectStore("chapters").delete(chapter.id),
+      transaction.objectStore("progress").delete(chapter.id),
+    );
+  }
+  for (const page of pages) {
+    operations.push(
+      transaction.objectStore("pages").delete(page.id),
+      transaction.objectStore("blobs").delete(page.storageKey),
+    );
+  }
+
+  await Promise.all(operations);
+  await transaction.done;
+  await Promise.all(pages.map((page) => deleteBlobFromOpfs(page.storageKey)));
+}
+
 export async function putChapter(chapter: Chapter): Promise<void> {
   const db = await openKageDb();
   await db.put("chapters", { ...chapter, schemaVersion: SCHEMA_VERSION });

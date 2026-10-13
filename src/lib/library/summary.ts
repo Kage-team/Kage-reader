@@ -1,8 +1,10 @@
-import type { Chapter, Series } from "../storage/types";
+import type { Chapter, Series, SeriesType } from "../storage/types";
 
 export type LibraryEntry = {
   id: string;
   title: string;
+  type: SeriesType;
+  tags: string[];
   coverPageKey?: string;
   chapterCount: number;
   pageCount: number;
@@ -31,6 +33,8 @@ export function buildLibraryEntries(
     .map((series) => ({
       id: series.id,
       title: series.title,
+      type: series.type,
+      tags: series.tags ?? [],
       coverPageKey: series.coverPageKey,
       chapterCount: chapterTotals.get(series.id) ?? 0,
       pageCount: pageTotals.get(series.id) ?? 0,
@@ -42,4 +46,22 @@ export function buildLibraryEntries(
       }
       return left.title.localeCompare(right.title);
     });
+}
+
+export function filterLibraryEntries(
+  entries: LibraryEntry[],
+  filters: { query?: string; type?: SeriesType | "all"; tag?: string },
+): LibraryEntry[] {
+  const query = filters.query?.trim().toLocaleLowerCase() ?? "";
+
+  return entries.filter((entry) => {
+    const matchesQuery =
+      !query ||
+      entry.title.toLocaleLowerCase().includes(query) ||
+      entry.tags.some((tag) => tag.toLocaleLowerCase().includes(query));
+    const matchesType =
+      !filters.type || filters.type === "all" || entry.type === filters.type;
+    const matchesTag = !filters.tag || entry.tags.includes(filters.tag);
+    return matchesQuery && matchesType && matchesTag;
+  });
 }
