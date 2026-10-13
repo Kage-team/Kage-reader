@@ -69,6 +69,11 @@ export function sortArchiveEntries(entries: ArchiveEntry[]): ArchiveEntry[] {
   return [...entries].sort((left, right) => naturalSort(left.name, right.name));
 }
 
+export type ArchiveBundle = {
+  entries: ArchiveEntry[];
+  comicInfoXml?: string;
+};
+
 function readArchiveEntry(file: UnzipFile): Promise<ArchiveEntry> {
   const chunks: Uint8Array[] = [];
   const mime = mimeTypeForArchiveEntry(file.name);
@@ -101,11 +106,59 @@ function readArchiveEntry(file: UnzipFile): Promise<ArchiveEntry> {
   });
 }
 
-export async function extractArchiveEntries(
+function isComicInfoEntry(name: string): boolean {
+  return (
+    name.replaceAll("\\", "/").split("/").pop()?.toLowerCase() ===
+    "comicinfo.xml"
+  );
+}
+
+function readArchiveTextEntry(file: UnzipFile): Promise<string> {
+  const chunks: Uint8Array[] = [];
+
+  return new Promise<string>((resolve, reject) => {
+    file.ondata = (error, chunk, final) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      if (chunk.length > 0) {
+        chunks.push(chunk);
+      }
+
+      if (final) {
+        new Blob(chunks)
+          .arrayBuffer()
+          .then((buffer) => resolve(new TextDecoder().decode(buffer)))
+          .catch(reject);
+      }
+    };
+
+    try {
+      file.start();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+export async function extractArchiveBundle(
   source: ArchiveSource,
-): Promise<ArchiveEntry[]> {
+): Promise<ArchiveBundle> {
   const supportedEntries: Promise<ArchiveEntry>[] = [];
+  const metadataEntries: Promise<void>[] = [];
+  let comicInfoXml: string | undefined;
   const unzipper = new Unzip((file) => {
+    if (isComicInfoEntry(file.name)) {
+      metadataEntries.push(
+        readArchiveTextEntry(file).then((text) => {
+          comicInfoXml = text;
+        }),
+      );
+      return;
+    }
+
     if (!isSupportedArchiveEntry(file.name)) {
       return;
     }
@@ -135,6 +188,7 @@ export async function extractArchiveEntries(
     reader.releaseLock();
   }
 
+  await Promise.all(metadataEntries);
   const entries = sortArchiveEntries(await Promise.all(supportedEntries));
   if (entries.length === 0) {
     throw new Error(
@@ -142,5 +196,11 @@ export async function extractArchiveEntries(
     );
   }
 
-  return entries;
+  return { entries, comicInfoXml };
+}
+
+export async function extractArchiveEntries(
+  source: ArchiveSource,
+): Promise<ArchiveEntry[]> {
+  return (await extractArchiveBundle(source)).entries;
 }

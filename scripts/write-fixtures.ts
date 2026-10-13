@@ -41,6 +41,11 @@ const imageEntries = {
   "page_10.png": png1x1,
 };
 
+const coverImageEntries = {
+  ...imageEntries,
+  "z_cover.png": png1x1,
+};
+
 writeBinary(join(root, "ok.cbz"), makeZip(imageEntries));
 
 writeBinary(
@@ -60,11 +65,26 @@ writeBinary(
   <Series>Kage Sample</Series>
   <Number>1</Number>
   <Title>Opening Move</Title>
+  <Volume>2</Volume>
   <Writer>A. Reader</Writer>
+  <Tags>alpha, beta</Tags>
   <AgeRating>18+</AgeRating>
+  <Pages>
+    <Page Image="3" Type="FrontCover" />
+  </Pages>
 </ComicInfo>
 `,
+    ...coverImageEntries,
+  }),
+);
+
+writeBinary(join(root, "series-name-c001.cbz"), makeZip(imageEntries));
+
+writeBinary(
+  join(root, "series-name-vol01.cbz"),
+  makeZip({
     ...imageEntries,
+    "notes.txt": "Different chapter content",
   }),
 );
 

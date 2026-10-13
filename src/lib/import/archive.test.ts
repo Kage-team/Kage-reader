@@ -47,6 +47,7 @@ describe("archive extraction", () => {
       "page_1.png",
       "page_2.png",
       "page_10.png",
+      "z_cover.png",
     ]);
     expect(entries.every((entry) => entry.mime.startsWith("image/"))).toBe(
       true,

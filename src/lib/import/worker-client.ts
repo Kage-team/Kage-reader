@@ -1,14 +1,19 @@
-import { extractArchiveEntries } from "./archive";
+import { extractArchiveBundle } from "./archive";
 import type { ArchiveSource, ArchiveEntry } from "./types";
 
-export async function extractArchiveEntriesInWorker(
+export type ArchiveBundlePayload = {
+  entries: ArchiveEntry[];
+  comicInfoXml?: string;
+};
+
+export async function extractArchiveBundleInWorker(
   source: ArchiveSource,
-): Promise<ArchiveEntry[]> {
+): Promise<ArchiveBundlePayload> {
   if (typeof Worker === "undefined") {
-    return extractArchiveEntries(source);
+    return extractArchiveBundle(source);
   }
 
-  return new Promise<ArchiveEntry[]>((resolve, reject) => {
+  return new Promise<ArchiveBundlePayload>((resolve, reject) => {
     const worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
     });
@@ -17,7 +22,11 @@ export async function extractArchiveEntriesInWorker(
 
     worker.onmessage = (event: MessageEvent) => {
       const payload = event.data as
-        | { id: string; kind: "result"; entries: ArchiveEntry[] }
+        | {
+            id: string;
+            kind: "result";
+            bundle: ArchiveBundlePayload;
+          }
         | { id: string; kind: "error"; message: string };
 
       if (payload.id !== requestId) {
@@ -31,7 +40,7 @@ export async function extractArchiveEntriesInWorker(
         return;
       }
 
-      resolve(payload.entries);
+      resolve(payload.bundle);
     };
 
     worker.onerror = () => {

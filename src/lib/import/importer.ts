@@ -1,7 +1,20 @@
-import { putChapter, putPage, putSeries, saveBlob } from "../storage/db";
+import {
+  getChapterByHash,
+  getSeries,
+  putChapter,
+  putPage,
+  putSeries,
+  saveBlob,
+} from "../storage/db";
 import type { Chapter, Page, Series } from "../storage/types";
-import { naturalSort } from "./naturalSort";
-import { extractArchiveEntriesInWorker } from "./worker-client";
+import { hashBlobSignature } from "./hash";
+import { parseComicInfoXml } from "./comicInfo";
+import {
+  deriveSeriesId,
+  deriveSeriesTitle,
+  groupArchiveEntries,
+} from "./grouping";
+import { extractArchiveBundleInWorker } from "./worker-client";
 import type {
   ArchiveSource,
   ImportProgressEvent,
@@ -9,102 +22,134 @@ import type {
   ImportedChapterSummary,
 } from "./types";
 
-const SOURCE_ENTRY_SIZE = 64 * 1024;
-
-function stripArchiveExtension(name: string): string {
-  return name.replace(/\.(cbz|zip)$/i, "");
-}
-
-function toSeriesTitle(sourceName: string): string {
-  const stripped = stripArchiveExtension(sourceName);
-  return (
-    stripped.slice(stripped.lastIndexOf("/") + 1) || stripped || sourceName
-  );
-}
-
-async function hashArchiveSource(source: ArchiveSource): Promise<string> {
-  const size = source.blob.size;
-  const head = new Uint8Array(
-    await source.blob.slice(0, SOURCE_ENTRY_SIZE).arrayBuffer(),
-  );
-  const tailStart = Math.max(0, size - SOURCE_ENTRY_SIZE);
-  const tail = new Uint8Array(await source.blob.slice(tailStart).arrayBuffer());
-  const meta = new TextEncoder().encode(`${source.name}:${size}:`);
-
-  const combined = new Uint8Array(meta.length + head.length + tail.length);
-  combined.set(meta, 0);
-  combined.set(head, meta.length);
-  combined.set(tail, meta.length + head.length);
-
-  const digest = await crypto.subtle.digest("SHA-256", combined);
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
-}
-
 async function saveArchiveAsChapter(
   source: ArchiveSource,
 ): Promise<ImportedChapterSummary> {
-  const entries = await extractArchiveEntriesInWorker(source);
-  const sortedEntries = [...entries].sort((left, right) =>
-    naturalSort(left.name, right.name),
+  const bundle = await extractArchiveBundleInWorker(source);
+  const comicInfo = bundle.comicInfoXml
+    ? parseComicInfoXml(bundle.comicInfoXml)
+    : { tags: [] };
+  const imageEntries = bundle.entries.filter((entry) =>
+    entry.mime.startsWith("image/"),
   );
-
-  const seriesId = crypto.randomUUID();
-  const chapterId = crypto.randomUUID();
-  const chapterHash = await hashArchiveSource(source);
+  const chapterGroups = groupArchiveEntries(bundle.entries);
+  const seriesTitle = deriveSeriesTitle(source.name, comicInfo);
+  const seriesId = deriveSeriesId(source.name, comicInfo);
   const now = Date.now();
-  let coverPageKey = "";
-
-  const pageRecords: Page[] = [];
-  for (const [index, entry] of sortedEntries.entries()) {
-    const storageKey = `${chapterId}/${index}`;
-    await saveBlob(storageKey, entry.blob);
-    if (!coverPageKey) {
-      coverPageKey = storageKey;
-    }
-
-    pageRecords.push({
-      schemaVersion: 1,
-      id: crypto.randomUUID(),
-      chapterId,
-      index,
-      storageKey,
-      mime: entry.mime,
-    });
-  }
-
-  const chapter: Chapter = {
-    schemaVersion: 1,
-    id: chapterId,
-    seriesId,
-    title: toSeriesTitle(source.name),
-    order: 0,
-    pageCount: sortedEntries.length,
-    sourceName: source.name,
-    hash: chapterHash,
-    addedAt: now,
-  };
-
-  await Promise.all(pageRecords.map((page) => putPage(page)));
-
-  const series: Series = {
+  let coverPageKey: string | undefined;
+  const importedSummaries: ImportedChapterSummary[] = [];
+  const existingSeries = await getSeries(seriesId);
+  let series: Series = existingSeries ?? {
     schemaVersion: 1,
     id: seriesId,
-    title: toSeriesTitle(source.name),
+    title: seriesTitle,
     type: "manga",
-    coverPageKey: coverPageKey || undefined,
     addedAt: now,
     updatedAt: now,
   };
 
+  for (const [order, chapterGroup] of chapterGroups.entries()) {
+    const chapterBlob = new Blob(
+      chapterGroup.entries.map((entry) => entry.blob),
+    );
+    const chapterHash = await hashBlobSignature(chapterBlob);
+    const existingChapter = await getChapterByHash(chapterHash);
+    if (existingChapter) {
+      continue;
+    }
+
+    const chapterId = `chapter:${chapterHash}`;
+    const pageRecords: Page[] = [];
+    for (const [index, entry] of chapterGroup.entries.entries()) {
+      const storageKey = `${chapterId}/${index}`;
+      await saveBlob(storageKey, entry.blob);
+      pageRecords.push({
+        schemaVersion: 1,
+        id: crypto.randomUUID(),
+        chapterId,
+        index,
+        storageKey,
+        mime: entry.mime,
+      });
+    }
+
+    await Promise.all(pageRecords.map((page) => putPage(page)));
+
+    const chapter: Chapter = {
+      schemaVersion: 1,
+      id: chapterId,
+      seriesId,
+      title:
+        chapterGroups.length === 1
+          ? comicInfo.title?.trim() || chapterGroup.title || seriesTitle
+          : chapterGroup.title || comicInfo.title?.trim() || seriesTitle,
+      order,
+      pageCount: chapterGroup.entries.length,
+      sourceName: source.name,
+      hash: chapterHash,
+      addedAt: now,
+    };
+
+    await putChapter(chapter);
+    importedSummaries.push({
+      id: chapterId,
+      title: chapter.title,
+      pageCount: chapter.pageCount,
+      sourceName: source.name,
+    });
+
+    if (!coverPageKey) {
+      const coverEntry =
+        comicInfo.coverPageIndex !== undefined
+          ? imageEntries[comicInfo.coverPageIndex]
+          : chapterGroup.entries[0];
+      if (coverEntry) {
+        const pageIndex = chapterGroup.entries.findIndex(
+          (entry) => entry.name === coverEntry.name,
+        );
+        if (pageIndex >= 0) {
+          coverPageKey = `${chapterId}/${pageIndex}`;
+        }
+      }
+    }
+  }
+
+  const existingSeriesType = existingSeries?.type ?? "manga";
+  const existingTags = existingSeries?.tags ?? [];
+  const tags = Array.from(
+    new Set([...(comicInfo.tags ?? []), ...existingTags]),
+  );
+
+  series = {
+    ...series,
+    schemaVersion: 1,
+    title: seriesTitle,
+    type: existingSeriesType,
+    coverPageKey: coverPageKey ?? series.coverPageKey,
+    ageRating: comicInfo.ageRating ?? series.ageRating,
+    writer: comicInfo.writer ?? series.writer,
+    tags: tags.length > 0 ? tags : undefined,
+    updatedAt: now,
+  };
+
   await putSeries(series);
-  await putChapter(chapter);
+
+  if (importedSummaries.length === 0) {
+    return {
+      id: seriesId,
+      title: seriesTitle,
+      pageCount: 0,
+      sourceName: source.name,
+    };
+  }
 
   return {
-    id: chapterId,
-    title: chapter.title,
-    pageCount: chapter.pageCount,
+    id: seriesId,
+    title: seriesTitle,
+    pageCount: importedSummaries.reduce(
+      (total, summary) => total + summary.pageCount,
+      0,
+    ),
     sourceName: source.name,
   };
 }
@@ -138,7 +183,9 @@ export async function importArchiveSources(
 
     try {
       const summary = await saveArchiveAsChapter(source);
-      imported.push(summary);
+      if (summary.pageCount > 0) {
+        imported.push(summary);
+      }
       onProgress?.({
         ...progressBase,
         state: "saved",
