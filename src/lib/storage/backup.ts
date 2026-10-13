@@ -80,6 +80,10 @@ function isReaderMode(value: unknown): value is ReaderMode {
   return ["flip", "webtoon", "novel"].includes(value as string);
 }
 
+function isReadingDirection(value: unknown): value is "ltr" | "rtl" {
+  return value === "ltr" || value === "rtl";
+}
+
 function isSeries(value: unknown): value is Series {
   if (!isObject(value)) return false;
   return (
@@ -94,7 +98,10 @@ function isSeries(value: unknown): value is Series {
     (value.tags === undefined ||
       (Array.isArray(value.tags) &&
         value.tags.every((tag) => typeof tag === "string"))) &&
-    (value.preferredMode === undefined || isReaderMode(value.preferredMode))
+    (value.summary === undefined || typeof value.summary === "string") &&
+    (value.preferredMode === undefined || isReaderMode(value.preferredMode)) &&
+    (value.preferredDirection === undefined ||
+      isReadingDirection(value.preferredDirection))
   );
 }
 
@@ -305,6 +312,12 @@ function parseManifest(bytes: Uint8Array): BackupManifest {
   const seriesIds = new Set(series.map((record) => record.id));
   const chapterById = new Map(chapters.map((record) => [record.id, record]));
   const pageStorageKeys = new Set(pages.map((record) => record.storageKey));
+  const coverStorageKeys = new Set(
+    series
+      .map((record) => record.coverPageKey)
+      .filter((key): key is string => Boolean(key)),
+  );
+  const validStorageKeys = new Set([...pageStorageKeys, ...coverStorageKeys]);
   const pageCounts = new Map<string, number>();
   for (const page of pages) {
     pageCounts.set(page.chapterId, (pageCounts.get(page.chapterId) ?? 0) + 1);
@@ -340,9 +353,9 @@ function parseManifest(bytes: Uint8Array): BackupManifest {
 
   const blobs = parsed.blobs as unknown[];
   if (
-    blobs.length !== pages.length ||
+    blobs.length !== validStorageKeys.size ||
     !blobs.every(
-      (blob) => isBackupBlob(blob) && pageStorageKeys.has(blob.storageKey),
+      (blob) => isBackupBlob(blob) && validStorageKeys.has(blob.storageKey),
     ) ||
     !hasUniqueIds(blobs as BackupBlob[], (blob) => blob.storageKey) ||
     !hasUniqueIds(blobs as BackupBlob[], (blob) => blob.entry)
@@ -364,14 +377,24 @@ export async function createLibraryBackup(): Promise<Blob> {
     chapters.map((chapter) => listPages(chapter.id)),
   );
   const pages = pagesByChapter.flat();
+  const pageStorageKeys = new Set(pages.map((page) => page.storageKey));
+  const customCoverKeys = series
+    .map((record) => record.coverPageKey)
+    .filter(
+      (key): key is string => key !== undefined && !pageStorageKeys.has(key),
+    );
+  const storageKeys = [
+    ...pages.map((page) => page.storageKey),
+    ...customCoverKeys,
+  ];
   const entries: Record<string, Uint8Array> = {};
   const blobs: BackupBlob[] = [];
   let totalBlobBytes = 0;
 
-  for (const [index, page] of pages.entries()) {
-    const blob = await getBlob(page.storageKey);
+  for (const [index, storageKey] of storageKeys.entries()) {
+    const blob = await getBlob(storageKey);
     if (!blob) {
-      throw new Error(`Missing stored page data: ${page.storageKey}`);
+      throw new Error(`Missing stored page data: ${storageKey}`);
     }
     const entry = `blobs/${index}.bin`;
     const bytes = new Uint8Array(await blob.arrayBuffer());
@@ -380,7 +403,7 @@ export async function createLibraryBackup(): Promise<Blob> {
       throw new Error("Library is too large for a single backup file.");
     }
     entries[entry] = bytes;
-    blobs.push({ storageKey: page.storageKey, entry, type: blob.type });
+    blobs.push({ storageKey, entry, type: blob.type });
   }
 
   const manifest: BackupManifest = {

@@ -1,13 +1,57 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { Chapter, Progress, Series } from "../../lib/storage/types";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Play,
+  Plus,
+  Upload,
+} from "lucide-react";
+import { importArchiveSources } from "../../lib/import/importer";
+import type {
+  Chapter,
+  Progress,
+  ReaderMode,
+  ReadingDirection,
+  Series,
+  SeriesType,
+} from "../../lib/storage/types";
 import {
   deleteSeriesWithContents,
+  getBlob,
   getSeries,
   listChapters,
   listProgress,
+  saveBlob,
   putSeries,
 } from "../../lib/storage/db";
+
+const SERIES_TYPES: Array<{ value: SeriesType; label: string }> = [
+  { value: "manga", label: "Manga" },
+  { value: "manhua", label: "Manhua" },
+  { value: "manhwa", label: "Manhwa" },
+  { value: "oel", label: "OEL" },
+  { value: "novel", label: "Novel" },
+];
+const POPULAR_TAGS = [
+  "Action",
+  "Adventure",
+  "Comedy",
+  "Drama",
+  "Fantasy",
+  "Horror",
+  "Mystery",
+  "Romance",
+  "Sci-Fi",
+  "Slice of Life",
+  "Supernatural",
+  "Thriller",
+];
+
+function isAdultRating(ageRating: string): boolean {
+  return /(18\+?|adult|mature|r-?18|nc-?17)/i.test(ageRating);
+}
 
 export function SeriesPage() {
   const { id } = useParams();
@@ -17,11 +61,42 @@ export function SeriesPage() {
   const [progressByChapter, setProgressByChapter] = useState<
     Record<string, Progress>
   >({});
+  const [coverUrl, setCoverUrl] = useState("");
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [isAppending, setIsAppending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
-  const [draftTags, setDraftTags] = useState("");
+  const [draftType, setDraftType] = useState<SeriesType>("manga");
+  const [draftWriter, setDraftWriter] = useState("");
+  const [draftAgeRating, setDraftAgeRating] = useState("");
+  const [draftSummary, setDraftSummary] = useState("");
+  const [draftTags, setDraftTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [draftPreferredMode, setDraftPreferredMode] = useState<ReaderMode | "">(
+    "",
+  );
+  const [draftPreferredDirection, setDraftPreferredDirection] = useState<
+    ReadingDirection | ""
+  >("");
   const [actionError, setActionError] = useState("");
+  const [appendMessage, setAppendMessage] = useState("");
+  const archiveInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
+  function resetDrafts(record: Series): void {
+    setDraftTitle(record.title);
+    setDraftType(record.type);
+    setDraftWriter(record.writer ?? "");
+    setDraftAgeRating(record.ageRating ?? "");
+    setDraftSummary(record.summary ?? "");
+    setDraftTags(record.tags ?? []);
+    setTagInput("");
+    setDraftPreferredMode(record.preferredMode ?? "");
+    setDraftPreferredDirection(record.preferredDirection ?? "");
+    setCoverFile(null);
+  }
 
   useEffect(() => {
     if (!id) {
@@ -45,10 +120,43 @@ export function SeriesPage() {
             .map((progress) => [progress.chapterId, progress]),
         ),
       );
-      setDraftTitle(seriesRecord?.title ?? "");
-      setDraftTags(seriesRecord?.tags?.join(", ") ?? "");
+      if (seriesRecord) resetDrafts(seriesRecord);
     })();
   }, [id]);
+
+  useEffect(() => {
+    if (!coverFile) {
+      setCoverPreviewUrl("");
+      return;
+    }
+    const objectUrl = URL.createObjectURL(coverFile);
+    setCoverPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [coverFile]);
+
+  useEffect(() => {
+    if (!series?.coverPageKey) {
+      setCoverUrl("");
+      return;
+    }
+
+    let isCancelled = false;
+    let objectUrl = "";
+    void getBlob(series.coverPageKey).then((blob) => {
+      if (!blob) return;
+      objectUrl = URL.createObjectURL(blob);
+      if (isCancelled) {
+        URL.revokeObjectURL(objectUrl);
+      } else {
+        setCoverUrl(objectUrl);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [series?.coverPageKey]);
 
   async function saveSeriesDetails(): Promise<void> {
     if (!series) {
@@ -61,29 +169,89 @@ export function SeriesPage() {
       return;
     }
 
-    const tags = Array.from(
-      new Map(
-        draftTags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean)
-          .map((tag) => [tag.toLocaleLowerCase(), tag] as const),
-      ).values(),
-    );
-    const updatedSeries: Series = {
-      ...series,
-      title,
-      tags: tags.length > 0 ? tags : undefined,
-      updatedAt: Date.now(),
-    };
-
     try {
+      let coverPageKey = series.coverPageKey;
+      if (coverFile) {
+        coverPageKey = `series:${series.id}/custom-cover`;
+        await saveBlob(coverPageKey, coverFile);
+      }
+      const updatedSeries: Series = {
+        ...series,
+        title,
+        type: draftType,
+        writer: draftWriter.trim() || undefined,
+        ageRating: draftAgeRating || undefined,
+        summary: draftSummary.trim() || undefined,
+        coverPageKey,
+        tags: draftTags.length > 0 ? draftTags : undefined,
+        preferredMode: draftPreferredMode || undefined,
+        preferredDirection: draftPreferredDirection || undefined,
+        updatedAt: Date.now(),
+      };
       await putSeries(updatedSeries);
       setSeries(updatedSeries);
+      setCoverFile(null);
       setIsEditing(false);
       setActionError("");
     } catch {
       setActionError("Could not save series details.");
+    }
+  }
+
+  function addDraftTag(value: string): void {
+    const nextTag = value.trim();
+    if (
+      nextTag &&
+      !draftTags.some(
+        (tag) => tag.toLocaleLowerCase() === nextTag.toLocaleLowerCase(),
+      )
+    ) {
+      setDraftTags((current) => [...current, nextTag]);
+    }
+    setTagInput("");
+  }
+
+  async function appendChapters(files: FileList | File[]): Promise<void> {
+    if (!series || isAppending) return;
+    const sources = Array.from(files, (file) => ({
+      name: file.webkitRelativePath || file.name,
+      blob: file,
+    }));
+    if (sources.length === 0) return;
+
+    setIsAppending(true);
+    setAppendMessage("Importing chapters...");
+    setActionError("");
+    try {
+      const result = await importArchiveSources(sources, undefined, series.id);
+      const [chapterRows, progressRows] = await Promise.all([
+        listChapters(series.id),
+        listProgress(),
+      ]);
+      setChapters(chapterRows);
+      const chapterIds = new Set(chapterRows.map((chapter) => chapter.id));
+      setProgressByChapter(
+        Object.fromEntries(
+          progressRows
+            .filter((progress) => chapterIds.has(progress.chapterId))
+            .map((progress) => [progress.chapterId, progress]),
+        ),
+      );
+      setAppendMessage(
+        result.errors.length > 0
+          ? `${result.imported.length} chapter(s) added. ${result.errors.join(" ")}`
+          : result.imported.length > 0
+            ? `${result.imported.length} chapter(s) added to ${series.title}.`
+            : "No new chapters were added; those archives may already be in this series.",
+      );
+      const updatedSeries = await getSeries(series.id);
+      if (updatedSeries) setSeries(updatedSeries);
+    } catch (error) {
+      setAppendMessage(
+        error instanceof Error ? error.message : "Could not add chapters.",
+      );
+    } finally {
+      setIsAppending(false);
     }
   }
 
@@ -124,21 +292,28 @@ export function SeriesPage() {
     );
   }
 
+  const mostRecentChapter = chapters
+    .map((chapter) => ({ chapter, progress: progressByChapter[chapter.id] }))
+    .filter((entry) => entry.progress)
+    .sort(
+      (left, right) =>
+        (right.progress?.updatedAt ?? 0) - (left.progress?.updatedAt ?? 0),
+    )[0]?.chapter;
+  const featuredChapter = mostRecentChapter ?? chapters[0];
+
   return (
     <main style={styles.page}>
       <section style={styles.panel}>
         <header style={styles.headerRow}>
-          <div>
-            <p style={styles.kicker}>Series</p>
-            <h1 style={styles.title}>{series.title}</h1>
-          </div>
+          <Link to="/" style={styles.backLink}>
+            <ArrowLeft size={15} /> Library
+          </Link>
           <div style={styles.headerActions}>
             <button
               type="button"
               style={styles.secondaryButton}
               onClick={() => {
-                setDraftTitle(series.title);
-                setDraftTags(series.tags?.join(", ") ?? "");
+                resetDrafts(series);
                 setActionError("");
                 setIsEditing((current) => !current);
               }}
@@ -153,11 +328,79 @@ export function SeriesPage() {
             >
               {isDeleting ? "Deleting..." : "Delete series"}
             </button>
-            <Link to="/" style={styles.linkButton}>
-              Library
-            </Link>
           </div>
         </header>
+
+        <input
+          ref={archiveInputRef}
+          type="file"
+          accept=".cbz,.cbr,.zip,.rar,.7z,.cb7,.cbt,.tar,.tgz,.gz,.bz2,.xz,.epub,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.tif,.tiff,.jfif,.jpe,.svg"
+          multiple
+          onChange={(event) => {
+            const files = event.currentTarget.files;
+            if (files?.length) void appendChapters(files);
+            event.currentTarget.value = "";
+          }}
+          style={styles.hiddenInput}
+        />
+
+        <section style={styles.seriesHero}>
+          <div style={styles.seriesCover}>
+            {coverPreviewUrl || coverUrl ? (
+              <img
+                src={coverPreviewUrl || coverUrl}
+                alt={`${series.title} cover`}
+                style={styles.seriesCoverImage}
+              />
+            ) : (
+              <span style={styles.seriesCoverFallback}>
+                <BookOpen size={36} />
+              </span>
+            )}
+          </div>
+          <div style={styles.seriesHeroContent}>
+            <p style={styles.kicker}>
+              {series.type} <span aria-hidden="true">/</span> {chapters.length}{" "}
+              chapters
+            </p>
+            <h1 style={styles.title}>{series.title}</h1>
+            {series.summary ? (
+              <p style={styles.seriesSummary}>{series.summary}</p>
+            ) : null}
+            <div style={styles.heroFacts}>
+              {series.writer ? <span>{series.writer}</span> : null}
+              {series.ageRating ? <span>{series.ageRating}</span> : null}
+              <span>
+                {chapters.reduce(
+                  (total, chapter) => total + chapter.pageCount,
+                  0,
+                )}{" "}
+                pages
+              </span>
+            </div>
+            {series.tags?.length ? (
+              <ul style={styles.tagList} aria-label="Series tags">
+                {series.tags.map((tag) => (
+                  <li key={tag} style={styles.tag}>
+                    {tag}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {featuredChapter ? (
+              <Link
+                to={`/read/${encodeURIComponent(featuredChapter.id)}`}
+                style={styles.startReadingButton}
+              >
+                <Play size={15} fill="currentColor" />
+                {mostRecentChapter ? "Continue reading" : "Start reading"}
+                <ArrowRight size={15} />
+              </Link>
+            ) : (
+              <p style={styles.emptyText}>Import a chapter to start reading.</p>
+            )}
+          </div>
+        </section>
 
         {isEditing ? (
           <form
@@ -167,24 +410,214 @@ export function SeriesPage() {
               void saveSeriesDetails();
             }}
           >
-            <label style={styles.field}>
-              <span style={styles.fieldLabel}>Series title</span>
-              <input
-                value={draftTitle}
-                onChange={(event) => setDraftTitle(event.currentTarget.value)}
-                style={styles.textInput}
-                required
-              />
-            </label>
-            <label style={styles.field}>
-              <span style={styles.fieldLabel}>Tags</span>
-              <input
-                value={draftTags}
-                onChange={(event) => setDraftTags(event.currentTarget.value)}
-                placeholder="Separate tags with commas"
-                style={styles.textInput}
-              />
-            </label>
+            <section style={styles.detailsGrid}>
+              <div style={styles.coverEditor}>
+                {coverPreviewUrl || coverUrl ? (
+                  <img
+                    src={coverPreviewUrl || coverUrl}
+                    alt="Series cover preview"
+                    style={styles.editorCover}
+                  />
+                ) : (
+                  <div style={styles.editorCoverFallback}>
+                    <BookOpen size={28} />
+                  </div>
+                )}
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) =>
+                    setCoverFile(event.currentTarget.files?.[0] ?? null)
+                  }
+                  style={styles.hiddenInput}
+                />
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  onClick={() => coverInputRef.current?.click()}
+                >
+                  <Upload size={14} /> Upload custom cover
+                </button>
+              </div>
+              <div style={styles.metadataFields}>
+                <label style={styles.field}>
+                  <span style={styles.fieldLabel}>
+                    Display title / series name
+                  </span>
+                  <input
+                    value={draftTitle}
+                    onChange={(event) =>
+                      setDraftTitle(event.currentTarget.value)
+                    }
+                    style={styles.textInput}
+                    required
+                  />
+                </label>
+                <div style={styles.overrideGrid}>
+                  <label style={styles.field}>
+                    <span style={styles.fieldLabel}>Author / creator</span>
+                    <input
+                      value={draftWriter}
+                      onChange={(event) =>
+                        setDraftWriter(event.currentTarget.value)
+                      }
+                      placeholder="Author or creator"
+                      style={styles.textInput}
+                    />
+                  </label>
+                  <label style={styles.field}>
+                    <span style={styles.fieldLabel}>Category / format</span>
+                    <select
+                      value={draftType}
+                      onChange={(event) =>
+                        setDraftType(event.currentTarget.value as SeriesType)
+                      }
+                      style={styles.textInput}
+                    >
+                      {SERIES_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <label style={styles.field}>
+                  <span style={styles.fieldLabel}>Synopsis / summary</span>
+                  <textarea
+                    value={draftSummary}
+                    onChange={(event) =>
+                      setDraftSummary(event.currentTarget.value)
+                    }
+                    placeholder="Brief description or blurb"
+                    rows={3}
+                    style={styles.textarea}
+                  />
+                </label>
+                <label style={styles.adultToggle}>
+                  <span>
+                    <strong>18+ Adult Content</strong>
+                    <span style={styles.overrideDescription}>
+                      Hidden while Safe Mode is enabled.
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={isAdultRating(draftAgeRating)}
+                    onChange={(event) =>
+                      setDraftAgeRating(
+                        event.currentTarget.checked ? "18+" : "Everyone",
+                      )
+                    }
+                  />
+                </label>
+              </div>
+            </section>
+            <section style={styles.tagEditor}>
+              <div>
+                <strong>Tags &amp; organization</strong>
+                <p style={styles.overrideDescription}>
+                  Add genres to organize and filter your library.
+                </p>
+              </div>
+              <div style={styles.tagInputRow}>
+                <input
+                  value={tagInput}
+                  onChange={(event) => setTagInput(event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addDraftTag(tagInput);
+                    }
+                  }}
+                  placeholder="Type a tag and press Enter"
+                  style={styles.textInput}
+                />
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  onClick={() => addDraftTag(tagInput)}
+                >
+                  <Plus size={14} /> Add
+                </button>
+              </div>
+              {draftTags.length > 0 ? (
+                <div style={styles.draftTagList}>
+                  {draftTags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      aria-label={`Remove ${tag} tag`}
+                      style={styles.draftTag}
+                      onClick={() =>
+                        setDraftTags((current) =>
+                          current.filter((entry) => entry !== tag),
+                        )
+                      }
+                    >
+                      {tag} <span aria-hidden="true">×</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              <div style={styles.popularTags}>
+                <span style={styles.overrideDescription}>Popular genres:</span>
+                {POPULAR_TAGS.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    style={styles.popularTag}
+                    onClick={() => addDraftTag(tag)}
+                  >
+                    <Plus size={11} /> {tag}
+                  </button>
+                ))}
+              </div>
+            </section>
+            <section style={styles.overrideSection}>
+              <div>
+                <strong>Custom Reading Overrides</strong>
+                <p style={styles.overrideDescription}>
+                  Choose how this series opens without changing global settings.
+                </p>
+              </div>
+              <div style={styles.overrideGrid}>
+                <label style={styles.field}>
+                  <span style={styles.fieldLabel}>Reading mode</span>
+                  <select
+                    value={draftPreferredMode}
+                    onChange={(event) =>
+                      setDraftPreferredMode(
+                        event.currentTarget.value as ReaderMode | "",
+                      )
+                    }
+                    style={styles.textInput}
+                  >
+                    <option value="">Use Global Settings</option>
+                    <option value="flip">Paginated</option>
+                    <option value="webtoon">Continuous Scroll</option>
+                    <option value="novel">Novel</option>
+                  </select>
+                </label>
+                <label style={styles.field}>
+                  <span style={styles.fieldLabel}>Reading direction</span>
+                  <select
+                    value={draftPreferredDirection}
+                    onChange={(event) =>
+                      setDraftPreferredDirection(
+                        event.currentTarget.value as ReadingDirection | "",
+                      )
+                    }
+                    style={styles.textInput}
+                  >
+                    <option value="">Use Global Settings</option>
+                    <option value="ltr">Left to Right</option>
+                    <option value="rtl">Right to Left</option>
+                  </select>
+                </label>
+              </div>
+            </section>
             <div style={styles.editorActions}>
               <button type="submit" style={styles.linkButton}>
                 Save details
@@ -193,8 +626,7 @@ export function SeriesPage() {
                 type="button"
                 style={styles.secondaryButton}
                 onClick={() => {
-                  setDraftTitle(series.title);
-                  setDraftTags(series.tags?.join(", ") ?? "");
+                  resetDrafts(series);
                   setIsEditing(false);
                   setActionError("");
                 }}
@@ -211,71 +643,115 @@ export function SeriesPage() {
           </p>
         ) : null}
 
-        <div style={styles.summaryCard}>
-          <p style={styles.metaText}>Type: {series.type}</p>
-          <p style={styles.metaText}>Chapters: {chapters.length}</p>
-          {series.writer ? (
-            <p style={styles.metaText}>Writer: {series.writer}</p>
+        <section
+          style={styles.appendSection}
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            if (event.dataTransfer.files.length) {
+              void appendChapters(event.dataTransfer.files);
+            }
+          }}
+        >
+          <div style={styles.appendHeader}>
+            <div>
+              <h2 style={styles.chapterHeading}>Chapters &amp; Volumes</h2>
+              <p style={styles.chapterSubheading}>
+                Add later issues directly to {series.title}.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={isAppending}
+              style={styles.startReadingButton}
+              onClick={() => archiveInputRef.current?.click()}
+            >
+              <Upload size={14} />
+              {isAppending ? "Adding..." : "Add Chapters"}
+            </button>
+          </div>
+          <button
+            type="button"
+            disabled={isAppending}
+            style={styles.appendDropzone}
+            onClick={() => archiveInputRef.current?.click()}
+          >
+            <Plus size={18} />
+            <strong>Upload &amp; append more chapters to this series</strong>
+            <span>CBZ, ZIP, EPUB, or image files</span>
+          </button>
+          {appendMessage ? (
+            <p role="status" style={styles.appendMessage}>
+              {appendMessage}
+            </p>
           ) : null}
-          {series.ageRating ? (
-            <p style={styles.metaText}>Rating: {series.ageRating}</p>
-          ) : null}
-          {series.tags?.length ? (
-            <ul style={styles.tagList} aria-label="Series tags">
-              {series.tags.map((tag) => (
-                <li key={tag} style={styles.tag}>
-                  {tag}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
+        </section>
 
         {chapters.length === 0 ? (
           <p style={styles.emptyText}>No chapters available for this series.</p>
         ) : (
-          <ul style={styles.list}>
-            {chapters.map((chapter) => (
-              <li key={chapter.id} style={styles.listItem}>
-                {(() => {
-                  const progress = progressByChapter[chapter.id];
-                  const progressPercent = progress
-                    ? Math.min(
-                        100,
-                        ((progress.pageIndex + 1) / chapter.pageCount) * 100,
-                      )
-                    : 0;
-                  return (
-                    <Link
-                      to={`/read/${encodeURIComponent(chapter.id)}`}
-                      style={styles.chapterLink}
-                    >
-                      <span style={styles.chapterDetails}>
-                        <span>{chapter.title}</span>
-                        {progress ? (
-                          <span style={styles.progressLabel}>
-                            Continue · page {progress.pageIndex + 1} of{" "}
-                            {chapter.pageCount}
+          <section style={styles.chapterSection}>
+            <header style={styles.chapterHeader}>
+              <div>
+                <h2 style={styles.chapterHeading}>Chapters</h2>
+                <p style={styles.chapterSubheading}>Choose an issue to read.</p>
+              </div>
+              <span style={styles.chapterCount}>{chapters.length} total</span>
+            </header>
+            <ul style={styles.list}>
+              {chapters.map((chapter) => (
+                <li key={chapter.id} style={styles.listItem}>
+                  {(() => {
+                    const progress = progressByChapter[chapter.id];
+                    const progressPercent = progress
+                      ? Math.min(
+                          100,
+                          ((progress.pageIndex + 1) / chapter.pageCount) * 100,
+                        )
+                      : 0;
+                    return (
+                      <Link
+                        to={`/read/${encodeURIComponent(chapter.id)}`}
+                        style={styles.chapterLink}
+                      >
+                        <span style={styles.chapterDetails}>
+                          <span>
+                            {chapter.title}
+                            {chapter.volume !== undefined
+                              ? ` · Vol. ${chapter.volume}`
+                              : ""}
+                            {chapter.number !== undefined
+                              ? ` · #${chapter.number}`
+                              : ""}
                           </span>
-                        ) : null}
-                        {progress ? (
-                          <span style={styles.progressTrack} aria-hidden="true">
+                          {progress ? (
+                            <span style={styles.progressLabel}>
+                              Continue · page {progress.pageIndex + 1} of{" "}
+                              {chapter.pageCount}
+                            </span>
+                          ) : null}
+                          {progress ? (
                             <span
-                              style={{
-                                ...styles.progressFill,
-                                width: `${progressPercent}%`,
-                              }}
-                            />
-                          </span>
-                        ) : null}
-                      </span>
-                      <span>{chapter.pageCount} pages</span>
-                    </Link>
-                  );
-                })()}
-              </li>
-            ))}
-          </ul>
+                              style={styles.progressTrack}
+                              aria-hidden="true"
+                            >
+                              <span
+                                style={{
+                                  ...styles.progressFill,
+                                  width: `${progressPercent}%`,
+                                }}
+                              />
+                            </span>
+                          ) : null}
+                        </span>
+                        <span>{chapter.pageCount} pages</span>
+                      </Link>
+                    );
+                  })()}
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </section>
     </main>
@@ -285,13 +761,13 @@ export function SeriesPage() {
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
-    background: "#0b1210",
-    color: "#e6f2e8",
-    padding: "32px",
-    fontFamily: "Inter, system-ui, sans-serif",
+    background: "var(--app-bg)",
+    color: "var(--app-text)",
+    padding: "clamp(20px, 3vw, 40px)",
+    fontFamily: "var(--font-body)",
   },
   panel: {
-    maxWidth: 760,
+    maxWidth: 1160,
     margin: "0 auto",
     display: "grid",
     gap: 20,
@@ -300,7 +776,16 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     justifyContent: "space-between",
     gap: 16,
-    alignItems: "end",
+    alignItems: "center",
+  },
+  backLink: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 7,
+    color: "var(--app-muted)",
+    fontSize: 12,
+    fontWeight: 600,
+    textDecoration: "none",
   },
   headerActions: {
     display: "flex",
@@ -313,9 +798,121 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     gap: 16,
     padding: 18,
-    border: "1px solid rgba(143, 196, 154, 0.2)",
+    border: "1px solid var(--app-border)",
     borderRadius: 10,
-    background: "rgba(255, 255, 255, 0.03)",
+    background: "var(--app-panel)",
+  },
+  hiddenInput: { display: "none" },
+  detailsGrid: {
+    display: "grid",
+    gridTemplateColumns: "minmax(110px, 0.35fr) minmax(0, 1.65fr)",
+    gap: 18,
+  },
+  coverEditor: {
+    display: "grid",
+    alignContent: "start",
+    justifyItems: "center",
+    gap: 10,
+  },
+  editorCover: {
+    width: "100%",
+    maxWidth: 180,
+    aspectRatio: "0.72",
+    objectFit: "cover",
+    border: "1px solid var(--app-border-strong)",
+    borderRadius: 8,
+  },
+  editorCoverFallback: {
+    display: "grid",
+    width: "100%",
+    maxWidth: 180,
+    aspectRatio: "0.72",
+    placeItems: "center",
+    border: "1px solid var(--app-border-strong)",
+    borderRadius: 8,
+    color: "var(--app-muted)",
+  },
+  metadataFields: { display: "grid", gap: 14, minWidth: 0 },
+  textarea: {
+    width: "100%",
+    boxSizing: "border-box",
+    resize: "vertical",
+    padding: "10px 12px",
+    border: "1px solid var(--app-border-strong)",
+    borderRadius: 6,
+    background: "var(--app-bg)",
+    color: "var(--app-text)",
+    font: "inherit",
+  },
+  adultToggle: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 16,
+    padding: 12,
+    border: "1px solid var(--app-border)",
+    borderRadius: 8,
+    background: "var(--app-bg)",
+  },
+  tagEditor: {
+    display: "grid",
+    gap: 12,
+    padding: 16,
+    border: "1px solid var(--app-border)",
+    borderRadius: 8,
+    background: "var(--app-bg)",
+  },
+  tagInputRow: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: 8,
+  },
+  draftTagList: { display: "flex", flexWrap: "wrap", gap: 6 },
+  draftTag: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 7,
+    padding: "5px 8px",
+    border: "1px solid var(--app-border)",
+    borderRadius: 999,
+    background: "var(--app-panel-raised)",
+    color: "var(--app-text)",
+    cursor: "pointer",
+  },
+  popularTags: {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 6,
+  },
+  popularTag: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 3,
+    padding: "5px 7px",
+    border: "1px solid var(--app-border)",
+    borderRadius: 6,
+    background: "transparent",
+    color: "var(--app-muted)",
+    cursor: "pointer",
+  },
+  overrideSection: {
+    display: "grid",
+    gap: 14,
+    padding: 16,
+    border: "1px solid var(--app-border)",
+    borderRadius: 8,
+    background: "var(--app-bg)",
+  },
+  overrideDescription: {
+    margin: "5px 0 0",
+    color: "var(--app-muted)",
+    fontSize: 12,
+  },
+  overrideGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 12,
   },
   field: { display: "grid", gap: 6 },
   fieldLabel: { fontWeight: 700 },
@@ -323,47 +920,157 @@ const styles: Record<string, React.CSSProperties> = {
     width: "100%",
     boxSizing: "border-box",
     padding: "10px 12px",
-    border: "1px solid rgba(143, 196, 154, 0.3)",
+    border: "1px solid var(--app-border-strong)",
     borderRadius: 6,
-    background: "#17221b",
-    color: "#e6f2e8",
+    background: "var(--app-bg)",
+    color: "var(--app-text)",
     font: "inherit",
   },
   editorActions: { display: "flex", flexWrap: "wrap", gap: 10 },
   errorText: { margin: 0, color: "#ffaaa0" },
   kicker: {
     margin: 0,
-    letterSpacing: "0.16em",
+    letterSpacing: "0.12em",
     textTransform: "uppercase",
-    color: "#8fc49a",
-    fontSize: 12,
+    color: "var(--app-lime)",
+    fontSize: 10,
+    fontWeight: 700,
   },
   title: {
     margin: "8px 0 0",
-    fontSize: 40,
+    fontFamily: "var(--font-display)",
+    fontSize: 38,
+    fontWeight: 600,
+    lineHeight: 1.08,
+    overflowWrap: "anywhere",
   },
-  linkButton: {
-    color: "#0b1210",
-    background: "#8fc49a",
+  seriesHero: {
+    display: "grid",
+    gridTemplateColumns: "minmax(108px, 0.7fr) minmax(0, 1.6fr)",
+    gap: "clamp(14px, 3vw, 34px)",
+    alignItems: "center",
+    padding: "clamp(18px, 3vw, 34px)",
+    border: "1px solid var(--app-border)",
+    borderRadius: 12,
+    background: "var(--app-panel)",
+  },
+  seriesCover: {
+    aspectRatio: "0.72",
+    overflow: "hidden",
+    border: "1px solid var(--app-border-strong)",
+    borderRadius: 8,
+    background: "var(--app-panel-raised)",
+  },
+  seriesCoverImage: { width: "100%", height: "100%", objectFit: "cover" },
+  seriesCoverFallback: {
+    display: "grid",
+    width: "100%",
+    height: "100%",
+    placeItems: "center",
+    color: "var(--app-lime)",
+  },
+  seriesHeroContent: {
+    display: "grid",
+    justifyItems: "start",
+    gap: 15,
+    minWidth: 0,
+  },
+  seriesSummary: {
+    maxWidth: 760,
+    margin: 0,
+    color: "var(--app-muted)",
+    fontSize: 13,
+    lineHeight: 1.6,
+  },
+  heroFacts: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px 16px",
+    color: "var(--app-muted)",
+    fontSize: 12,
+  },
+  startReadingButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 9,
+    marginTop: 3,
+    padding: "11px 14px",
+    border: "1px solid #e2fa94",
+    borderRadius: 7,
+    background: "var(--app-lime)",
+    color: "#182014",
+    fontSize: 12,
+    fontWeight: 700,
     textDecoration: "none",
-    borderRadius: 999,
-    padding: "10px 18px",
+  },
+  appendSection: {
+    display: "grid",
+    gap: 12,
+    padding: 16,
+    border: "1px solid var(--app-border)",
+    borderRadius: 10,
+    background: "var(--app-panel)",
+  },
+  appendHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+  appendDropzone: {
+    display: "grid",
+    justifyItems: "center",
+    gap: 7,
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "20px 12px",
+    border: "1px dashed var(--app-border-strong)",
+    borderRadius: 8,
+    background: "var(--app-bg)",
+    color: "var(--app-text)",
+    cursor: "pointer",
+  },
+  appendMessage: { margin: 0, color: "var(--app-muted)", fontSize: 12 },
+  chapterSection: { display: "grid", gap: 15 },
+  chapterHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "end",
+    gap: 15,
+  },
+  chapterHeading: {
+    margin: 0,
+    fontFamily: "var(--font-display)",
+    fontSize: 20,
+  },
+  chapterSubheading: {
+    margin: "5px 0 0",
+    color: "var(--app-muted)",
+    fontSize: 12,
+  },
+  chapterCount: { color: "var(--app-muted)", fontSize: 11 },
+  linkButton: {
+    color: "#182014",
+    background: "var(--app-lime)",
+    textDecoration: "none",
+    borderRadius: 7,
+    padding: "10px 14px",
     fontWeight: 700,
   },
   secondaryButton: {
-    color: "#e6f2e8",
-    background: "rgba(255, 255, 255, 0.06)",
-    border: "1px solid rgba(143, 196, 154, 0.25)",
-    borderRadius: 999,
+    color: "var(--app-text)",
+    background: "var(--app-panel-raised)",
+    border: "1px solid var(--app-border)",
+    borderRadius: 7,
     padding: "10px 14px",
     fontWeight: 700,
     cursor: "pointer",
   },
   deleteButton: {
     color: "#ffe5e1",
-    background: "#702e2e",
-    border: "1px solid #a54b45",
-    borderRadius: 999,
+    background: "#562522",
+    border: "1px solid #8f473e",
+    borderRadius: 7,
     padding: "10px 14px",
     fontWeight: 700,
     cursor: "pointer",
@@ -371,13 +1078,14 @@ const styles: Record<string, React.CSSProperties> = {
   summaryCard: {
     display: "grid",
     gap: 4,
-    background: "rgba(255, 255, 255, 0.03)",
-    borderRadius: 16,
+    background: "var(--app-panel)",
+    border: "1px solid var(--app-border)",
+    borderRadius: 9,
     padding: 16,
   },
   metaText: {
     margin: 0,
-    color: "#dfeae1",
+    color: "var(--app-text)",
   },
   tagList: {
     display: "flex",
@@ -390,21 +1098,21 @@ const styles: Record<string, React.CSSProperties> = {
   tag: {
     borderRadius: 4,
     padding: "3px 7px",
-    background: "rgba(143, 196, 154, 0.12)",
-    color: "#c8dec9",
-    fontSize: 12,
+    background: "#ffffff08",
+    color: "#b8c1b9",
+    fontSize: 10,
   },
   list: {
     listStyle: "none",
     margin: 0,
     padding: 0,
     display: "grid",
-    gap: 10,
+    gap: 8,
   },
   listItem: {
-    background: "rgba(255, 255, 255, 0.04)",
+    background: "var(--app-panel)",
     borderRadius: 12,
-    border: "1px solid rgba(143, 196, 154, 0.15)",
+    border: "1px solid var(--app-border)",
   },
   chapterLink: {
     display: "flex",
@@ -431,6 +1139,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   emptyText: {
     margin: 0,
-    color: "#9db0a1",
+    color: "var(--app-muted)",
   },
 };

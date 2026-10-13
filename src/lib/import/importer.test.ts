@@ -1,7 +1,19 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { zipSync } from "fflate";
 import { importArchiveSources } from "./importer";
-import { listAllChapters, listSeries } from "../storage/db";
+import {
+  getBlob,
+  getSeries,
+  listAllChapters,
+  listPages,
+  listSeries,
+  putChapter,
+  putPage,
+  putSeries,
+  saveBlob,
+} from "../storage/db";
+import { deriveSeriesId } from "./grouping";
 
 type XmlNodeLike = {
   textContent?: string | null;
@@ -90,9 +102,7 @@ async function loadFixture(
     throw new Error("Missing working directory in test runtime");
   }
 
-  // @ts-expect-error Node runtime module is available in Vitest.
   const { join } = await import("node:path");
-  // @ts-expect-error Node runtime module is available in Vitest.
   const { readFile } = await import("node:fs/promises");
   const bytes = await readFile(join(cwd, "fixtures", name));
   return {
@@ -152,7 +162,8 @@ describe("importer metadata and grouping", () => {
     const chapters = await listAllChapters();
     expect(
       chapters.some(
-        (chapter) => chapter.seriesId === novelSeries?.id && chapter.pageCount > 0,
+        (chapter) =>
+          chapter.seriesId === novelSeries?.id && chapter.pageCount > 0,
       ),
     ).toBe(true);
   });
@@ -168,5 +179,106 @@ describe("importer metadata and grouping", () => {
 
     const chapters = await listAllChapters();
     expect(chapters).toHaveLength(1);
+  });
+
+  it("reports import stages after opening an archive", async () => {
+    const events: Array<{ state: string; message?: string }> = [];
+    await importArchiveSources([await loadFixture("ok.cbz")], (event) => {
+      events.push(event);
+    });
+
+    expect(events[0]?.message).toMatch(/Opening archive/);
+    expect(
+      events.some((event) =>
+        /detecting chapters|Saving chapter/.test(event.message ?? ""),
+      ),
+    ).toBe(true);
+    expect(events.at(-1)?.state).toBe("saved");
+  });
+
+  it("appends a new archive to the selected series and preserves its title", async () => {
+    await importArchiveSources([await loadFixture("series-name-c001.cbz")]);
+    const [series] = await listSeries();
+    if (!series) throw new Error("Expected imported series");
+
+    await putSeries({ ...series, title: "My Deadpool Shelf" });
+    const appended = await importArchiveSources(
+      [await loadFixture("meta.cbz")],
+      undefined,
+      series.id,
+    );
+
+    expect(appended.imported).toHaveLength(1);
+    await expect(getSeries(series.id)).resolves.toMatchObject({
+      title: "My Deadpool Shelf",
+    });
+    const chapters = await listAllChapters();
+    expect(chapters).toHaveLength(2);
+    expect(chapters.map((chapter) => chapter.seriesId)).toEqual([
+      series.id,
+      series.id,
+    ]);
+    expect(chapters.map((chapter) => chapter.order).sort()).toEqual([0, 1]);
+  });
+
+  it("replaces a previously merged chapter when its source now splits into chapters", async () => {
+    const sourceName = "Repairable Series.zip";
+    const seriesId = deriveSeriesId(sourceName);
+    const legacyChapterId = "chapter:legacy-merged";
+    const legacyStorageKey = `${legacyChapterId}/0`;
+    await putSeries({
+      schemaVersion: 2,
+      id: seriesId,
+      title: "Repairable Series",
+      type: "manga",
+      addedAt: 1,
+      updatedAt: 1,
+    });
+    await putChapter({
+      schemaVersion: 2,
+      id: legacyChapterId,
+      seriesId,
+      title: "Chapter 33",
+      order: 0,
+      pageCount: 1,
+      sourceName,
+      hash: "legacy-merged-hash",
+      addedAt: 1,
+    });
+    await putPage({
+      schemaVersion: 2,
+      id: "legacy-page",
+      chapterId: legacyChapterId,
+      index: 0,
+      storageKey: legacyStorageKey,
+      mime: "image/png",
+    });
+    await saveBlob(legacyStorageKey, new Blob(["old merged page"]));
+
+    const archive = zipSync({
+      "Series Chapter 1 page 001.png": new Uint8Array([1, 2]),
+      "Series Chapter 1 page 002.png": new Uint8Array([3, 4]),
+      "Series Chapter 2 page 001.png": new Uint8Array([5, 6]),
+      "Series Chapter 2 page 002.png": new Uint8Array([7, 8]),
+    });
+    await importArchiveSources(
+      [
+        {
+          name: sourceName,
+          blob: new Blob([archive], { type: "application/zip" }),
+        },
+      ],
+      undefined,
+      seriesId,
+    );
+
+    const chapters = await listAllChapters();
+    expect(chapters).toHaveLength(2);
+    expect(chapters.every((chapter) => chapter.seriesId === seriesId)).toBe(
+      true,
+    );
+    await expect(listPages(legacyChapterId)).resolves.toEqual([]);
+    await expect(getBlob(legacyStorageKey)).resolves.toBeUndefined();
+    expect(chapters.map((chapter) => chapter.order).sort()).toEqual([0, 1]);
   });
 });

@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AppFrame } from "./components/layout/AppFrame";
+import { ImportPage } from "./components/import/ImportPage";
 import { LibraryPage } from "./components/library/LibraryPage";
 import { ReaderPage } from "./components/reader/ReaderPage";
 import { SettingsPage } from "./components/settings/SettingsPage";
 import { SeriesPage } from "./components/series/SeriesPage";
-import { getPreferences } from "./lib/preferences/preferences";
+import {
+  applyPreferencesToDocument,
+  getPreferences,
+} from "./lib/preferences/preferences";
 import type { PwaInstallPrompt } from "./lib/pwa/install";
 
 export function App() {
@@ -14,9 +19,7 @@ export function App() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    document.body.style.filter = getPreferences().highContrast
-      ? "contrast(1.18)"
-      : "";
+    applyPreferencesToDocument(getPreferences());
     setIsInstalled(window.matchMedia("(display-mode: standalone)").matches);
 
     const handleInstallPrompt = (event: Event) => {
@@ -39,18 +42,42 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LibraryPage />} />
+        <Route
+          path="/"
+          element={
+            <AppFrame>
+              <LibraryPage />
+            </AppFrame>
+          }
+        />
+        <Route
+          path="/import"
+          element={
+            <AppFrame>
+              <ImportPage />
+            </AppFrame>
+          }
+        />
         <Route
           path="/settings"
           element={
-            <SettingsPage
-              installPrompt={installPrompt}
-              isInstalled={isInstalled}
-              onInstallPromptConsumed={() => setInstallPrompt(null)}
-            />
+            <AppFrame>
+              <SettingsPage
+                installPrompt={installPrompt}
+                isInstalled={isInstalled}
+                onInstallPromptConsumed={() => setInstallPrompt(null)}
+              />
+            </AppFrame>
           }
         />
-        <Route path="/series/:id" element={<SeriesPage />} />
+        <Route
+          path="/series/:id"
+          element={
+            <AppFrame>
+              <SeriesPage />
+            </AppFrame>
+          }
+        />
         <Route path="/read/:chapterId" element={<ReaderPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

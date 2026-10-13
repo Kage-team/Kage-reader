@@ -5,6 +5,7 @@ import {
   getBlob,
   getBookmark,
   getProgress,
+  getSeries,
   listAllChapters,
   listPages,
   listSeries,
@@ -47,6 +48,8 @@ describe("library backup", () => {
       id: "series:backup",
       title: "Backup Sample",
       type: "novel" as const,
+      coverPageKey: "series:backup/custom-cover",
+      summary: "A saved series summary.",
       tags: ["saved"],
       addedAt: 10,
       updatedAt: 20,
@@ -91,6 +94,10 @@ describe("library backup", () => {
       page.storageKey,
       new Blob(["saved page"], { type: page.mime }),
     );
+    await saveBlob(
+      series.coverPageKey,
+      new Blob(["cover"], { type: "image/png" }),
+    );
 
     const backup = await createLibraryBackup();
     expect(backup.type).toBe("application/zip");
@@ -125,6 +132,13 @@ describe("library backup", () => {
     await expect(listPages(chapter.id)).resolves.toMatchObject([
       { storageKey: page.storageKey },
     ]);
+    await expect(getBlob(series.coverPageKey)).resolves.toMatchObject({
+      type: "image/png",
+    });
+    await expect(getSeries(series.id)).resolves.toMatchObject({
+      summary: "A saved series summary.",
+      coverPageKey: series.coverPageKey,
+    });
     await expect(getProgress(chapter.id)).resolves.toMatchObject({
       scrollRatio: 0.4,
     });

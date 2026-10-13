@@ -1,4 +1,4 @@
-import { extractArchiveBundle } from "./archive";
+import { extractArchiveBundle, type ArchiveProgress } from "./archive";
 import type { ArchiveSource, ArchiveEntry } from "./types";
 
 export type ArchiveBundlePayload = {
@@ -8,9 +8,10 @@ export type ArchiveBundlePayload = {
 
 export async function extractArchiveBundleInWorker(
   source: ArchiveSource,
+  onProgress?: ArchiveProgress,
 ): Promise<ArchiveBundlePayload> {
   if (typeof Worker === "undefined") {
-    return extractArchiveBundle(source);
+    return extractArchiveBundle(source, 0, onProgress);
   }
 
   return new Promise<ArchiveBundlePayload>((resolve, reject) => {
@@ -27,9 +28,15 @@ export async function extractArchiveBundleInWorker(
             kind: "result";
             bundle: ArchiveBundlePayload;
           }
+        | { id: string; kind: "progress"; message: string }
         | { id: string; kind: "error"; message: string };
 
       if (payload.id !== requestId) {
+        return;
+      }
+
+      if (payload.kind === "progress") {
+        onProgress?.(payload.message);
         return;
       }
 

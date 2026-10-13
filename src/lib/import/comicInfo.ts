@@ -4,6 +4,7 @@ export type ComicInfoMetadata = {
   number?: string;
   volume?: number;
   writer?: string;
+  summary?: string;
   tags: string[];
   ageRating?: string;
   coverPageIndex?: number;
@@ -77,6 +78,7 @@ export function parseComicInfoXml(xml: string): ComicInfoMetadata {
       number: textContent(document, "ComicInfo > Number"),
       volume: Number.isFinite(volume) ? volume : undefined,
       writer: textContent(document, "ComicInfo > Writer"),
+      summary: textContent(document, "ComicInfo > Summary"),
       tags: collectTextList(textContent(document, "ComicInfo > Tags")),
       ageRating: textContent(document, "ComicInfo > AgeRating"),
       coverPageIndex: parseCoverIndex(document),

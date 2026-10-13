@@ -34,14 +34,54 @@ describe("preferences", () => {
   it("persists validated reader preferences", () => {
     const storage = createStorage();
     const updated = savePreferences(
-      { defaultReaderMode: "novel", textScale: 113, highContrast: true },
+      {
+        ...DEFAULT_PREFERENCES,
+        defaultReaderMode: "novel",
+        defaultReadingDirection: "rtl",
+        textScale: 113,
+        novelFontFamily: "modern",
+        novelFontSize: 22,
+        novelLineSpacing: 2.1,
+        novelTextAlignment: "justify",
+        novelParagraphIndent: true,
+        novelParagraphGap: 28,
+        novelColumnWidth: "standard",
+        novelReadingTheme: "paper",
+        highContrast: true,
+        theme: "forest",
+        accent: "jade",
+        safeMode: false,
+        readerWidth: 1088,
+        comicPageGap: 7,
+        comicInfiniteScroll: false,
+        novelInfiniteScroll: false,
+        immersiveMode: true,
+      },
       storage,
     );
 
     expect(updated).toEqual({
+      ...DEFAULT_PREFERENCES,
       defaultReaderMode: "novel",
+      defaultReadingDirection: "rtl",
       textScale: 115,
+      novelFontFamily: "modern",
+      novelFontSize: 22,
+      novelLineSpacing: 2.1,
+      novelTextAlignment: "justify",
+      novelParagraphIndent: true,
+      novelParagraphGap: 28,
+      novelColumnWidth: "standard",
+      novelReadingTheme: "paper",
       highContrast: true,
+      theme: "forest",
+      accent: "jade",
+      safeMode: false,
+      readerWidth: 1100,
+      comicPageGap: 8,
+      comicInfiniteScroll: false,
+      novelInfiniteScroll: false,
+      immersiveMode: true,
     });
     expect(getPreferences(storage)).toEqual(updated);
   });

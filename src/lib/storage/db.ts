@@ -240,6 +240,7 @@ export async function deleteSeriesWithContents(
     ),
   );
   const pages = pagesByChapter.flat();
+  const series = await db.get("series", seriesId);
   const transaction = db.transaction(
     ["series", "chapters", "pages", "progress", "blobs", "bookmarks"],
     "readwrite",
@@ -265,6 +266,12 @@ export async function deleteSeriesWithContents(
   await Promise.all(operations);
   await transaction.done;
   await Promise.all(pages.map((page) => deleteBlobFromOpfs(page.storageKey)));
+  if (
+    series?.coverPageKey &&
+    !pages.some((page) => page.storageKey === series.coverPageKey)
+  ) {
+    await deleteBlob(series.coverPageKey);
+  }
 }
 
 export async function putChapter(chapter: Chapter): Promise<void> {
@@ -300,6 +307,46 @@ export async function deleteChapterRecord(id: string): Promise<void> {
   await db.delete("chapters", id);
 }
 
+export async function deleteChapterWithContents(id: string): Promise<void> {
+  const db = await openKageDb();
+  const chapter = await db.get("chapters", id);
+  if (!chapter) return;
+
+  const pages = await db.getAllFromIndex("pages", "by-chapter", id);
+  const series = await db.get("series", chapter.seriesId);
+  const transaction = db.transaction(
+    ["chapters", "pages", "progress", "bookmarks", "blobs"],
+    "readwrite",
+  );
+  const operations: Promise<unknown>[] = [
+    transaction.objectStore("chapters").delete(id),
+    transaction.objectStore("progress").delete(id),
+    transaction.objectStore("bookmarks").delete(id),
+  ];
+
+  for (const page of pages) {
+    operations.push(
+      transaction.objectStore("pages").delete(page.id),
+      transaction.objectStore("blobs").delete(page.storageKey),
+    );
+  }
+
+  await Promise.all(operations);
+  await transaction.done;
+  await Promise.all(pages.map((page) => deleteBlobFromOpfs(page.storageKey)));
+
+  if (
+    series?.coverPageKey &&
+    pages.some((page) => page.storageKey === series.coverPageKey)
+  ) {
+    await putSeries({
+      ...series,
+      coverPageKey: undefined,
+      updatedAt: Date.now(),
+    });
+  }
+}
+
 export async function putPage(page: Page): Promise<void> {
   const db = await openKageDb();
   await db.put("pages", { ...page, schemaVersion: SCHEMA_VERSION });
@@ -309,6 +356,11 @@ export async function listPages(chapterId: string): Promise<Page[]> {
   const db = await openKageDb();
   const rows = await db.getAllFromIndex("pages", "by-chapter", chapterId);
   return rows.sort((a, b) => a.index - b.index);
+}
+
+export async function listAllPages(): Promise<Page[]> {
+  const db = await openKageDb();
+  return db.getAll("pages");
 }
 
 export async function deletePageRecord(id: string): Promise<void> {

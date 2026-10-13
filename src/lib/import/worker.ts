@@ -14,7 +14,9 @@ self.onmessage = async (event: MessageEvent<ImportWorkerRequest>) => {
   const { id, source } = event.data;
 
   try {
-    const bundle = await extractArchiveBundle(source);
+    const bundle = await extractArchiveBundle(source, 0, (message) => {
+      self.postMessage({ id, kind: "progress", message });
+    });
     self.postMessage({ id, kind: "result", bundle });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

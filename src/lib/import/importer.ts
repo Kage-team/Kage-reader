@@ -1,6 +1,9 @@
 import {
   getChapterByHash,
   getSeries,
+  listChapters,
+  listPages,
+  deleteChapterWithContents,
   putChapter,
   putPage,
   putSeries,
@@ -15,6 +18,8 @@ import {
   groupArchiveEntries,
 } from "./grouping";
 import { extractArchiveBundleInWorker } from "./worker-client";
+import { packageLooseImageSources } from "./looseImages";
+import { naturalSort } from "./naturalSort";
 import type {
   ArchiveSource,
   ImportProgressEvent,
@@ -24,8 +29,11 @@ import type {
 
 async function saveArchiveAsChapter(
   source: ArchiveSource,
+  targetSeriesId?: string,
+  reportStage?: (message: string) => void,
 ): Promise<ImportedChapterSummary> {
-  const bundle = await extractArchiveBundleInWorker(source);
+  const bundle = await extractArchiveBundleInWorker(source, reportStage);
+  reportStage?.(`Read ${bundle.entries.length} files; detecting chapters…`);
   const comicInfo = bundle.comicInfoXml
     ? parseComicInfoXml(bundle.comicInfoXml)
     : { tags: [] };
@@ -37,13 +45,34 @@ async function saveArchiveAsChapter(
   const imageEntries = bundle.entries.filter((entry) =>
     entry.mime.startsWith("image/"),
   );
-  const chapterGroups = groupArchiveEntries(bundle.entries);
-  const seriesTitle = deriveSeriesTitle(source.name, comicInfo);
-  const seriesId = deriveSeriesId(source.name, comicInfo);
+  const chapterGroups = groupArchiveEntries(bundle.entries, isNovelArchive);
+  const derivedSeriesTitle = deriveSeriesTitle(source.name, comicInfo);
+  const seriesId = targetSeriesId ?? deriveSeriesId(source.name, comicInfo);
   const now = Date.now();
   let coverPageKey: string | undefined;
   const importedSummaries: ImportedChapterSummary[] = [];
   const existingSeries = await getSeries(seriesId);
+  if (targetSeriesId && !existingSeries) {
+    throw new Error("The selected series no longer exists.");
+  }
+  const seriesTitle = targetSeriesId
+    ? (existingSeries?.title ?? derivedSeriesTitle)
+    : derivedSeriesTitle;
+  const existingChapters = await listChapters(seriesId);
+  const previousSourceChapters = existingChapters.filter(
+    (chapter) => chapter.sourceName === source.name,
+  );
+  const mayReplaceMergedChapter =
+    chapterGroups.length > 1 && previousSourceChapters.length === 1;
+  const orderBase = mayReplaceMergedChapter
+    ? existingChapters.filter((chapter) => chapter.sourceName !== source.name)
+    : existingChapters;
+  let nextChapterOrder =
+    orderBase.reduce(
+      (highestOrder, chapter) => Math.max(highestOrder, chapter.order),
+      -1,
+    ) + 1;
+  const retainedExistingIds = new Set<string>();
   let series: Series = existingSeries ?? {
     schemaVersion: 1,
     id: seriesId,
@@ -53,19 +82,34 @@ async function saveArchiveAsChapter(
     updatedAt: now,
   };
 
-  for (const [order, chapterGroup] of chapterGroups.entries()) {
+  for (const [groupIndex, chapterGroup] of chapterGroups.entries()) {
+    reportStage?.(
+      `Preparing chapter ${groupIndex + 1} of ${chapterGroups.length}: ${chapterGroup.title}`,
+    );
     const chapterBlob = new Blob(
       chapterGroup.entries.map((entry) => entry.blob),
     );
     const chapterHash = await hashBlobSignature(chapterBlob);
     const existingChapter = await getChapterByHash(chapterHash);
     if (existingChapter) {
+      if (existingChapter.seriesId === seriesId) {
+        retainedExistingIds.add(existingChapter.id);
+      }
       continue;
     }
 
     const chapterId = `chapter:${chapterHash}`;
     const pageRecords: Page[] = [];
     for (const [index, entry] of chapterGroup.entries.entries()) {
+      if (
+        index === 0 ||
+        (index + 1) % 10 === 0 ||
+        index === chapterGroup.entries.length - 1
+      ) {
+        reportStage?.(
+          `Saving chapter ${groupIndex + 1}/${chapterGroups.length} · page ${index + 1}/${chapterGroup.entries.length}`,
+        );
+      }
       const storageKey = `${chapterId}/${index}`;
       await saveBlob(storageKey, entry.blob);
       pageRecords.push({
@@ -88,7 +132,15 @@ async function saveArchiveAsChapter(
         chapterGroups.length === 1
           ? comicInfo.title?.trim() || chapterGroup.title || seriesTitle
           : chapterGroup.title || comicInfo.title?.trim() || seriesTitle,
-      order,
+      number:
+        chapterGroup.number ??
+        (chapterGroups.length === 1 && comicInfo.number
+          ? Number.parseFloat(comicInfo.number) || undefined
+          : undefined),
+      volume:
+        chapterGroup.volume ??
+        (chapterGroups.length === 1 ? comicInfo.volume : undefined),
+      order: nextChapterOrder++,
       pageCount: chapterGroup.entries.length,
       sourceName: source.name,
       hash: chapterHash,
@@ -119,6 +171,26 @@ async function saveArchiveAsChapter(
     }
   }
 
+  if (importedSummaries.length > 0 && mayReplaceMergedChapter) {
+    const obsoleteChapters = previousSourceChapters.filter(
+      (chapter) => !retainedExistingIds.has(chapter.id),
+    );
+    const obsoletePageKeys = new Set<string>();
+    for (const obsolete of obsoleteChapters) {
+      for (const page of await listPages(obsolete.id)) {
+        obsoletePageKeys.add(page.storageKey);
+      }
+      await deleteChapterWithContents(obsolete.id);
+    }
+    if (
+      obsoleteChapters.length > 0 &&
+      series.coverPageKey &&
+      obsoletePageKeys.has(series.coverPageKey)
+    ) {
+      series = { ...series, coverPageKey };
+    }
+  }
+
   const existingSeriesType =
     existingSeries?.type ?? (isNovelArchive ? "novel" : "manga");
   const existingTags = existingSeries?.tags ?? [];
@@ -129,11 +201,16 @@ async function saveArchiveAsChapter(
   series = {
     ...series,
     schemaVersion: 1,
-    title: seriesTitle,
+    title: targetSeriesId
+      ? (existingSeries?.title ?? seriesTitle)
+      : seriesTitle,
     type: existingSeriesType,
-    coverPageKey: coverPageKey ?? series.coverPageKey,
+    coverPageKey: targetSeriesId
+      ? (series.coverPageKey ?? coverPageKey)
+      : (coverPageKey ?? series.coverPageKey),
     ageRating: comicInfo.ageRating ?? series.ageRating,
     writer: comicInfo.writer ?? series.writer,
+    summary: comicInfo.summary ?? series.summary,
     tags: tags.length > 0 ? tags : undefined,
     updatedAt: now,
   };
@@ -161,34 +238,50 @@ async function saveArchiveAsChapter(
 }
 
 function isSupportedArchiveName(name: string): boolean {
-  return /\.(cbz|zip|epub)$/i.test(name);
+  return /\.(cbz|zip|epub|cbr|rar|7z|cb7|cbt|tar|tgz|gz|bz2|xz|txt|html|htm|xhtml|md)$/i.test(
+    name,
+  );
 }
 
 export async function importArchiveSources(
   sources: ArchiveSource[],
   onProgress?: (event: ImportProgressEvent) => void,
+  targetSeriesId?: string,
 ): Promise<ImportRunResult> {
   const imported: ImportedChapterSummary[] = [];
   const errors: string[] = [];
+  const normalizedSources = await packageLooseImageSources(sources);
+  if (targetSeriesId) {
+    normalizedSources.sort((left, right) => naturalSort(left.name, right.name));
+  }
 
-  for (const [index, source] of sources.entries()) {
+  for (const [index, source] of normalizedSources.entries()) {
     const progressBase = {
       fileName: source.name,
       index: index + 1,
-      total: sources.length,
+      total: normalizedSources.length,
     };
 
     if (!isSupportedArchiveName(source.name)) {
-      const message = `Unsupported file: ${source.name}`;
+      const message = `Unsupported file "${source.name}". Supported formats include CBZ, CBR/RAR, ZIP, 7z, TAR, EPUB, and common image files.`;
       errors.push(message);
       onProgress?.({ ...progressBase, state: "error", message });
       continue;
     }
 
-    onProgress?.({ ...progressBase, state: "working" });
+    onProgress?.({
+      ...progressBase,
+      state: "working",
+      message: "Opening archive and extracting locally…",
+    });
 
     try {
-      const summary = await saveArchiveAsChapter(source);
+      const summary = await saveArchiveAsChapter(
+        source,
+        targetSeriesId,
+        (message) =>
+          onProgress?.({ ...progressBase, state: "working", message }),
+      );
       if (summary.pageCount > 0) {
         imported.push(summary);
       }

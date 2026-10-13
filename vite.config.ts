@@ -1,10 +1,36 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+import { copyFileSync, mkdirSync } from "node:fs";
+import { resolve } from "node:path";
+
+function copyLibarchiveRuntime() {
+  return {
+    name: "copy-libarchive-runtime",
+    configResolved(config: { root: string; publicDir: string | false }) {
+      if (!config.publicDir) return;
+      const packageDist = resolve(
+        config.root,
+        "node_modules/libarchive.js/dist",
+      );
+      const target = resolve(config.publicDir, "libarchive");
+      mkdirSync(target, { recursive: true });
+      copyFileSync(
+        resolve(packageDist, "worker-bundle.js"),
+        resolve(target, "worker-bundle.js"),
+      );
+      copyFileSync(
+        resolve(packageDist, "libarchive.wasm"),
+        resolve(target, "libarchive.wasm"),
+      );
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
     react(),
+    copyLibarchiveRuntime(),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["icon.svg"],
@@ -26,7 +52,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2,wasm}"],
         navigateFallback: "/index.html",
       },
     }),
