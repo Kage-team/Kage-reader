@@ -2,6 +2,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   deleteBlob,
+  deleteBookmark,
+  getBookmark,
   getProgress,
   getBlob,
   getSeries,
@@ -9,6 +11,7 @@ import {
   listPages,
   listSeries,
   putChapter,
+  putBookmark,
   putPage,
   putProgress,
   putSeries,
@@ -89,15 +92,39 @@ describe("blob storage", () => {
       scrollRatio: 0,
       updatedAt: 1,
     });
+    await putBookmark({
+      schemaVersion: 2,
+      chapterId: chapter.id,
+      pageIndex: 0,
+      createdAt: 1,
+    });
     await saveBlob(page.storageKey, new Blob(["page"]));
 
     await deleteSeriesWithContents(series.id);
 
     await expect(getSeries(series.id)).resolves.toBeUndefined();
-    await expect(listSeries()).resolves.toEqual([unrelatedSeries]);
+    await expect(listSeries()).resolves.toEqual([
+      { ...unrelatedSeries, schemaVersion: 2 },
+    ]);
     await expect(listChapters(series.id)).resolves.toEqual([]);
     await expect(listPages(chapter.id)).resolves.toEqual([]);
     await expect(getProgress(chapter.id)).resolves.toBeUndefined();
+    await expect(getBookmark(chapter.id)).resolves.toBeUndefined();
     await expect(getBlob(page.storageKey)).resolves.toBeUndefined();
+  });
+
+  it("persists and removes a page bookmark", async () => {
+    const bookmark = {
+      schemaVersion: 2,
+      chapterId: "chapter:bookmark",
+      pageIndex: 3,
+      createdAt: 20,
+    };
+
+    await putBookmark(bookmark);
+    await expect(getBookmark(bookmark.chapterId)).resolves.toEqual(bookmark);
+
+    await deleteBookmark(bookmark.chapterId);
+    await expect(getBookmark(bookmark.chapterId)).resolves.toBeUndefined();
   });
 });

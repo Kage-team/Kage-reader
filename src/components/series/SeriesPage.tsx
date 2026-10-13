@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { Chapter, Series } from "../../lib/storage/types";
+import type { Chapter, Progress, Series } from "../../lib/storage/types";
 import {
   deleteSeriesWithContents,
   getSeries,
   listChapters,
+  listProgress,
   putSeries,
 } from "../../lib/storage/db";
 
@@ -13,6 +14,9 @@ export function SeriesPage() {
   const navigate = useNavigate();
   const [series, setSeries] = useState<Series | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [progressByChapter, setProgressByChapter] = useState<
+    Record<string, Progress>
+  >({});
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
@@ -26,12 +30,21 @@ export function SeriesPage() {
 
     void (async () => {
       const decodedId = decodeURIComponent(id);
-      const [seriesRecord, chapterRows] = await Promise.all([
+      const [seriesRecord, chapterRows, progressRows] = await Promise.all([
         getSeries(decodedId),
         listChapters(decodedId),
+        listProgress(),
       ]);
       setSeries(seriesRecord ?? null);
       setChapters(chapterRows);
+      const chapterIds = new Set(chapterRows.map((chapter) => chapter.id));
+      setProgressByChapter(
+        Object.fromEntries(
+          progressRows
+            .filter((progress) => chapterIds.has(progress.chapterId))
+            .map((progress) => [progress.chapterId, progress]),
+        ),
+      );
       setDraftTitle(seriesRecord?.title ?? "");
       setDraftTags(seriesRecord?.tags?.join(", ") ?? "");
     })();
@@ -92,7 +105,9 @@ export function SeriesPage() {
       navigate("/", { replace: true });
     } catch {
       setIsDeleting(false);
-      setActionError("Could not delete this series. Its records were left in the library.");
+      setActionError(
+        "Could not delete this series. Its records were left in the library.",
+      );
     }
   }
 
@@ -190,16 +205,28 @@ export function SeriesPage() {
           </form>
         ) : null}
 
-        {actionError ? <p role="alert" style={styles.errorText}>{actionError}</p> : null}
+        {actionError ? (
+          <p role="alert" style={styles.errorText}>
+            {actionError}
+          </p>
+        ) : null}
 
         <div style={styles.summaryCard}>
           <p style={styles.metaText}>Type: {series.type}</p>
           <p style={styles.metaText}>Chapters: {chapters.length}</p>
-          {series.writer ? <p style={styles.metaText}>Writer: {series.writer}</p> : null}
-          {series.ageRating ? <p style={styles.metaText}>Rating: {series.ageRating}</p> : null}
+          {series.writer ? (
+            <p style={styles.metaText}>Writer: {series.writer}</p>
+          ) : null}
+          {series.ageRating ? (
+            <p style={styles.metaText}>Rating: {series.ageRating}</p>
+          ) : null}
           {series.tags?.length ? (
             <ul style={styles.tagList} aria-label="Series tags">
-              {series.tags.map((tag) => <li key={tag} style={styles.tag}>{tag}</li>)}
+              {series.tags.map((tag) => (
+                <li key={tag} style={styles.tag}>
+                  {tag}
+                </li>
+              ))}
             </ul>
           ) : null}
         </div>
@@ -210,13 +237,42 @@ export function SeriesPage() {
           <ul style={styles.list}>
             {chapters.map((chapter) => (
               <li key={chapter.id} style={styles.listItem}>
-                <Link
-                  to={`/read/${encodeURIComponent(chapter.id)}`}
-                  style={styles.chapterLink}
-                >
-                  <span>{chapter.title}</span>
-                  <span>{chapter.pageCount} pages</span>
-                </Link>
+                {(() => {
+                  const progress = progressByChapter[chapter.id];
+                  const progressPercent = progress
+                    ? Math.min(
+                        100,
+                        ((progress.pageIndex + 1) / chapter.pageCount) * 100,
+                      )
+                    : 0;
+                  return (
+                    <Link
+                      to={`/read/${encodeURIComponent(chapter.id)}`}
+                      style={styles.chapterLink}
+                    >
+                      <span style={styles.chapterDetails}>
+                        <span>{chapter.title}</span>
+                        {progress ? (
+                          <span style={styles.progressLabel}>
+                            Continue · page {progress.pageIndex + 1} of{" "}
+                            {chapter.pageCount}
+                          </span>
+                        ) : null}
+                        {progress ? (
+                          <span style={styles.progressTrack} aria-hidden="true">
+                            <span
+                              style={{
+                                ...styles.progressFill,
+                                width: `${progressPercent}%`,
+                              }}
+                            />
+                          </span>
+                        ) : null}
+                      </span>
+                      <span>{chapter.pageCount} pages</span>
+                    </Link>
+                  );
+                })()}
               </li>
             ))}
           </ul>
@@ -357,6 +413,21 @@ const styles: Record<string, React.CSSProperties> = {
     textDecoration: "none",
     color: "inherit",
     padding: "16px 18px",
+  },
+  chapterDetails: { display: "grid", gap: 6, minWidth: 0 },
+  progressLabel: { color: "#afc1b2", fontSize: 13 },
+  progressTrack: {
+    display: "block",
+    width: "min(240px, 100%)",
+    height: 4,
+    overflow: "hidden",
+    borderRadius: 4,
+    background: "rgba(255, 255, 255, 0.12)",
+  },
+  progressFill: {
+    display: "block",
+    height: "100%",
+    background: "#8fc49a",
   },
   emptyText: {
     margin: 0,

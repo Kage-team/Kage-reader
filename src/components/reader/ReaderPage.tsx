@@ -4,10 +4,13 @@ import { resolveReaderMode } from "../../lib/reader/mode";
 import { getPreferences } from "../../lib/preferences/preferences";
 import {
   getBlob,
+  getBookmark,
   getChapter,
+  deleteBookmark,
   getProgress,
   getSeries,
   listPages,
+  putBookmark,
   putProgress,
   putSeries,
 } from "../../lib/storage/db";
@@ -16,11 +19,17 @@ import type { Chapter, Page, ReaderMode } from "../../lib/storage/types";
 export function ReaderPage() {
   const { chapterId } = useParams();
   const [chapter, setChapter] = useState<Chapter | null>(null);
+  const [loadedChapterId, setLoadedChapterId] = useState<string | null>(null);
   const [pages, setPages] = useState<Page[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageUrls, setPageUrls] = useState<string[]>([]);
   const [pageTexts, setPageTexts] = useState<string[]>([]);
   const [readerMode, setReaderMode] = useState<ReaderMode>("flip");
+  const [bookmarkPageIndex, setBookmarkPageIndex] = useState<number | null>(
+    null,
+  );
+  const [bookmarkError, setBookmarkError] = useState("");
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   useEffect(() => {
     if (!chapterId) {
@@ -29,14 +38,20 @@ export function ReaderPage() {
 
     void (async () => {
       const decodedChapterId = decodeURIComponent(chapterId);
-      const [chapterRecord, pageRows, progress] = await Promise.all([
+      setLoadedChapterId(null);
+      setCurrentPage(0);
+      setBookmarkPageIndex(null);
+      setZoomLevel(1);
+      const [chapterRecord, pageRows, progress, bookmark] = await Promise.all([
         getChapter(decodedChapterId),
         listPages(decodedChapterId),
         getProgress(decodedChapterId),
+        getBookmark(decodedChapterId),
       ]);
 
       setChapter(chapterRecord ?? null);
       setPages(pageRows);
+      setLoadedChapterId(decodedChapterId);
 
       if (chapterRecord) {
         const seriesRecord = await getSeries(chapterRecord.seriesId);
@@ -48,13 +63,20 @@ export function ReaderPage() {
         );
       }
 
-      if (
+      const restoredPageIndex =
         progress &&
         progress.pageIndex >= 0 &&
         progress.pageIndex < pageRows.length
-      ) {
-        setCurrentPage(progress.pageIndex);
-      }
+          ? progress.pageIndex
+          : 0;
+      setCurrentPage(restoredPageIndex);
+      setBookmarkPageIndex(
+        bookmark &&
+          bookmark.pageIndex >= 0 &&
+          bookmark.pageIndex < pageRows.length
+          ? bookmark.pageIndex
+          : null,
+      );
     })();
   }, [chapterId]);
 
@@ -108,7 +130,11 @@ export function ReaderPage() {
   }, [chapterId, pages]);
 
   useEffect(() => {
-    if (!chapterId || pages.length === 0) {
+    if (
+      !chapterId ||
+      loadedChapterId !== decodeURIComponent(chapterId) ||
+      pages.length === 0
+    ) {
       return;
     }
 
@@ -120,7 +146,7 @@ export function ReaderPage() {
       scrollRatio: 0,
       updatedAt: Date.now(),
     });
-  }, [chapterId, currentPage, pages.length]);
+  }, [chapterId, currentPage, loadedChapterId, pages.length]);
 
   useEffect(() => {
     if (!chapterId || pages.length === 0) {
@@ -158,6 +184,31 @@ export function ReaderPage() {
       preferredMode: nextMode,
       updatedAt: Date.now(),
     });
+  }
+
+  async function toggleBookmark(): Promise<void> {
+    if (!chapter || !chapterId || pages.length === 0) {
+      return;
+    }
+
+    const decodedChapterId = decodeURIComponent(chapterId);
+    try {
+      if (bookmarkPageIndex === currentIndex) {
+        await deleteBookmark(decodedChapterId);
+        setBookmarkPageIndex(null);
+      } else {
+        await putBookmark({
+          schemaVersion: 2,
+          chapterId: decodedChapterId,
+          pageIndex: currentIndex,
+          createdAt: Date.now(),
+        });
+        setBookmarkPageIndex(currentIndex);
+      }
+      setBookmarkError("");
+    } catch {
+      setBookmarkError("Could not update this bookmark.");
+    }
   }
 
   if (!chapter) {
@@ -217,6 +268,75 @@ export function ReaderPage() {
 
           {readerMode !== "webtoon" ? (
             <>
+              {currentPageMime.startsWith("image/") ? (
+                <div
+                  style={styles.zoomControls}
+                  role="group"
+                  aria-label="Page zoom"
+                >
+                  <button
+                    type="button"
+                    aria-label="Zoom out"
+                    disabled={zoomLevel <= 0.5}
+                    onClick={() =>
+                      setZoomLevel((level) => Math.max(0.5, level - 0.25))
+                    }
+                    style={styles.bookmarkButton}
+                  >
+                    -
+                  </button>
+                  <span style={styles.pageIndicator}>
+                    {Math.round(zoomLevel * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Zoom in"
+                    disabled={zoomLevel >= 2.5}
+                    onClick={() =>
+                      setZoomLevel((level) => Math.min(2.5, level + 0.25))
+                    }
+                    style={styles.bookmarkButton}
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Reset zoom"
+                    onClick={() => setZoomLevel(1)}
+                    style={styles.bookmarkButton}
+                  >
+                    Reset
+                  </button>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                aria-label={
+                  bookmarkPageIndex === currentIndex
+                    ? "Remove bookmark"
+                    : "Bookmark this page"
+                }
+                aria-pressed={bookmarkPageIndex === currentIndex}
+                onClick={() => void toggleBookmark()}
+                style={{
+                  ...styles.bookmarkButton,
+                  ...(bookmarkPageIndex === currentIndex
+                    ? styles.activeBookmarkButton
+                    : {}),
+                }}
+              >
+                {bookmarkPageIndex === currentIndex ? "★ Saved" : "☆ Bookmark"}
+              </button>
+              {bookmarkPageIndex !== null &&
+              bookmarkPageIndex !== currentIndex ? (
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(bookmarkPageIndex)}
+                  style={styles.bookmarkButton}
+                >
+                  Go to saved page
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() =>
@@ -257,6 +377,12 @@ export function ReaderPage() {
           )}
         </div>
 
+        {bookmarkError ? (
+          <p role="alert" style={styles.errorText}>
+            {bookmarkError}
+          </p>
+        ) : null}
+
         <div style={styles.viewerFrame}>
           {currentPageMime.startsWith("text/") ||
           currentPageMime.includes("html") ||
@@ -284,7 +410,11 @@ export function ReaderPage() {
             <img
               src={pageUrls[currentIndex]}
               alt={`${chapter.title} page ${currentIndex + 1}`}
-              style={styles.image}
+              style={{
+                ...styles.image,
+                transform: `scale(${zoomLevel})`,
+                transformOrigin: "center",
+              }}
             />
           ) : (
             <div style={styles.emptyViewer}>Loading page...</div>
@@ -354,6 +484,11 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
     flexWrap: "wrap",
   },
+  zoomControls: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  },
   modeButton: {
     border: "1px solid rgba(143, 196, 154, 0.3)",
     borderRadius: 999,
@@ -377,6 +512,20 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#0b1210",
     cursor: "pointer",
   },
+  bookmarkButton: {
+    border: "1px solid rgba(143, 196, 154, 0.3)",
+    borderRadius: 8,
+    padding: "8px 12px",
+    background: "transparent",
+    color: "#e6f2e8",
+    cursor: "pointer",
+  },
+  activeBookmarkButton: {
+    background: "rgba(236, 202, 105, 0.18)",
+    color: "#f0d985",
+    borderColor: "rgba(236, 202, 105, 0.55)",
+  },
+  errorText: { margin: 0, color: "#ffaaa0" },
   pageIndicator: {
     color: "#dfeae1",
     fontWeight: 700,
@@ -389,6 +538,8 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid rgba(143, 196, 154, 0.2)",
     borderRadius: 20,
     padding: 16,
+    minWidth: 0,
+    overflow: "auto",
   },
   image: {
     maxWidth: "100%",

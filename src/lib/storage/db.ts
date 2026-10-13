@@ -2,6 +2,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import {
   SCHEMA_VERSION,
   type Chapter,
+  type Bookmark,
   type Meta,
   type Page,
   type Progress,
@@ -29,6 +30,7 @@ interface KageDB extends DBSchema {
     indexes: { "by-chapter": string };
   };
   progress: { key: string; value: Progress };
+  bookmarks: { key: string; value: Bookmark };
   blobs: {
     key: string;
     value: { key: string; blob: ArrayBuffer; type: string };
@@ -56,14 +58,23 @@ export function openKageDb(): Promise<IDBPDatabase<KageDB>> {
           db.createObjectStore("progress", { keyPath: "chapterId" });
           db.createObjectStore("blobs", { keyPath: "key" });
         }
+        if (oldVersion < 2) {
+          db.createObjectStore("bookmarks", { keyPath: "chapterId" });
+        }
       },
     }).then(async (db) => {
       const existing = await db.get("meta", "singleton");
       if (!existing) {
         await db.put("meta", { schemaVersion: SCHEMA_VERSION }, "singleton");
-      } else if (existing.schemaVersion !== SCHEMA_VERSION) {
+      } else if (existing.schemaVersion > SCHEMA_VERSION) {
         throw new Error(
-          `Unsupported schema ${existing.schemaVersion}; expected ${SCHEMA_VERSION}. Add a migration.`,
+          `Unsupported schema ${existing.schemaVersion}; current schema is ${SCHEMA_VERSION}.`,
+        );
+      } else if (existing.schemaVersion < SCHEMA_VERSION) {
+        await db.put(
+          "meta",
+          { ...existing, schemaVersion: SCHEMA_VERSION },
+          "singleton",
         );
       }
       return db;
@@ -230,7 +241,7 @@ export async function deleteSeriesWithContents(
   );
   const pages = pagesByChapter.flat();
   const transaction = db.transaction(
-    ["series", "chapters", "pages", "progress", "blobs"],
+    ["series", "chapters", "pages", "progress", "blobs", "bookmarks"],
     "readwrite",
   );
   const operations: Promise<unknown>[] = [
@@ -241,6 +252,7 @@ export async function deleteSeriesWithContents(
     operations.push(
       transaction.objectStore("chapters").delete(chapter.id),
       transaction.objectStore("progress").delete(chapter.id),
+      transaction.objectStore("bookmarks").delete(chapter.id),
     );
   }
   for (const page of pages) {
@@ -326,6 +338,23 @@ export async function deleteProgress(chapterId: string): Promise<void> {
   await db.delete("progress", chapterId);
 }
 
+export async function putBookmark(bookmark: Bookmark): Promise<void> {
+  const db = await openKageDb();
+  await db.put("bookmarks", { ...bookmark, schemaVersion: SCHEMA_VERSION });
+}
+
+export async function getBookmark(
+  chapterId: string,
+): Promise<Bookmark | undefined> {
+  const db = await openKageDb();
+  return db.get("bookmarks", chapterId);
+}
+
+export async function deleteBookmark(chapterId: string): Promise<void> {
+  const db = await openKageDb();
+  await db.delete("bookmarks", chapterId);
+}
+
 export async function wipeDatabase(): Promise<void> {
   const db = await openKageDb();
   await Promise.all([
@@ -334,6 +363,7 @@ export async function wipeDatabase(): Promise<void> {
     db.clear("pages"),
     db.clear("progress"),
     db.clear("blobs"),
+    db.clear("bookmarks"),
   ]);
   await db.put("meta", { schemaVersion: SCHEMA_VERSION }, "singleton");
 }

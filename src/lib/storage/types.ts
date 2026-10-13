@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export type SeriesType = "manga" | "manhwa" | "manhua" | "oel" | "novel";
 export type ReaderMode = "flip" | "webtoon" | "novel";
@@ -51,4 +51,11 @@ export type Progress = {
   pageIndex: number;
   scrollRatio: number;
   updatedAt: number;
+};
+
+export type Bookmark = {
+  schemaVersion: number;
+  chapterId: string;
+  pageIndex: number;
+  createdAt: number;
 };
