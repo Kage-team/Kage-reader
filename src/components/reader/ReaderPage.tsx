@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { resolveReaderMode } from "../../lib/reader/mode";
+import { getPreferences } from "../../lib/preferences/preferences";
 import {
   getBlob,
   getChapter,
@@ -39,7 +40,12 @@ export function ReaderPage() {
 
       if (chapterRecord) {
         const seriesRecord = await getSeries(chapterRecord.seriesId);
-        setReaderMode(resolveReaderMode(seriesRecord?.preferredMode));
+        setReaderMode(
+          resolveReaderMode(
+            seriesRecord?.preferredMode,
+            getPreferences().defaultReaderMode,
+          ),
+        );
       }
 
       if (
@@ -171,6 +177,7 @@ export function ReaderPage() {
   const currentIndex = Math.min(Math.max(currentPage, 0), totalPages - 1);
   const currentPageMime = pages[currentIndex]?.mime ?? "";
   const currentTextPage = pageTexts[currentIndex] ?? "";
+  const textScale = getPreferences().textScale;
   const modeOptions: ReaderMode[] = ["flip", "webtoon", "novel"];
 
   return (
@@ -255,7 +262,7 @@ export function ReaderPage() {
           currentPageMime.includes("html") ||
           currentPageMime.includes("xml") ? (
             <article
-              style={styles.textPage}
+              style={{ ...styles.textPage, fontSize: `${textScale}%` }}
               dangerouslySetInnerHTML={{ __html: currentTextPage }}
             />
           ) : readerMode === "webtoon" ? (

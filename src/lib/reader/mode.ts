@@ -2,9 +2,12 @@ import type { ReaderMode } from "../storage/types";
 
 const READER_MODES: ReaderMode[] = ["flip", "webtoon", "novel"];
 
-export function resolveReaderMode(mode?: ReaderMode): ReaderMode {
+export function resolveReaderMode(
+  mode?: ReaderMode,
+  fallback: ReaderMode = "flip",
+): ReaderMode {
   if (!mode || !READER_MODES.includes(mode)) {
-    return "flip";
+    return READER_MODES.includes(fallback) ? fallback : "flip";
   }
 
   return mode;

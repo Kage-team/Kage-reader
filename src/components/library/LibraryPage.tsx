@@ -81,13 +81,18 @@ export function LibraryPage() {
             <p style={styles.kicker}>Library</p>
             <h1 style={styles.title}>Your collection</h1>
           </div>
-          <Link
-            to="/"
-            style={styles.linkButton}
-            onClick={() => void loadEntries()}
-          >
-            Refresh
-          </Link>
+          <div style={styles.headerActions}>
+            <Link to="/settings" style={styles.linkButton}>
+              Settings
+            </Link>
+            <button
+              type="button"
+              style={styles.secondaryButton}
+              onClick={() => void loadEntries()}
+            >
+              Refresh
+            </button>
+          </div>
         </header>
 
         <label
@@ -216,6 +221,11 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "space-between",
     gap: 16,
   },
+  headerActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+  },
   kicker: {
     margin: 0,
     letterSpacing: "0.16em",
@@ -234,6 +244,15 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 999,
     padding: "10px 18px",
     fontWeight: 700,
+  },
+  secondaryButton: {
+    color: "#e6f2e8",
+    background: "rgba(255, 255, 255, 0.06)",
+    border: "1px solid rgba(143, 196, 154, 0.25)",
+    borderRadius: 999,
+    padding: "10px 18px",
+    fontWeight: 700,
+    cursor: "pointer",
   },
   grid: {
     display: "grid",
