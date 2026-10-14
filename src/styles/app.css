@@ -1084,10 +1084,6 @@ select:focus-visible {
     min-width: 0;
   }
 
-  .readerToolbar .readerFitSelect {
-    width: 96px !important;
-  }
-
   .readerToolbar .readerPageScrubber {
     width: 100% !important;
     flex: 1 0 100%;

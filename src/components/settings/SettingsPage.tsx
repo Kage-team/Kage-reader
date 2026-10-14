@@ -592,25 +592,6 @@ export function SettingsPage({
           </label>
 
           <label style={styles.field}>
-            <span style={styles.fieldLabel}>Comic page fit</span>
-            <select
-              aria-label="Default comic page fit"
-              value={preferences.readerPageFit}
-              onChange={(event) =>
-                updatePreferences({
-                  readerPageFit: event.currentTarget
-                    .value as Preferences["readerPageFit"],
-                })
-              }
-              style={styles.select}
-            >
-              <option value="screen">Fit screen</option>
-              <option value="width">Fit width</option>
-              <option value="height">Fit height</option>
-            </select>
-          </label>
-
-          <label style={styles.field}>
             <span style={styles.fieldLabel}>Default comic zoom</span>
             <span style={styles.rangeRow}>
               <input

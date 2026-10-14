@@ -595,6 +595,52 @@ export function ReaderPage() {
     }, 350);
   }
 
+  function zoomAtPoint(
+    nextZoom: number,
+    clientX: number,
+    clientY: number,
+  ): void {
+    const frame = viewerFrameRef.current;
+    if (!frame) {
+      changeZoom(nextZoom);
+      return;
+    }
+
+    const page =
+      document
+        .elementFromPoint(clientX, clientY)
+        ?.closest<HTMLElement>("[data-reader-page-index]") ??
+      frame.querySelector<HTMLElement>(
+        `[data-reader-page-index="${currentIndex}"]`,
+      );
+    if (!page) {
+      changeZoom(nextZoom);
+      return;
+    }
+
+    const before = page.getBoundingClientRect();
+    const pointX = Math.min(
+      1,
+      Math.max(0, (clientX - before.left) / Math.max(1, before.width)),
+    );
+    const pointY = Math.min(
+      1,
+      Math.max(0, (clientY - before.top) / Math.max(1, before.height)),
+    );
+    const minimumZoom = getPreferences().disableZoomOut ? 1 : 0.5;
+    const clampedZoom = Math.min(3, Math.max(minimumZoom, nextZoom));
+    changeZoom(clampedZoom);
+
+    requestAnimationFrame(() => {
+      const after = page.getBoundingClientRect();
+      frame.scrollBy({
+        left: after.left + after.width * pointX - clientX,
+        top: after.top + after.height * pointY - clientY,
+        behavior: "instant",
+      });
+    });
+  }
+
   async function persistReaderMode(nextMode: ReaderMode): Promise<void> {
     if (!chapter) {
       return;
@@ -777,10 +823,12 @@ export function ReaderPage() {
       const [first, second] = Array.from(pointerPositionsRef.current.values());
       const start = pinchStartRef.current;
       if (start?.distance) {
-        changeZoom(
+        zoomAtPoint(
           start.zoom *
             (Math.hypot(second.x - first.x, second.y - first.y) /
               start.distance),
+          (first.x + second.x) / 2,
+          (first.y + second.y) / 2,
         );
       }
       return;
@@ -793,6 +841,9 @@ export function ReaderPage() {
     if (zoomLevel > 1.01) {
       event.preventDefault();
       frame.scrollBy({ left: -deltaX, top: -deltaY, behavior: "instant" });
+    } else if (readerMode === "webtoon") {
+      event.preventDefault();
+      frame.scrollBy({ top: -deltaY, behavior: "instant" });
     } else if (readerMode === "flip") {
       event.preventDefault();
     }
@@ -830,7 +881,11 @@ export function ReaderPage() {
   function handleReaderWheel(event: React.WheelEvent<HTMLDivElement>): void {
     if (!event.ctrlKey && !event.metaKey) return;
     event.preventDefault();
-    changeZoom(zoomLevel + (event.deltaY < 0 ? 0.1 : -0.1));
+    zoomAtPoint(
+      zoomLevel + (event.deltaY < 0 ? 0.1 : -0.1),
+      event.clientX,
+      event.clientY,
+    );
   }
 
   function toggleImmersiveMode(): void {
@@ -1074,26 +1129,6 @@ export function ReaderPage() {
     const fitWidth = Math.min(normalizedReaderWidth, viewportWidth);
     const baseStyle = isContinuous ? styles.webtoonImage : styles.image;
     if (isContinuous) {
-      return {
-        ...baseStyle,
-        width: `${fitWidth * zoom}px`,
-        height: "auto",
-        maxWidth: "none",
-        maxHeight: "none",
-      };
-    }
-
-    if (readerPreferences.readerPageFit === "height") {
-      return {
-        ...baseStyle,
-        width: "auto",
-        height: `${viewportSize.height * zoom}px`,
-        maxWidth: "none",
-        maxHeight: "none",
-      };
-    }
-
-    if (readerPreferences.readerPageFit === "width") {
       return {
         ...baseStyle,
         width: `${fitWidth * zoom}px`,
@@ -1392,22 +1427,6 @@ export function ReaderPage() {
               >
                 <RotateCcw size={15} />
               </button>
-              <select
-                aria-label="Page fit"
-                value={readerPreferences.readerPageFit}
-                onChange={(event) =>
-                  updateReaderPreferences({
-                    readerPageFit: event.currentTarget
-                      .value as Preferences["readerPageFit"],
-                  })
-                }
-                className="readerFitSelect"
-                style={styles.settingsSelect}
-              >
-                <option value="screen">Fit screen</option>
-                <option value="width">Fit width</option>
-                <option value="height">Fit height</option>
-              </select>
             </div>
           ) : null}
 
@@ -2012,34 +2031,6 @@ export function ReaderPage() {
                   </label>
 
                   <h3 className="readerSettingsGroupTitle">Page display</h3>
-                  <label style={styles.settingsDirectionRow}>
-                    <span style={styles.settingsSliderLabel}>
-                      Paginated fit
-                    </span>
-                    <select
-                      aria-label="Comic image fit"
-                      value={readerPreferences.readerPageFit}
-                      disabled={isComicContinuous}
-                      onChange={(event) =>
-                        updateReaderPreferences({
-                          readerPageFit: event.currentTarget
-                            .value as Preferences["readerPageFit"],
-                        })
-                      }
-                      style={styles.settingsSelect}
-                    >
-                      <option value="screen">Fit screen</option>
-                      <option value="width">Fit width</option>
-                      <option value="height">Fit height</option>
-                    </select>
-                  </label>
-                  {isComicContinuous ? (
-                    <span style={styles.settingsHint}>
-                      Web mode keeps every page the same width. Fit modes apply
-                      in paginated reading.
-                    </span>
-                  ) : null}
-
                   <label style={styles.settingsToggleRow}>
                     <div>
                       <div style={styles.settingsToggleHeading}>
@@ -2339,8 +2330,7 @@ export function ReaderPage() {
               : isImmersive
                 ? "1px solid rgba(255,255,255,0.12)"
                 : styles.viewerFrame.border,
-            touchAction:
-              readerMode === "flip" || zoomLevel > 1.01 ? "none" : "pan-y",
+            touchAction: isNovel ? "pan-y" : "none",
           }}
         >
           {isNovelContinuous ? (

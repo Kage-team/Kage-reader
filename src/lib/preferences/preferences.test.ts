@@ -58,7 +58,6 @@ describe("preferences", () => {
         immersiveMode: true,
         readerAutoHide: false,
         readerAutoHideDelay: 4000,
-        readerPageFit: "width",
         readerZoom: 140,
         disableZoomOut: true,
         readerTapBehavior: "page-turn",
@@ -90,7 +89,6 @@ describe("preferences", () => {
       immersiveMode: true,
       readerAutoHide: false,
       readerAutoHideDelay: 4000,
-      readerPageFit: "width",
       readerZoom: 140,
       disableZoomOut: true,
       readerTapBehavior: "page-turn",
@@ -113,7 +111,6 @@ describe("preferences", () => {
     const storage = createStorage(
       JSON.stringify({
         readerAutoHideDelay: 8750,
-        readerPageFit: "invalid",
         readerZoom: 327,
         disableZoomOut: "invalid",
         readerTapBehavior: "invalid",
@@ -123,7 +120,6 @@ describe("preferences", () => {
     expect(getPreferences(storage)).toMatchObject({
       readerAutoHide: true,
       readerAutoHideDelay: 6000,
-      readerPageFit: "screen",
       readerZoom: 300,
       disableZoomOut: false,
       readerTapBehavior: "controls",
