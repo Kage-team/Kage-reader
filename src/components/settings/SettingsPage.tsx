@@ -539,7 +539,7 @@ export function SettingsPage({
               <span style={styles.fieldLabel}>Hide reader controls</span>
               <span style={styles.description}>
                 Fade the header and reading dock after you stop interacting. Tap
-                or move to bring them back.
+                to bring them back.
               </span>
             </span>
             <input
@@ -569,6 +569,25 @@ export function SettingsPage({
               <option value={2500}>2.5 seconds</option>
               <option value={4000}>4 seconds</option>
               <option value={6000}>6 seconds</option>
+            </select>
+          </label>
+
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>Reader tap behavior</span>
+            <select
+              aria-label="Reader tap behavior"
+              value={preferences.readerTapBehavior}
+              onChange={(event) =>
+                updatePreferences({
+                  readerTapBehavior: event.currentTarget
+                    .value as Preferences["readerTapBehavior"],
+                })
+              }
+              style={styles.select}
+            >
+              <option value="controls">Tap to reveal controls</option>
+              <option value="toggle-controls">Tap to toggle controls</option>
+              <option value="page-turn">Tap page edges to turn</option>
             </select>
           </label>
 

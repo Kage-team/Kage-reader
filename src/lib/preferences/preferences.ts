@@ -21,6 +21,7 @@ export type NovelReadingTheme =
 export type NovelTextAlignment = "left" | "justify";
 export type NovelColumnWidth = "narrow" | "standard" | "wide" | "full";
 export type ReaderPageFit = "screen" | "width" | "height";
+export type ReaderTapBehavior = "controls" | "toggle-controls" | "page-turn";
 const NOVEL_FONT_FAMILIES: NovelFontFamily[] = [
   "literary",
   "modern",
@@ -93,6 +94,7 @@ export type Preferences = {
   readerAutoHideDelay: number;
   readerPageFit: ReaderPageFit;
   readerZoom: number;
+  readerTapBehavior: ReaderTapBehavior;
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -120,6 +122,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   readerAutoHideDelay: 2500,
   readerPageFit: "screen",
   readerZoom: 100,
+  readerTapBehavior: "controls",
 };
 
 function isReaderMode(value: unknown): value is ReaderMode {
@@ -270,6 +273,12 @@ function normalizePreferences(value: unknown): Preferences {
           Math.max(50, Math.round(Number(candidate.readerZoom) / 10) * 10),
         )
       : DEFAULT_PREFERENCES.readerZoom,
+    readerTapBehavior:
+      candidate.readerTapBehavior === "controls" ||
+      candidate.readerTapBehavior === "toggle-controls" ||
+      candidate.readerTapBehavior === "page-turn"
+        ? candidate.readerTapBehavior
+        : DEFAULT_PREFERENCES.readerTapBehavior,
   };
 }
 

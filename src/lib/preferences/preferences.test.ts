@@ -60,6 +60,7 @@ describe("preferences", () => {
         readerAutoHideDelay: 4000,
         readerPageFit: "width",
         readerZoom: 140,
+        readerTapBehavior: "page-turn",
       },
       storage,
     );
@@ -90,6 +91,7 @@ describe("preferences", () => {
       readerAutoHideDelay: 4000,
       readerPageFit: "width",
       readerZoom: 140,
+      readerTapBehavior: "page-turn",
     });
     expect(getPreferences(storage)).toEqual(updated);
   });
@@ -111,6 +113,7 @@ describe("preferences", () => {
         readerAutoHideDelay: 8750,
         readerPageFit: "invalid",
         readerZoom: 327,
+        readerTapBehavior: "invalid",
       }),
     );
 
@@ -119,6 +122,7 @@ describe("preferences", () => {
       readerAutoHideDelay: 6000,
       readerPageFit: "screen",
       readerZoom: 300,
+      readerTapBehavior: "controls",
     });
   });
 });

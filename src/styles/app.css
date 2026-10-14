@@ -818,6 +818,17 @@ select:focus-visible {
   isolation: isolate;
 }
 
+.readerFocusActive .readerViewport {
+  background: #000 !important;
+}
+
+.readerFocusActive .readerHeader,
+.readerFocusActive .readerToolbar {
+  border-color: transparent;
+  background: #050606bd;
+  box-shadow: none;
+}
+
 .readerHeader {
   position: fixed !important;
   z-index: 22;
