@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   AlignJustify,
   AlignLeft,
@@ -14,6 +14,7 @@ import {
   EyeOff,
   List,
   Minimize2,
+  MoreHorizontal,
   Minus,
   PanelsTopLeft,
   Plus,
@@ -24,6 +25,11 @@ import {
   X,
 } from "lucide-react";
 import { resolveReaderMode } from "../../lib/reader/mode";
+import { sanitizeReaderHtml } from "../../lib/reader/html";
+import {
+  translateAtFocalPoint,
+  type ZoomTransform,
+} from "../../lib/reader/zoom";
 import {
   getPreferences,
   savePreferences,
@@ -31,24 +37,27 @@ import {
 } from "../../lib/preferences/preferences";
 import {
   getBlob,
-  getBookmark,
+  getBookmarksForChapter,
   getChapter,
   deleteBookmark,
   getProgress,
   getSeries,
   listChapters,
+  listBookmarks,
   listPages,
   putBookmark,
   putProgress,
   putSeries,
 } from "../../lib/storage/db";
 import type {
+  Bookmark as BookmarkRecord,
   Chapter,
   Page,
   ReaderMode,
   ReadingDirection,
   SeriesType,
 } from "../../lib/storage/types";
+import { SCHEMA_VERSION } from "../../lib/storage/types";
 
 const NOVEL_THEME_OPTIONS = [
   { value: "oled", label: "OLED", swatch: "#050505", color: "#f2f0eb" },
@@ -116,6 +125,7 @@ function plainTextPreview(markup: string): string {
 
 export function ReaderPage() {
   const { chapterId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [seriesType, setSeriesType] = useState<SeriesType | null>(null);
@@ -136,13 +146,22 @@ export function ReaderPage() {
   const [pageUrls, setPageUrls] = useState<Array<string | null>>([]);
   const [pageTexts, setPageTexts] = useState<Array<string | null>>([]);
   const [readerMode, setReaderMode] = useState<ReaderMode>("flip");
-  const [bookmarkPageIndex, setBookmarkPageIndex] = useState<number | null>(
-    null,
-  );
+  const [bookmarks, setBookmarks] = useState<BookmarkRecord[]>([]);
+  const [bookmarkDrawerEntries, setBookmarkDrawerEntries] = useState<
+    Array<{
+      bookmark: BookmarkRecord;
+      chapterTitle: string;
+      seriesTitle: string;
+    }>
+  >([]);
+  const [isBookmarkDrawerOpen, setIsBookmarkDrawerOpen] = useState(false);
   const [bookmarkError, setBookmarkError] = useState("");
-  const [zoomLevel, setZoomLevel] = useState(
-    () => getPreferences().readerZoom / 100,
-  );
+  const [zoomTransform, setZoomTransform] = useState<ZoomTransform>({
+    scale: 1,
+    translateX: 0,
+    translateY: 0,
+  });
+  const zoomLevel = zoomTransform.scale;
   const [viewportSize, setViewportSize] = useState(() => ({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -159,12 +178,28 @@ export function ReaderPage() {
   );
   const readerRootRef = useRef<HTMLElement>(null);
   const viewerFrameRef = useRef<HTMLDivElement>(null);
+  const changeZoomRef = useRef<(nextZoom: number) => void>(() => undefined);
   const pointerPositionsRef = useRef(
     new Map<number, { x: number; y: number }>(),
   );
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const ignoreTapUntilRef = useRef(0);
-  const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(null);
+  const pinchStartRef = useRef<{
+    distance: number;
+    transform: ZoomTransform;
+    midpointX: number;
+    midpointY: number;
+  } | null>(null);
+  const lastTouchTapRef = useRef<{ at: number; x: number; y: number } | null>(
+    null,
+  );
+  const pendingTapRef = useRef<number | undefined>(undefined);
+  const lastPointerTypeRef = useRef<string | null>(null);
+  const comicChapterPrefetchRef = useRef<{
+    chapterId: string;
+    blobs: Promise<Map<string, Blob | undefined>>;
+  } | null>(null);
+  const autoAdvancedChapterRef = useRef<string | null>(null);
   const zoomPersistTimerRef = useRef<number | undefined>(undefined);
   const chromeHideTimerRef = useRef<number | undefined>(undefined);
   const novelProgressSavedAtRef = useRef(0);
@@ -183,16 +218,22 @@ export function ReaderPage() {
 
     void (async () => {
       const decodedChapterId = decodeURIComponent(chapterId);
+      viewerFrameRef.current?.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "instant",
+      });
       setLoadedChapterId(null);
       setCurrentPage(0);
-      setBookmarkPageIndex(null);
-      setZoomLevel(getPreferences().readerZoom / 100);
-      const [chapterRecord, pageRows, progress, bookmark] = await Promise.all([
-        getChapter(decodedChapterId),
-        listPages(decodedChapterId),
-        getProgress(decodedChapterId),
-        getBookmark(decodedChapterId),
-      ]);
+      setBookmarks([]);
+      setZoomTransform({ scale: 1, translateX: 0, translateY: 0 });
+      const [chapterRecord, pageRows, progress, chapterBookmarks] =
+        await Promise.all([
+          getChapter(decodedChapterId),
+          listPages(decodedChapterId),
+          getProgress(decodedChapterId),
+          getBookmarksForChapter(decodedChapterId),
+        ]);
 
       setChapter(chapterRecord ?? null);
       setSeriesType(null);
@@ -234,16 +275,33 @@ export function ReaderPage() {
         progress.pageIndex < pageRows.length
           ? progress.pageIndex
           : 0;
-      setCurrentPage(restoredPageIndex);
-      setBookmarkPageIndex(
-        bookmark &&
-          bookmark.pageIndex >= 0 &&
-          bookmark.pageIndex < pageRows.length
-          ? bookmark.pageIndex
-          : null,
+      setBookmarks(chapterBookmarks);
+      const routeState = location.state as {
+        bookmarkPageIndex?: number;
+      } | null;
+      const requestedBookmarkPage = routeState?.bookmarkPageIndex;
+      const hasRequestedBookmarkPage =
+        typeof requestedBookmarkPage === "number" &&
+        Number.isInteger(requestedBookmarkPage) &&
+        requestedBookmarkPage >= 0 &&
+        requestedBookmarkPage < pageRows.length;
+      setCurrentPage(
+        hasRequestedBookmarkPage ? requestedBookmarkPage : restoredPageIndex,
       );
     })();
-  }, [chapterId]);
+  }, [chapterId, location.state]);
+
+  useEffect(() => {
+    setZoomTransform({ scale: 1, translateX: 0, translateY: 0 });
+    pointerPositionsRef.current.clear();
+    swipeStartRef.current = null;
+    pinchStartRef.current = null;
+    lastTouchTapRef.current = null;
+    if (pendingTapRef.current !== undefined) {
+      window.clearTimeout(pendingTapRef.current);
+      pendingTapRef.current = undefined;
+    }
+  }, [currentPage, chapterId]);
 
   useEffect(() => {
     const shouldAutoHide = readerPreferences.readerAutoHide || isImmersive;
@@ -251,6 +309,7 @@ export function ReaderPage() {
       !shouldAutoHide ||
       isReaderSettingsOpen ||
       isPageGridOpen ||
+      isBookmarkDrawerOpen ||
       isContentsOpen;
     if (keepChromeVisible) {
       setIsUiVisible(true);
@@ -277,6 +336,7 @@ export function ReaderPage() {
     chapterId,
     isContentsOpen,
     isPageGridOpen,
+    isBookmarkDrawerOpen,
     isReaderSettingsOpen,
     isImmersive,
     pages.length,
@@ -289,12 +349,19 @@ export function ReaderPage() {
       if (zoomPersistTimerRef.current !== undefined) {
         window.clearTimeout(zoomPersistTimerRef.current);
       }
+      if (pendingTapRef.current !== undefined) {
+        window.clearTimeout(pendingTapRef.current);
+      }
     },
     [],
   );
 
   useEffect(() => {
-    if (!chapterId || pages.length === 0) {
+    if (
+      !chapterId ||
+      loadedChapterId !== decodeURIComponent(chapterId) ||
+      pages.length === 0
+    ) {
       setPageUrls([]);
       setPageTexts([]);
       return;
@@ -304,11 +371,20 @@ export function ReaderPage() {
     let objectUrls: string[] = [];
 
     void (async () => {
+      const decodedChapterId = decodeURIComponent(chapterId);
+      const prefetched =
+        comicChapterPrefetchRef.current?.chapterId === decodedChapterId
+          ? comicChapterPrefetchRef.current.blobs
+          : undefined;
+      if (prefetched) comicChapterPrefetchRef.current = null;
+      const prefetchedBlobs = prefetched ? await prefetched : undefined;
       const loadedUrls: Array<string | null> = [];
       const loadedTexts: Array<string | null> = [];
 
       for (const page of pages) {
-        const blob = await getBlob(page.storageKey);
+        const blob =
+          prefetchedBlobs?.get(page.storageKey) ??
+          (await getBlob(page.storageKey));
         if (!blob) {
           loadedUrls.push(null);
           loadedTexts.push(null);
@@ -323,7 +399,10 @@ export function ReaderPage() {
         }
 
         loadedUrls.push(null);
-        loadedTexts.push(await blob.text());
+        const text = await blob.text();
+        loadedTexts.push(
+          isTextMime(page.mime) ? sanitizeReaderHtml(text) : text,
+        );
       }
 
       if (isCancelled) {
@@ -342,7 +421,46 @@ export function ReaderPage() {
       isCancelled = true;
       objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [chapterId, pages]);
+  }, [chapterId, loadedChapterId, pages]);
+
+  useEffect(() => {
+    if (
+      !chapter ||
+      readerMode !== "webtoon" ||
+      !readerPreferences.comicInfiniteScroll
+    ) {
+      return;
+    }
+
+    const currentChapterIndex = seriesChapters.findIndex(
+      (entry) => entry.id === chapter.id,
+    );
+    const nextChapter = seriesChapters[currentChapterIndex + 1];
+    if (
+      !nextChapter ||
+      comicChapterPrefetchRef.current?.chapterId === nextChapter.id
+    ) {
+      return;
+    }
+
+    const blobs = listPages(nextChapter.id)
+      .then(async (chapterPages) => {
+        const entries = await Promise.all(
+          chapterPages.map(
+            async (page) =>
+              [page.storageKey, await getBlob(page.storageKey)] as const,
+          ),
+        );
+        return new Map(entries);
+      })
+      .catch(() => new Map<string, Blob | undefined>());
+    comicChapterPrefetchRef.current = { chapterId: nextChapter.id, blobs };
+  }, [
+    chapter,
+    readerMode,
+    readerPreferences.comicInfiniteScroll,
+    seriesChapters,
+  ]);
 
   useEffect(() => {
     if (
@@ -368,7 +486,7 @@ export function ReaderPage() {
             const blob = await getBlob(page.storageKey);
             if (!blob) continue;
             if (isTextMime(page.mime)) {
-              textParts.push(await blob.text());
+              textParts.push(sanitizeReaderHtml(await blob.text()));
             } else if (page.mime.startsWith("image/")) {
               const url = URL.createObjectURL(blob);
               objectUrls.push(url);
@@ -503,19 +621,24 @@ export function ReaderPage() {
         setIsPageGridOpen((current) => !current);
         return;
       }
+      if (event.key.toLowerCase() === "b") {
+        event.preventDefault();
+        void openBookmarkDrawer();
+        return;
+      }
       if (event.key === "+" || event.key === "=" || event.key === "Add") {
         event.preventDefault();
-        changeZoom(zoomLevel + 0.1);
+        changeZoomRef.current(zoomLevel + 0.1);
         return;
       }
       if (event.key === "-") {
         event.preventDefault();
-        changeZoom(zoomLevel - 0.1);
+        changeZoomRef.current(zoomLevel - 0.1);
         return;
       }
       if (event.key === "0") {
         event.preventDefault();
-        changeZoom(1);
+        changeZoomRef.current(1);
         return;
       }
       if (event.key.toLowerCase() === "f") {
@@ -578,10 +701,7 @@ export function ReaderPage() {
     return next;
   }
 
-  function changeZoom(nextZoom: number): void {
-    const minimumZoom = getPreferences().disableZoomOut ? 1 : 0.5;
-    const clampedZoom = Math.min(3, Math.max(minimumZoom, nextZoom));
-    setZoomLevel(clampedZoom);
+  function persistZoom(scale: number): void {
     if (zoomPersistTimerRef.current !== undefined) {
       window.clearTimeout(zoomPersistTimerRef.current);
     }
@@ -589,11 +709,59 @@ export function ReaderPage() {
       const preferences = getPreferences();
       const nextPreferences = savePreferences({
         ...preferences,
-        readerZoom: Math.round(clampedZoom * 100),
+        readerZoom: Math.round(scale * 100),
       });
       setReaderPreferences(nextPreferences);
     }, 350);
   }
+
+  function clampZoomTranslation(
+    scale: number,
+    translateX: number,
+    translateY: number,
+  ): Pick<ZoomTransform, "translateX" | "translateY"> {
+    if (scale <= 1) return { translateX: 0, translateY: 0 };
+    const frame = viewerFrameRef.current;
+    const target = frame?.querySelector<HTMLElement>(
+      "[data-reader-zoom-target]",
+    );
+    if (!frame || !target) return { translateX, translateY };
+
+    const frameRect = frame.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const baseLeft =
+      targetRect.left - frameRect.left - zoomTransform.translateX;
+    const baseTop = targetRect.top - frameRect.top - zoomTransform.translateY;
+    const baseWidth = targetRect.width / zoomTransform.scale;
+    const baseHeight = targetRect.height / zoomTransform.scale;
+    const minX = Math.min(0, frame.clientWidth - baseLeft - baseWidth * scale);
+    const maxX = Math.max(0, -baseLeft);
+    const minY = Math.min(0, frame.clientHeight - baseTop - baseHeight * scale);
+    const maxY = Math.max(0, -baseTop);
+
+    return {
+      translateX: Math.min(maxX, Math.max(minX, translateX)),
+      translateY: Math.min(maxY, Math.max(minY, translateY)),
+    };
+  }
+
+  function changeZoom(nextZoom: number): void {
+    const scale = Math.min(4, Math.max(1, nextZoom));
+    const translation =
+      scale === 1
+        ? { translateX: 0, translateY: 0 }
+        : clampZoomTranslation(
+            scale,
+            zoomTransform.translateX,
+            zoomTransform.translateY,
+          );
+    setZoomTransform({ scale, ...translation });
+    persistZoom(scale);
+  }
+
+  useEffect(() => {
+    changeZoomRef.current = changeZoom;
+  });
 
   function zoomAtPoint(
     nextZoom: number,
@@ -601,44 +769,45 @@ export function ReaderPage() {
     clientY: number,
   ): void {
     const frame = viewerFrameRef.current;
-    if (!frame) {
+    const target = frame?.querySelector<HTMLElement>(
+      "[data-reader-zoom-target]",
+    );
+    if (!frame || !target) {
       changeZoom(nextZoom);
       return;
     }
 
-    const page =
-      document
-        .elementFromPoint(clientX, clientY)
-        ?.closest<HTMLElement>("[data-reader-page-index]") ??
-      frame.querySelector<HTMLElement>(
-        `[data-reader-page-index="${currentIndex}"]`,
-      );
-    if (!page) {
-      changeZoom(nextZoom);
+    const scale = Math.min(4, Math.max(1, nextZoom));
+    if (scale === 1) {
+      setZoomTransform({ scale: 1, translateX: 0, translateY: 0 });
+      persistZoom(scale);
       return;
     }
 
-    const before = page.getBoundingClientRect();
-    const pointX = Math.min(
-      1,
-      Math.max(0, (clientX - before.left) / Math.max(1, before.width)),
+    const frameRect = frame.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const baseLeft =
+      targetRect.left - frameRect.left - zoomTransform.translateX;
+    const baseTop = targetRect.top - frameRect.top - zoomTransform.translateY;
+    const focalX = clientX - frameRect.left - baseLeft;
+    const focalY = clientY - frameRect.top - baseTop;
+    const translateX = translateAtFocalPoint(
+      focalX,
+      zoomTransform.translateX,
+      zoomTransform.scale,
+      scale,
     );
-    const pointY = Math.min(
-      1,
-      Math.max(0, (clientY - before.top) / Math.max(1, before.height)),
+    const translateY = translateAtFocalPoint(
+      focalY,
+      zoomTransform.translateY,
+      zoomTransform.scale,
+      scale,
     );
-    const minimumZoom = getPreferences().disableZoomOut ? 1 : 0.5;
-    const clampedZoom = Math.min(3, Math.max(minimumZoom, nextZoom));
-    changeZoom(clampedZoom);
-
-    requestAnimationFrame(() => {
-      const after = page.getBoundingClientRect();
-      frame.scrollBy({
-        left: after.left + after.width * pointX - clientX,
-        top: after.top + after.height * pointY - clientY,
-        behavior: "instant",
-      });
+    setZoomTransform({
+      scale,
+      ...clampZoomTranslation(scale, translateX, translateY),
     });
+    persistZoom(scale);
   }
 
   async function persistReaderMode(nextMode: ReaderMode): Promise<void> {
@@ -691,22 +860,104 @@ export function ReaderPage() {
 
     const decodedChapterId = decodeURIComponent(chapterId);
     try {
-      if (bookmarkPageIndex === currentIndex) {
-        await deleteBookmark(decodedChapterId);
-        setBookmarkPageIndex(null);
+      const currentBookmark = bookmarks.find(
+        (bookmark) => bookmark.pageIndex === currentIndex,
+      );
+      if (currentBookmark) {
+        await deleteBookmark(currentBookmark.id);
+        setBookmarks((current) =>
+          current.filter((bookmark) => bookmark.id !== currentBookmark.id),
+        );
+        setBookmarkDrawerEntries((current) =>
+          current.filter((entry) => entry.bookmark.id !== currentBookmark.id),
+        );
       } else {
-        await putBookmark({
-          schemaVersion: 2,
+        const bookmark = await putBookmark({
+          schemaVersion: SCHEMA_VERSION,
           chapterId: decodedChapterId,
           pageIndex: currentIndex,
           createdAt: Date.now(),
         });
-        setBookmarkPageIndex(currentIndex);
+        setBookmarks((current) => [...current, bookmark]);
       }
       setBookmarkError("");
     } catch {
       setBookmarkError("Could not update this bookmark.");
     }
+  }
+
+  async function openBookmarkDrawer(): Promise<void> {
+    try {
+      const records = await listBookmarks();
+      const entries = await Promise.all(
+        records.map(async (bookmark) => {
+          const bookmarkChapter = await getChapter(bookmark.chapterId);
+          if (!bookmarkChapter) return null;
+          const bookmarkSeries = await getSeries(bookmarkChapter.seriesId);
+          return {
+            bookmark,
+            chapterTitle: bookmarkChapter.title,
+            seriesTitle: bookmarkSeries?.title ?? "Unknown series",
+          };
+        }),
+      );
+      setBookmarkDrawerEntries(
+        entries
+          .filter((entry) => entry !== null)
+          .sort(
+            (left, right) => right.bookmark.createdAt - left.bookmark.createdAt,
+          ),
+      );
+      setIsBookmarkDrawerOpen(true);
+    } catch {
+      setBookmarkError("Could not load bookmarks.");
+    }
+  }
+
+  async function saveBookmarkNote(
+    bookmark: BookmarkRecord,
+    note: string,
+  ): Promise<void> {
+    try {
+      const updated = await putBookmark({ ...bookmark, note });
+      setBookmarks((current) =>
+        current.map((entry) => (entry.id === updated.id ? updated : entry)),
+      );
+      setBookmarkDrawerEntries((current) =>
+        current.map((entry) =>
+          entry.bookmark.id === updated.id
+            ? { ...entry, bookmark: updated }
+            : entry,
+        ),
+      );
+    } catch {
+      setBookmarkError("Could not save the bookmark note.");
+    }
+  }
+
+  async function removeBookmarkRecord(bookmark: BookmarkRecord): Promise<void> {
+    try {
+      await deleteBookmark(bookmark.id);
+      setBookmarks((current) =>
+        current.filter((entry) => entry.id !== bookmark.id),
+      );
+      setBookmarkDrawerEntries((current) =>
+        current.filter((entry) => entry.bookmark.id !== bookmark.id),
+      );
+    } catch {
+      setBookmarkError("Could not remove this bookmark.");
+    }
+  }
+
+  function selectBookmark(bookmark: BookmarkRecord): void {
+    setIsBookmarkDrawerOpen(false);
+    if (bookmark.chapterId === chapter?.id) {
+      selectReaderPage(bookmark.pageIndex);
+      return;
+    }
+    navigate(`/read/${encodeURIComponent(bookmark.chapterId)}`, {
+      state: { bookmarkPageIndex: bookmark.pageIndex },
+    });
   }
 
   async function toggleFullscreen(): Promise<void> {
@@ -770,27 +1021,46 @@ export function ReaderPage() {
       return;
     }
 
+    if (zoomLevel > 1) return;
+
     if (readerMode !== "flip" || isContinuousReader) {
       revealReaderControls();
       return;
     }
-    const frame = viewerFrameRef.current;
-    if (!frame) return;
-    const horizontalPosition =
-      (event.clientX - frame.getBoundingClientRect().left) /
-      Math.max(1, frame.clientWidth);
-    if (horizontalPosition < 0.3) {
-      setCurrentPage((page) => Math.max(0, page - 1));
-    } else if (horizontalPosition > 0.7) {
-      setCurrentPage((page) => Math.min(pages.length - 1, page + 1));
+
+    const clientX = event.clientX;
+    const activatePageTap = (): void => {
+      const frame = viewerFrameRef.current;
+      if (!frame) return;
+      const horizontalPosition =
+        (clientX - frame.getBoundingClientRect().left) /
+        Math.max(1, frame.clientWidth);
+      if (horizontalPosition < 0.3) {
+        setCurrentPage((page) => Math.max(0, page - 1));
+      } else if (horizontalPosition > 0.7) {
+        setCurrentPage((page) => Math.min(pages.length - 1, page + 1));
+      } else {
+        revealReaderControls();
+      }
+    };
+
+    if (lastPointerTypeRef.current === "touch") {
+      if (pendingTapRef.current !== undefined) {
+        window.clearTimeout(pendingTapRef.current);
+      }
+      pendingTapRef.current = window.setTimeout(() => {
+        pendingTapRef.current = undefined;
+        activatePageTap();
+      }, 300);
     } else {
-      revealReaderControls();
+      activatePageTap();
     }
   }
 
   function handleReaderPointerDown(
     event: React.PointerEvent<HTMLDivElement>,
   ): void {
+    lastPointerTypeRef.current = event.pointerType;
     if (event.pointerType !== "touch") return;
     event.currentTarget.setPointerCapture(event.pointerId);
     const point = { x: event.clientX, y: event.clientY };
@@ -801,7 +1071,9 @@ export function ReaderPage() {
       const [first, second] = Array.from(pointerPositionsRef.current.values());
       pinchStartRef.current = {
         distance: Math.hypot(second.x - first.x, second.y - first.y),
-        zoom: zoomLevel,
+        transform: zoomTransform,
+        midpointX: (first.x + second.x) / 2,
+        midpointY: (first.y + second.y) / 2,
       };
     }
   }
@@ -823,13 +1095,46 @@ export function ReaderPage() {
       const [first, second] = Array.from(pointerPositionsRef.current.values());
       const start = pinchStartRef.current;
       if (start?.distance) {
-        zoomAtPoint(
-          start.zoom *
-            (Math.hypot(second.x - first.x, second.y - first.y) /
-              start.distance),
-          (first.x + second.x) / 2,
-          (first.y + second.y) / 2,
+        const frame = viewerFrameRef.current;
+        const target = frame?.querySelector<HTMLElement>(
+          "[data-reader-zoom-target]",
         );
+        if (!frame || !target) return;
+
+        const midpointX = (first.x + second.x) / 2;
+        const midpointY = (first.y + second.y) / 2;
+        const scale = Math.min(
+          4,
+          Math.max(
+            1,
+            start.transform.scale *
+              (Math.hypot(second.x - first.x, second.y - first.y) /
+                start.distance),
+          ),
+        );
+        const frameRect = frame.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const baseLeft =
+          targetRect.left - frameRect.left - zoomTransform.translateX;
+        const baseTop =
+          targetRect.top - frameRect.top - zoomTransform.translateY;
+        const startFocalX = start.midpointX - frameRect.left - baseLeft;
+        const startFocalY = start.midpointY - frameRect.top - baseTop;
+        const currentFocalX = midpointX - frameRect.left - baseLeft;
+        const currentFocalY = midpointY - frameRect.top - baseTop;
+        const translateX =
+          currentFocalX -
+          (startFocalX - start.transform.translateX) *
+            (scale / start.transform.scale);
+        const translateY =
+          currentFocalY -
+          (startFocalY - start.transform.translateY) *
+            (scale / start.transform.scale);
+        setZoomTransform({
+          scale,
+          ...clampZoomTranslation(scale, translateX, translateY),
+        });
+        persistZoom(scale);
       }
       return;
     }
@@ -838,9 +1143,16 @@ export function ReaderPage() {
     if (!frame) return;
     const deltaX = point.x - previous.x;
     const deltaY = point.y - previous.y;
-    if (zoomLevel > 1.01) {
+    if (zoomLevel > 1) {
       event.preventDefault();
-      frame.scrollBy({ left: -deltaX, top: -deltaY, behavior: "instant" });
+      setZoomTransform({
+        scale: zoomLevel,
+        ...clampZoomTranslation(
+          zoomLevel,
+          zoomTransform.translateX + deltaX,
+          zoomTransform.translateY + deltaY,
+        ),
+      });
     } else if (readerMode === "webtoon") {
       event.preventDefault();
       frame.scrollBy({ top: -deltaY, behavior: "instant" });
@@ -854,11 +1166,41 @@ export function ReaderPage() {
   ): void {
     if (!pointerPositionsRef.current.has(event.pointerId)) return;
     const start = swipeStartRef.current;
+    const isTap =
+      start !== null &&
+      pointerPositionsRef.current.size === 1 &&
+      !pinchStartRef.current &&
+      Math.hypot(start.x - event.clientX, start.y - event.clientY) < 14;
+    if (isTap) {
+      const previousTap = lastTouchTapRef.current;
+      if (
+        previousTap &&
+        Date.now() - previousTap.at < 300 &&
+        Math.hypot(
+          previousTap.x - event.clientX,
+          previousTap.y - event.clientY,
+        ) < 36
+      ) {
+        if (pendingTapRef.current !== undefined) {
+          window.clearTimeout(pendingTapRef.current);
+          pendingTapRef.current = undefined;
+        }
+        lastTouchTapRef.current = null;
+        ignoreTapUntilRef.current = Date.now() + 500;
+        zoomAtPoint(zoomLevel > 1 ? 1 : 2, event.clientX, event.clientY);
+      } else {
+        lastTouchTapRef.current = {
+          at: Date.now(),
+          x: event.clientX,
+          y: event.clientY,
+        };
+      }
+    }
     if (
       start &&
       pointerPositionsRef.current.size === 1 &&
       !pinchStartRef.current &&
-      zoomLevel <= 1.01 &&
+      zoomLevel <= 1 &&
       readerMode === "flip" &&
       Math.abs(start.x - event.clientX) >= 48 &&
       Math.abs(start.x - event.clientX) > Math.abs(start.y - event.clientY)
@@ -970,6 +1312,25 @@ export function ReaderPage() {
     if (Number.isFinite(closestIndex) && closestIndex !== currentPage) {
       setCurrentPage(closestIndex);
     }
+
+    if (
+      readerMode === "webtoon" &&
+      readerPreferences.comicInfiniteScroll &&
+      chapter &&
+      event.currentTarget.scrollHeight -
+        event.currentTarget.scrollTop -
+        event.currentTarget.clientHeight <=
+        120
+    ) {
+      const currentChapterIndex = seriesChapters.findIndex(
+        (entry) => entry.id === chapter.id,
+      );
+      const nextChapter = seriesChapters[currentChapterIndex + 1];
+      if (nextChapter && autoAdvancedChapterRef.current !== chapter.id) {
+        autoAdvancedChapterRef.current = chapter.id;
+        navigate(`/read/${encodeURIComponent(nextChapter.id)}`);
+      }
+    }
   }
 
   function selectReaderPage(index: number): void {
@@ -1001,6 +1362,9 @@ export function ReaderPage() {
 
   const totalPages = pages.length;
   const currentIndex = Math.min(Math.max(currentPage, 0), totalPages - 1);
+  const isCurrentPageBookmarked = bookmarks.some(
+    (bookmark) => bookmark.pageIndex === currentIndex,
+  );
   const currentPageMime = pages[currentIndex]?.mime ?? "";
   const currentTextPage = pageTexts[currentIndex] ?? "";
   const isNovel = seriesType === "novel" || readerMode === "novel";
@@ -1125,13 +1489,18 @@ export function ReaderPage() {
     isCurrentPage: boolean,
     isContinuous: boolean,
   ): React.CSSProperties => {
-    const zoom = isContinuous || isCurrentPage ? zoomLevel : 1;
     const fitWidth = Math.min(normalizedReaderWidth, viewportWidth);
     const baseStyle = isContinuous ? styles.webtoonImage : styles.image;
+    const filter = `brightness(${readerPreferences.comicBrightness}%) contrast(${readerPreferences.comicContrast}%) invert(${readerPreferences.comicInvert}%) sepia(${readerPreferences.comicSepia}%)`;
+    const transformStyle: React.CSSProperties = {
+      transform: `translate3d(${zoomTransform.translateX}px, ${zoomTransform.translateY}px, 0) scale(${zoomTransform.scale})`,
+      transformOrigin: "0 0",
+    };
     if (isContinuous) {
       return {
         ...baseStyle,
-        width: `${fitWidth * zoom}px`,
+        filter,
+        width: `${fitWidth}px`,
         height: "auto",
         maxWidth: "none",
         maxHeight: "none",
@@ -1140,32 +1509,14 @@ export function ReaderPage() {
 
     return {
       ...baseStyle,
+      filter,
       width: "auto",
       height: "auto",
-      maxWidth: `${fitWidth * zoom}px`,
-      maxHeight: `${viewportSize.height * zoom}px`,
+      maxWidth: `${fitWidth}px`,
+      maxHeight: `${viewportSize.height}px`,
+      ...(isCurrentPage ? transformStyle : {}),
     };
   };
-  const settingsPanelPosition = (() => {
-    const panelWidth = Math.min(isNovel ? 520 : 700, viewportSize.width - 40);
-    const panelHeight = isNovel ? 760 : 640;
-    const padding = 20;
-    const maxLeft = Math.max(
-      padding,
-      viewportSize.width - panelWidth - padding,
-    );
-    const maxTop = Math.max(
-      padding,
-      viewportSize.height - panelHeight - padding,
-    );
-    const left = isNovel
-      ? Math.max(padding, viewportSize.width - panelWidth - padding)
-      : Math.min(Math.max(viewportSize.width * 0.2, padding), maxLeft);
-    const top = Math.min(Math.max(viewportSize.height * 0.12, padding), maxTop);
-
-    return { top, left, transform: "none" };
-  })();
-
   return (
     <main
       ref={readerRootRef}
@@ -1246,298 +1597,317 @@ export function ReaderPage() {
 
         <div
           className={`readerChrome readerToolbar${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
-          style={{
-            ...styles.toolbar,
-            ...(isImmersive ? styles.toolbarImmersive : {}),
-          }}
         >
-          <div style={styles.chapterNav}>
-            <button
-              type="button"
-              aria-label="Previous chapter"
-              disabled={!previousChapter}
-              onClick={() => {
-                if (previousChapter) {
-                  navigate(`/read/${encodeURIComponent(previousChapter.id)}`);
-                }
-              }}
-              style={styles.chapterNavButton}
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span style={styles.chapterNavLabel}>
-              {chapterPosition >= 0 ? chapterPosition + 1 : 1} /{" "}
-              {seriesChapters.length || 1}
-            </span>
-            <button
-              type="button"
-              aria-label="Next chapter"
-              disabled={!nextChapter}
-              onClick={() => {
-                if (nextChapter) {
-                  navigate(`/read/${encodeURIComponent(nextChapter.id)}`);
-                }
-              }}
-              style={styles.chapterNavButton}
-            >
-              <ChevronRight size={16} />
-            </button>
+          <div className="readerToolbarMain">
+            <div style={styles.chapterNav}>
+              <button
+                type="button"
+                aria-label="Previous chapter"
+                disabled={!previousChapter}
+                onClick={() => {
+                  if (previousChapter) {
+                    navigate(`/read/${encodeURIComponent(previousChapter.id)}`);
+                  }
+                }}
+                style={styles.chapterNavButton}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span style={styles.chapterNavLabel}>
+                {chapterPosition >= 0 ? chapterPosition + 1 : 1} /{" "}
+                {seriesChapters.length || 1}
+              </span>
+              <button
+                type="button"
+                aria-label="Next chapter"
+                disabled={!nextChapter}
+                onClick={() => {
+                  if (nextChapter) {
+                    navigate(`/read/${encodeURIComponent(nextChapter.id)}`);
+                  }
+                }}
+                style={styles.chapterNavButton}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+            {!isNovel ? (
+              <div className="readerModeButtons" style={styles.modeButtons}>
+                {modeOptions.map((mode) => (
+                  <button
+                    key={mode.value}
+                    type="button"
+                    aria-label={`Switch to ${mode.label} mode`}
+                    aria-pressed={readerMode === mode.value}
+                    title={mode.label}
+                    onClick={() => void persistReaderMode(mode.value)}
+                    style={{
+                      ...styles.modeButton,
+                      ...(readerMode === mode.value
+                        ? styles.activeModeButton
+                        : {}),
+                    }}
+                  >
+                    {mode.value === "flip" ? (
+                      <BookOpen size={16} />
+                    ) : (
+                      <PanelsTopLeft size={16} />
+                    )}
+                    <span className="readerModeLabel">{mode.label}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
-          {!isNovel ? (
-            <div className="readerModeButtons" style={styles.modeButtons}>
-              {modeOptions.map((mode) => (
+
+          <div className="readerToolbarTools">
+            <details className="readerMoreMenu">
+              <summary aria-label="More reading tools">
+                <MoreHorizontal size={18} />
+                <span>More</span>
+              </summary>
+              <div className="readerMoreMenuPanel">
+                {isNovel ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget
+                        .closest("details")
+                        ?.removeAttribute("open");
+                      setIsContentsOpen(true);
+                    }}
+                  >
+                    <List size={16} /> Table of contents
+                  </button>
+                ) : null}
                 <button
-                  key={mode.value}
                   type="button"
-                  aria-label={`Switch to ${mode.label} mode`}
-                  aria-pressed={readerMode === mode.value}
-                  title={mode.label}
-                  onClick={() => void persistReaderMode(mode.value)}
+                  onClick={(event) => {
+                    event.currentTarget
+                      .closest("details")
+                      ?.removeAttribute("open");
+                    setIsReaderSettingsOpen(true);
+                  }}
+                >
+                  {isNovel ? <Type size={16} /> : <Settings2 size={16} />}
+                  {isNovel ? "Formatting" : "Reader settings"}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={isImmersive}
+                  onClick={(event) => {
+                    event.currentTarget
+                      .closest("details")
+                      ?.removeAttribute("open");
+                    toggleImmersiveMode();
+                  }}
+                >
+                  {isImmersive ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {isImmersive ? "Exit focus mode" : "Focus mode"}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={isBookmarkDrawerOpen}
+                  onClick={(event) => {
+                    event.currentTarget
+                      .closest("details")
+                      ?.removeAttribute("open");
+                    void openBookmarkDrawer();
+                  }}
+                >
+                  <Bookmark size={16} /> Bookmarks
+                </button>
+                {!isNovel ? (
+                  <button
+                    type="button"
+                    aria-pressed={isPageGridOpen}
+                    onClick={(event) => {
+                      event.currentTarget
+                        .closest("details")
+                        ?.removeAttribute("open");
+                      setIsPageGridOpen(true);
+                    }}
+                  >
+                    <Grid2X2 size={16} /> Page overview
+                  </button>
+                ) : null}
+              </div>
+            </details>
+            {!isNovel ? (
+              <input
+                type="range"
+                aria-label="Page position"
+                min={0}
+                max={Math.max(totalPages - 1, 0)}
+                value={Math.max(currentIndex, 0)}
+                disabled={totalPages <= 1}
+                onChange={(event) =>
+                  selectReaderPage(Number(event.currentTarget.value))
+                }
+                className="readerPageScrubber"
+                style={styles.pageScrubber}
+              />
+            ) : null}
+
+            {!isNovel && currentPageMime.startsWith("image/") ? (
+              <div
+                style={styles.zoomControls}
+                className="readerZoomControls"
+                role="group"
+                aria-label={
+                  isContinuousReader ? "Continuous pages zoom" : "Page zoom"
+                }
+              >
+                <button
+                  type="button"
+                  aria-label="Zoom out"
+                  title="Zoom out"
+                  disabled={zoomLevel <= 1}
+                  onClick={() => changeZoom(zoomLevel - 0.25)}
+                  style={styles.bookmarkButton}
+                >
+                  <Minus size={15} />
+                </button>
+                <span style={styles.pageIndicator}>
+                  {Math.round(zoomLevel * 100)}%
+                </span>
+                <button
+                  type="button"
+                  aria-label="Zoom in"
+                  title="Zoom in"
+                  disabled={zoomLevel >= 4}
+                  onClick={() => changeZoom(zoomLevel + 0.25)}
+                  style={styles.bookmarkButton}
+                >
+                  <Plus size={15} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Reset zoom"
+                  title="Reset zoom"
+                  onClick={() => {
+                    changeZoom(1);
+                    viewerFrameRef.current?.scrollTo({
+                      top: 0,
+                      left: 0,
+                      behavior: "smooth",
+                    });
+                  }}
+                  className="readerIconButton"
+                  style={styles.bookmarkButton}
+                >
+                  <RotateCcw size={15} />
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="readerPageControls">
+            {!isContinuousReader && !isNovel ? (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous page"
+                  onClick={() =>
+                    setCurrentPage((previous) => Math.max(previous - 1, 0))
+                  }
+                  disabled={currentIndex === 0}
                   style={{
-                    ...styles.modeButton,
-                    ...(readerMode === mode.value
-                      ? styles.activeModeButton
+                    ...styles.navButton,
+                    opacity: currentIndex === 0 ? 0.45 : 1,
+                  }}
+                >
+                  <ChevronLeft size={16} />
+                  <span className="readerButtonLabel">Previous page</span>
+                </button>
+                <span style={styles.pageIndicator}>
+                  {currentIndex + 1} / {totalPages || 1}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Next page"
+                  onClick={() =>
+                    setCurrentPage((previous) =>
+                      Math.min(previous + 1, totalPages - 1),
+                    )
+                  }
+                  disabled={totalPages === 0 || currentIndex >= totalPages - 1}
+                  style={{
+                    ...styles.navButton,
+                    opacity:
+                      totalPages === 0 || currentIndex >= totalPages - 1
+                        ? 0.45
+                        : 1,
+                  }}
+                >
+                  <span className="readerButtonLabel">Next page</span>
+                  <ChevronRight size={16} />
+                </button>
+                <button
+                  type="button"
+                  aria-label={
+                    isCurrentPageBookmarked
+                      ? "Remove bookmark"
+                      : "Bookmark this page"
+                  }
+                  aria-pressed={isCurrentPageBookmarked}
+                  title={
+                    isCurrentPageBookmarked
+                      ? "Remove bookmark"
+                      : "Bookmark page"
+                  }
+                  onClick={() => void toggleBookmark()}
+                  className="readerIconButton"
+                  style={{
+                    ...styles.bookmarkButton,
+                    ...(isCurrentPageBookmarked
+                      ? styles.activeBookmarkButton
                       : {}),
                   }}
                 >
-                  {mode.value === "flip" ? (
-                    <BookOpen size={16} />
-                  ) : (
-                    <PanelsTopLeft size={16} />
-                  )}
+                  <Bookmark
+                    size={16}
+                    fill={isCurrentPageBookmarked ? "currentColor" : "none"}
+                  />
                 </button>
-              ))}
-            </div>
-          ) : (
-            <button
-              type="button"
-              aria-label="Open table of contents"
-              onClick={() => setIsContentsOpen(true)}
-              style={styles.bookmarkButton}
-            >
-              <List size={15} /> Contents
-            </button>
-          )}
-
-          <button
-            type="button"
-            aria-label={
-              isNovel ? "Open formatting settings" : "Open reader settings"
-            }
-            onClick={() => setIsReaderSettingsOpen(true)}
-            className="readerIconButton"
-            title={isNovel ? "Formatting settings" : "Reader settings"}
-            style={styles.bookmarkButton}
-          >
-            {isNovel ? <Type size={16} /> : <Settings2 size={16} />}
-          </button>
-
-          <button
-            type="button"
-            aria-label={
-              isImmersive ? "Disable immersive view" : "Enable immersive view"
-            }
-            title={isImmersive ? "Exit focus mode" : "Focus mode"}
-            onClick={toggleImmersiveMode}
-            className="readerIconButton"
-            style={{
-              ...styles.bookmarkButton,
-              ...(isImmersive ? styles.activeBookmarkButton : {}),
-            }}
-          >
-            {isImmersive ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
-          {!isNovel ? (
-            <button
-              type="button"
-              aria-label="Open page grid"
-              aria-pressed={isPageGridOpen}
-              title="Page overview"
-              onClick={() => setIsPageGridOpen(true)}
-              className="readerIconButton"
-              style={styles.bookmarkButton}
-            >
-              <Grid2X2 size={16} />
-            </button>
-          ) : null}
-          {!isNovel ? (
-            <input
-              type="range"
-              aria-label="Page position"
-              min={0}
-              max={Math.max(totalPages - 1, 0)}
-              value={Math.max(currentIndex, 0)}
-              disabled={totalPages <= 1}
-              onChange={(event) =>
-                selectReaderPage(Number(event.currentTarget.value))
-              }
-              className="readerPageScrubber"
-              style={styles.pageScrubber}
-            />
-          ) : null}
-
-          {!isNovel && currentPageMime.startsWith("image/") ? (
-            <div
-              style={styles.zoomControls}
-              className="readerZoomControls"
-              role="group"
-              aria-label={
-                isContinuousReader ? "Continuous pages zoom" : "Page zoom"
-              }
-            >
-              <button
-                type="button"
-                aria-label="Zoom out"
-                title="Zoom out"
-                disabled={
-                  zoomLevel <= (readerPreferences.disableZoomOut ? 1 : 0.5)
-                }
-                onClick={() => changeZoom(zoomLevel - 0.25)}
-                style={styles.bookmarkButton}
-              >
-                <Minus size={15} />
-              </button>
-              <span style={styles.pageIndicator}>
-                {Math.round(zoomLevel * 100)}%
-              </span>
-              <button
-                type="button"
-                aria-label="Zoom in"
-                title="Zoom in"
-                disabled={zoomLevel >= 3}
-                onClick={() => changeZoom(zoomLevel + 0.25)}
-                style={styles.bookmarkButton}
-              >
-                <Plus size={15} />
-              </button>
-              <button
-                type="button"
-                aria-label="Reset zoom"
-                title="Reset zoom"
-                onClick={() => {
-                  changeZoom(1);
-                  viewerFrameRef.current?.scrollTo({
-                    top: 0,
-                    left: 0,
-                    behavior: "smooth",
-                  });
-                }}
-                className="readerIconButton"
-                style={styles.bookmarkButton}
-              >
-                <RotateCcw size={15} />
-              </button>
-            </div>
-          ) : null}
-
-          {!isContinuousReader && !isNovel ? (
-            <>
-              <button
-                type="button"
-                aria-label="Previous page"
-                onClick={() =>
-                  setCurrentPage((previous) => Math.max(previous - 1, 0))
-                }
-                disabled={currentIndex === 0}
-                style={{
-                  ...styles.navButton,
-                  opacity: currentIndex === 0 ? 0.45 : 1,
-                }}
-              >
-                <ChevronLeft size={16} />
-                <span className="readerButtonLabel">Previous page</span>
-              </button>
-              <span style={styles.pageIndicator}>
-                {currentIndex + 1} / {totalPages || 1}
-              </span>
-              <button
-                type="button"
-                aria-label="Next page"
-                onClick={() =>
-                  setCurrentPage((previous) =>
-                    Math.min(previous + 1, totalPages - 1),
-                  )
-                }
-                disabled={totalPages === 0 || currentIndex >= totalPages - 1}
-                style={{
-                  ...styles.navButton,
-                  opacity:
-                    totalPages === 0 || currentIndex >= totalPages - 1
-                      ? 0.45
-                      : 1,
-                }}
-              >
-                <span className="readerButtonLabel">Next page</span>
-                <ChevronRight size={16} />
-              </button>
-              <button
-                type="button"
-                aria-label={
-                  bookmarkPageIndex === currentIndex
-                    ? "Remove bookmark"
-                    : "Bookmark this page"
-                }
-                aria-pressed={bookmarkPageIndex === currentIndex}
-                title={
-                  bookmarkPageIndex === currentIndex
-                    ? "Remove bookmark"
-                    : "Bookmark page"
-                }
-                onClick={() => void toggleBookmark()}
-                className="readerIconButton"
-                style={{
-                  ...styles.bookmarkButton,
-                  ...(bookmarkPageIndex === currentIndex
-                    ? styles.activeBookmarkButton
-                    : {}),
-                }}
-              >
-                <Bookmark
-                  size={16}
-                  fill={
-                    bookmarkPageIndex === currentIndex ? "currentColor" : "none"
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  aria-label={
+                    isCurrentPageBookmarked
+                      ? "Remove bookmark"
+                      : "Bookmark this page"
                   }
-                />
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                aria-label={
-                  bookmarkPageIndex === currentIndex
-                    ? "Remove bookmark"
-                    : "Bookmark this page"
-                }
-                aria-pressed={bookmarkPageIndex === currentIndex}
-                title={
-                  bookmarkPageIndex === currentIndex
-                    ? "Remove bookmark"
-                    : "Bookmark page"
-                }
-                onClick={() => void toggleBookmark()}
-                className="readerIconButton"
-                style={{
-                  ...styles.bookmarkButton,
-                  ...(bookmarkPageIndex === currentIndex
-                    ? styles.activeBookmarkButton
-                    : {}),
-                }}
-              >
-                <Bookmark
-                  size={15}
-                  fill={
-                    bookmarkPageIndex === currentIndex ? "currentColor" : "none"
+                  aria-pressed={isCurrentPageBookmarked}
+                  title={
+                    isCurrentPageBookmarked
+                      ? "Remove bookmark"
+                      : "Bookmark page"
                   }
-                />
-              </button>
-              <span style={styles.pageIndicator}>
-                {isNovel
-                  ? `${chapterPosition + 1} / ${seriesChapters.length || 1} chapters`
-                  : `Page ${currentIndex + 1} / ${totalPages || 1}`}
-              </span>
-            </>
-          )}
+                  onClick={() => void toggleBookmark()}
+                  className="readerIconButton"
+                  style={{
+                    ...styles.bookmarkButton,
+                    ...(isCurrentPageBookmarked
+                      ? styles.activeBookmarkButton
+                      : {}),
+                  }}
+                >
+                  <Bookmark
+                    size={15}
+                    fill={isCurrentPageBookmarked ? "currentColor" : "none"}
+                  />
+                </button>
+                <span style={styles.pageIndicator}>
+                  {isNovel
+                    ? `${chapterPosition + 1} / ${seriesChapters.length || 1} chapters`
+                    : `Page ${currentIndex + 1} / ${totalPages || 1}`}
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
         {bookmarkError ? (
@@ -1562,13 +1932,13 @@ export function ReaderPage() {
             <div
               style={{
                 ...styles.settingsPanel,
-                width: isNovel
-                  ? "min(520px, calc(100vw - 28px))"
-                  : styles.settingsPanel.width,
+                width: isNovel ? "min(520px, 100vw)" : "min(440px, 100vw)",
                 position: "fixed",
-                left: settingsPanelPosition.left,
-                top: settingsPanelPosition.top,
-                transform: settingsPanelPosition.transform,
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: "auto",
+                transform: "none",
               }}
               className="readerSettingsPanel"
               role="dialog"
@@ -2134,6 +2504,78 @@ export function ReaderPage() {
                     </span>
                   </div>
 
+                  <h3 className="readerSettingsGroupTitle">
+                    Image adjustments
+                  </h3>
+                  {[
+                    {
+                      id: "comic-brightness",
+                      label: "Brightness",
+                      value: readerPreferences.comicBrightness,
+                      min: 50,
+                      max: 150,
+                      step: 5,
+                      key: "comicBrightness",
+                    },
+                    {
+                      id: "comic-contrast",
+                      label: "Contrast",
+                      value: readerPreferences.comicContrast,
+                      min: 50,
+                      max: 150,
+                      step: 5,
+                      key: "comicContrast",
+                    },
+                    {
+                      id: "comic-invert",
+                      label: "Invert",
+                      value: readerPreferences.comicInvert,
+                      min: 0,
+                      max: 100,
+                      step: 5,
+                      key: "comicInvert",
+                    },
+                    {
+                      id: "comic-sepia",
+                      label: "Sepia",
+                      value: readerPreferences.comicSepia,
+                      min: 0,
+                      max: 100,
+                      step: 5,
+                      key: "comicSepia",
+                    },
+                  ].map((adjustment) => (
+                    <div key={adjustment.id} style={styles.settingsSliderRow}>
+                      <label
+                        htmlFor={adjustment.id}
+                        style={styles.settingsSliderLabel}
+                      >
+                        {adjustment.label}
+                      </label>
+                      <output
+                        htmlFor={adjustment.id}
+                        style={styles.settingsSliderValue}
+                      >
+                        {adjustment.value}%
+                      </output>
+                      <input
+                        id={adjustment.id}
+                        aria-label={`Comic image ${adjustment.label.toLowerCase()}`}
+                        type="range"
+                        min={adjustment.min}
+                        max={adjustment.max}
+                        step={adjustment.step}
+                        value={adjustment.value}
+                        onChange={(event) =>
+                          updateReaderPreferences({
+                            [adjustment.key]: Number(event.currentTarget.value),
+                          })
+                        }
+                        style={styles.settingsRange}
+                      />
+                    </div>
+                  ))}
+
                   <label style={styles.settingsDirectionRow}>
                     <span style={styles.settingsSliderLabel}>
                       Reading Direction
@@ -2405,11 +2847,14 @@ export function ReaderPage() {
           ) : isComicContinuous ? (
             pageUrls.some(Boolean) ? (
               <div
+                data-reader-zoom-target
                 style={{
                   ...styles.webtoonStrip,
                   maxWidth: Math.min(normalizedReaderWidth, viewportWidth),
                   margin: "0 auto",
                   gap: `${readerPreferences.comicPageGap}px`,
+                  transform: `translate3d(${zoomTransform.translateX}px, ${zoomTransform.translateY}px, 0) scale(${zoomTransform.scale})`,
+                  transformOrigin: "0 0",
                 }}
               >
                 {pageUrls.map((url, index) =>
@@ -2432,12 +2877,101 @@ export function ReaderPage() {
               src={pageUrls[currentIndex]}
               alt={`${chapter.title} page ${currentIndex + 1}`}
               data-reader-page-index={currentIndex}
+              data-reader-zoom-target
               style={comicPageImageStyle(true, false)}
             />
           ) : (
             <div style={styles.emptyViewer}>Loading page...</div>
           )}
         </div>
+
+        {isBookmarkDrawerOpen ? (
+          <div
+            style={styles.pageGridOverlay}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reader-bookmarks-title"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setIsBookmarkDrawerOpen(false);
+            }}
+          >
+            <section style={styles.bookmarkDrawerDialog}>
+              <header style={styles.pageGridHeader}>
+                <div>
+                  <p style={styles.kicker}>SAVED PAGES</p>
+                  <h2 id="reader-bookmarks-title" style={styles.gridTitle}>
+                    Bookmarks
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close bookmarks"
+                  onClick={() => setIsBookmarkDrawerOpen(false)}
+                  style={styles.iconButton}
+                >
+                  <X size={17} />
+                </button>
+              </header>
+              <div style={styles.bookmarkEntries}>
+                {bookmarkDrawerEntries.map((entry) => (
+                  <article key={entry.bookmark.id} style={styles.bookmarkEntry}>
+                    <div style={styles.bookmarkEntryHeader}>
+                      <button
+                        type="button"
+                        onClick={() => selectBookmark(entry.bookmark)}
+                        style={styles.bookmarkEntryTitle}
+                      >
+                        <span>{entry.seriesTitle}</span>
+                        <span>{entry.chapterTitle}</span>
+                        <span>Page {entry.bookmark.pageIndex + 1}</span>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Remove bookmark for ${entry.chapterTitle}, page ${entry.bookmark.pageIndex + 1}`}
+                        title="Remove bookmark"
+                        onClick={() =>
+                          void removeBookmarkRecord(entry.bookmark)
+                        }
+                        style={styles.bookmarkRemoveButton}
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+                    <textarea
+                      aria-label={`Note for ${entry.chapterTitle}, page ${entry.bookmark.pageIndex + 1}`}
+                      value={entry.bookmark.note}
+                      placeholder="Add a note"
+                      rows={2}
+                      onChange={(event) => {
+                        const note = event.currentTarget.value;
+                        setBookmarkDrawerEntries((current) =>
+                          current.map((item) =>
+                            item.bookmark.id === entry.bookmark.id
+                              ? {
+                                  ...item,
+                                  bookmark: { ...item.bookmark, note },
+                                }
+                              : item,
+                          ),
+                        );
+                      }}
+                      onBlur={(event) =>
+                        void saveBookmarkNote(
+                          entry.bookmark,
+                          event.currentTarget.value,
+                        )
+                      }
+                      style={styles.bookmarkNote}
+                    />
+                  </article>
+                ))}
+                {bookmarkDrawerEntries.length === 0 ? (
+                  <p style={styles.emptyText}>No saved pages yet.</p>
+                ) : null}
+              </div>
+            </section>
+          </div>
+        ) : null}
 
         {isPageGridOpen ? (
           <div
@@ -2494,7 +3028,9 @@ export function ReaderPage() {
                       </span>
                     )}
                     <span style={styles.pageGridNumber}>{index + 1}</span>
-                    {bookmarkPageIndex === index ? (
+                    {bookmarks.some(
+                      (bookmark) => bookmark.pageIndex === index,
+                    ) ? (
                       <span style={styles.pageGridBookmark}>Saved</span>
                     ) : null}
                   </button>
@@ -2855,6 +3391,8 @@ const styles: Record<string, React.CSSProperties> = {
     position: "fixed",
     inset: 0,
     zIndex: 50,
+    display: "flex",
+    justifyContent: "flex-end",
     background: "rgba(7, 10, 12, 0.7)",
     backdropFilter: "blur(10px)",
   },
@@ -2961,14 +3499,18 @@ const styles: Record<string, React.CSSProperties> = {
   },
   settingsPanel: {
     position: "fixed",
-    width: "min(700px, calc(100vw - 28px))",
-    maxHeight: "min(82vh, 760px)",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: 440,
+    height: "100dvh",
+    maxHeight: "100dvh",
     display: "grid",
     gridTemplateRows: "auto 1fr",
     gap: 18,
-    padding: "16px 20px 14px",
-    border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: 18,
+    padding: "18px 20px 14px",
+    border: "1px solid var(--app-border-strong)",
+    borderRadius: "12px 0 0 12px",
     background: "var(--app-panel)",
     boxShadow: "0 30px 90px rgba(0,0,0,0.5)",
     zIndex: 60,
@@ -3310,6 +3852,73 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     background: "var(--app-panel)",
     boxShadow: "0 24px 90px #000b",
+  },
+  bookmarkDrawerDialog: {
+    display: "grid",
+    width: "min(760px, 100%)",
+    maxHeight: "min(90vh, 900px)",
+    gridTemplateRows: "auto minmax(0, 1fr)",
+    gap: 16,
+    padding: "clamp(16px, 2.5vw, 28px)",
+    border: "1px solid var(--app-border-strong)",
+    borderRadius: 12,
+    background: "var(--app-panel)",
+    boxShadow: "0 24px 90px #000b",
+  },
+  bookmarkEntries: {
+    display: "grid",
+    alignContent: "start",
+    gap: 12,
+    overflowY: "auto",
+    minHeight: 0,
+  },
+  bookmarkEntry: {
+    display: "grid",
+    gap: 8,
+    padding: "8px 0 12px",
+    borderBottom: "1px solid var(--app-border)",
+  },
+  bookmarkEntryHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  bookmarkEntryTitle: {
+    display: "flex",
+    flex: 1,
+    flexWrap: "wrap",
+    gap: 6,
+    minWidth: 0,
+    padding: 0,
+    border: 0,
+    background: "transparent",
+    color: "var(--app-text)",
+    textAlign: "left",
+    cursor: "pointer",
+  },
+  bookmarkRemoveButton: {
+    display: "grid",
+    width: 32,
+    height: 32,
+    flex: "0 0 auto",
+    placeItems: "center",
+    border: "1px solid var(--app-border)",
+    borderRadius: 6,
+    background: "var(--app-panel-raised)",
+    color: "var(--app-text)",
+    cursor: "pointer",
+  },
+  bookmarkNote: {
+    boxSizing: "border-box",
+    width: "100%",
+    resize: "vertical",
+    padding: 9,
+    border: "1px solid var(--app-border)",
+    borderRadius: 6,
+    background: "var(--app-panel-raised)",
+    color: "var(--app-text)",
+    font: "inherit",
   },
   pageGridHeader: {
     display: "flex",

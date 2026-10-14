@@ -96,6 +96,7 @@ export function filterLibraryEntries(
     favoriteOnly?: boolean;
     continueOnly?: boolean;
     safeOnly?: boolean;
+    adultOnly?: boolean;
   } = {},
 ): LibraryEntry[] {
   const query = filters.query?.trim().toLocaleLowerCase() ?? "";
@@ -116,13 +117,17 @@ export function filterLibraryEntries(
     const matchesSafe =
       !filters.safeOnly ||
       !/(18\+?|adult|mature|r-?18|nc-?17)/i.test(entry.ageRating ?? "");
+    const matchesAdult =
+      !filters.adultOnly ||
+      /(18\+?|adult|mature|r-?18|nc-?17)/i.test(entry.ageRating ?? "");
     return (
       matchesQuery &&
       matchesType &&
       matchesTag &&
       matchesFavorite &&
       matchesContinue &&
-      matchesSafe
+      matchesSafe &&
+      matchesAdult
     );
   });
 }

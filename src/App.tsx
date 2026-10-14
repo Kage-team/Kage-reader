@@ -6,11 +6,13 @@ import { LibraryPage } from "./components/library/LibraryPage";
 import { ReaderPage } from "./components/reader/ReaderPage";
 import { SettingsPage } from "./components/settings/SettingsPage";
 import { SeriesPage } from "./components/series/SeriesPage";
+import { AdultContentGate } from "./components/security/AdultContentGate";
 import {
   applyPreferencesToDocument,
   getPreferences,
 } from "./lib/preferences/preferences";
 import type { PwaInstallPrompt } from "./lib/pwa/install";
+import { applyStealthMode } from "./lib/security/stealth";
 
 export function App() {
   const [installPrompt, setInstallPrompt] = useState<PwaInstallPrompt | null>(
@@ -19,7 +21,9 @@ export function App() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    applyPreferencesToDocument(getPreferences());
+    const preferences = getPreferences();
+    applyPreferencesToDocument(preferences);
+    applyStealthMode(preferences.stealthMode);
     setIsInstalled(window.matchMedia("(display-mode: standalone)").matches);
 
     const handleInstallPrompt = (event: Event) => {
@@ -73,12 +77,21 @@ export function App() {
         <Route
           path="/series/:id"
           element={
-            <AppFrame>
-              <SeriesPage />
-            </AppFrame>
+            <AdultContentGate>
+              <AppFrame>
+                <SeriesPage />
+              </AppFrame>
+            </AdultContentGate>
           }
         />
-        <Route path="/read/:chapterId" element={<ReaderPage />} />
+        <Route
+          path="/read/:chapterId"
+          element={
+            <AdultContentGate>
+              <ReaderPage />
+            </AdultContentGate>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

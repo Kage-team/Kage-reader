@@ -3,6 +3,8 @@ import {
   SCHEMA_VERSION,
   type Chapter,
   type Bookmark,
+  type BookmarkInput,
+  type LinkedFolder,
   type Meta,
   type Page,
   type Progress,
@@ -30,7 +32,13 @@ interface KageDB extends DBSchema {
     indexes: { "by-chapter": string };
   };
   progress: { key: string; value: Progress };
-  bookmarks: { key: string; value: Bookmark };
+  bookmarks: { key: string; value: BookmarkInput };
+  readerBookmarks: {
+    key: string;
+    value: Bookmark;
+    indexes: { "by-chapter": string };
+  };
+  folderLinks: { key: string; value: LinkedFolder };
   blobs: {
     key: string;
     value: { key: string; blob: ArrayBuffer; type: string };
@@ -61,8 +69,30 @@ export function openKageDb(): Promise<IDBPDatabase<KageDB>> {
         if (oldVersion < 2) {
           db.createObjectStore("bookmarks", { keyPath: "chapterId" });
         }
+        if (oldVersion < 3) {
+          const readerBookmarks = db.createObjectStore("readerBookmarks", {
+            keyPath: "id",
+          });
+          readerBookmarks.createIndex("by-chapter", "chapterId");
+        }
+        if (oldVersion < 4) {
+          db.createObjectStore("folderLinks", { keyPath: "id" });
+        }
       },
     }).then(async (db) => {
+      const legacyBookmarks = await db.getAll("bookmarks");
+      for (const legacyBookmark of legacyBookmarks) {
+        const id = `legacy:${legacyBookmark.chapterId}`;
+        if (!(await db.get("readerBookmarks", id))) {
+          await db.put("readerBookmarks", {
+            ...legacyBookmark,
+            id,
+            note: "",
+            schemaVersion: SCHEMA_VERSION,
+          });
+        }
+      }
+
       const existing = await db.get("meta", "singleton");
       if (!existing) {
         await db.put("meta", { schemaVersion: SCHEMA_VERSION }, "singleton");
@@ -240,21 +270,39 @@ export async function deleteSeriesWithContents(
     ),
   );
   const pages = pagesByChapter.flat();
+  const bookmarksByChapter = await Promise.all(
+    chapters.map((chapter) =>
+      db.getAllFromIndex("readerBookmarks", "by-chapter", chapter.id),
+    ),
+  );
   const series = await db.get("series", seriesId);
   const transaction = db.transaction(
-    ["series", "chapters", "pages", "progress", "blobs", "bookmarks"],
+    [
+      "series",
+      "chapters",
+      "pages",
+      "progress",
+      "blobs",
+      "bookmarks",
+      "readerBookmarks",
+    ],
     "readwrite",
   );
   const operations: Promise<unknown>[] = [
     transaction.objectStore("series").delete(seriesId),
   ];
 
-  for (const chapter of chapters) {
+  for (const [index, chapter] of chapters.entries()) {
     operations.push(
       transaction.objectStore("chapters").delete(chapter.id),
       transaction.objectStore("progress").delete(chapter.id),
       transaction.objectStore("bookmarks").delete(chapter.id),
     );
+    for (const bookmark of bookmarksByChapter[index]) {
+      operations.push(
+        transaction.objectStore("readerBookmarks").delete(bookmark.id),
+      );
+    }
   }
   for (const page of pages) {
     operations.push(
@@ -374,15 +422,23 @@ export async function deleteChapterWithContents(id: string): Promise<void> {
   if (!chapter) return;
 
   const pages = await db.getAllFromIndex("pages", "by-chapter", id);
+  const bookmarks = await db.getAllFromIndex(
+    "readerBookmarks",
+    "by-chapter",
+    id,
+  );
   const series = await db.get("series", chapter.seriesId);
   const transaction = db.transaction(
-    ["chapters", "pages", "progress", "bookmarks", "blobs"],
+    ["chapters", "pages", "progress", "bookmarks", "readerBookmarks", "blobs"],
     "readwrite",
   );
   const operations: Promise<unknown>[] = [
     transaction.objectStore("chapters").delete(id),
     transaction.objectStore("progress").delete(id),
     transaction.objectStore("bookmarks").delete(id),
+    ...bookmarks.map((bookmark) =>
+      transaction.objectStore("readerBookmarks").delete(bookmark.id),
+    ),
   ];
 
   for (const page of pages) {
@@ -451,32 +507,81 @@ export async function deleteProgress(chapterId: string): Promise<void> {
   await db.delete("progress", chapterId);
 }
 
-export async function putBookmark(bookmark: Bookmark): Promise<void> {
+export async function putBookmark(bookmark: BookmarkInput): Promise<Bookmark> {
   const db = await openKageDb();
-  await db.put("bookmarks", { ...bookmark, schemaVersion: SCHEMA_VERSION });
+  const record: Bookmark = {
+    ...bookmark,
+    id: bookmark.id ?? globalThis.crypto.randomUUID(),
+    note: bookmark.note ?? "",
+    schemaVersion: SCHEMA_VERSION,
+  };
+  await db.put("readerBookmarks", record);
+  return record;
 }
 
 export async function getBookmark(
   chapterId: string,
 ): Promise<Bookmark | undefined> {
   const db = await openKageDb();
-  return db.get("bookmarks", chapterId);
+  const bookmarks = await db.getAllFromIndex(
+    "readerBookmarks",
+    "by-chapter",
+    chapterId,
+  );
+  return bookmarks.sort((left, right) => left.createdAt - right.createdAt)[0];
+}
+
+export async function getBookmarksForChapter(
+  chapterId: string,
+): Promise<Bookmark[]> {
+  const db = await openKageDb();
+  return db.getAllFromIndex("readerBookmarks", "by-chapter", chapterId);
 }
 
 export async function listBookmarks(): Promise<Bookmark[]> {
   const db = await openKageDb();
-  return db.getAll("bookmarks");
+  return db.getAll("readerBookmarks");
 }
 
-export async function deleteBookmark(chapterId: string): Promise<void> {
+export async function deleteBookmark(id: string): Promise<void> {
   const db = await openKageDb();
-  await db.delete("bookmarks", chapterId);
+  await db.delete("readerBookmarks", id);
+}
+
+export async function getLinkedFolder(): Promise<LinkedFolder | undefined> {
+  const db = await openKageDb();
+  return db.get("folderLinks", "primary");
+}
+
+export async function putLinkedFolder(
+  handle: FileSystemDirectoryHandle,
+): Promise<void> {
+  const db = await openKageDb();
+  await db.put("folderLinks", {
+    id: "primary",
+    handle,
+    linkedAt: Date.now(),
+  });
+}
+
+export async function deleteLinkedFolder(): Promise<void> {
+  const db = await openKageDb();
+  await db.delete("folderLinks", "primary");
 }
 
 export async function clearLibraryData(): Promise<void> {
   const db = await openKageDb();
   const transaction = db.transaction(
-    ["series", "chapters", "pages", "progress", "bookmarks", "blobs"],
+    [
+      "series",
+      "chapters",
+      "pages",
+      "progress",
+      "bookmarks",
+      "readerBookmarks",
+      "folderLinks",
+      "blobs",
+    ],
     "readwrite",
   );
   await Promise.all([
@@ -485,6 +590,8 @@ export async function clearLibraryData(): Promise<void> {
     transaction.objectStore("pages").clear(),
     transaction.objectStore("progress").clear(),
     transaction.objectStore("bookmarks").clear(),
+    transaction.objectStore("readerBookmarks").clear(),
+    transaction.objectStore("folderLinks").clear(),
     transaction.objectStore("blobs").clear(),
   ]);
   await transaction.done;
@@ -510,6 +617,8 @@ export async function wipeDatabase(): Promise<void> {
     db.clear("progress"),
     db.clear("blobs"),
     db.clear("bookmarks"),
+    db.clear("readerBookmarks"),
+    db.clear("folderLinks"),
   ]);
   await db.put("meta", { schemaVersion: SCHEMA_VERSION }, "singleton");
 }

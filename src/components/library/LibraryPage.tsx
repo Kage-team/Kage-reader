@@ -12,6 +12,7 @@ import {
   SlidersHorizontal,
   Upload,
 } from "lucide-react";
+import { AdultAccessPrompt } from "../security/AdultAccessPrompt";
 import {
   getPreferences,
   savePreferences,
@@ -31,6 +32,7 @@ import {
   putSeries,
 } from "../../lib/storage/db";
 import type { SeriesType } from "../../lib/storage/types";
+import { hasAdultAccess } from "../../lib/security/adultPin";
 
 const SERIES_TYPES: SeriesType[] = ["manga", "manhua", "oel", "novel"];
 const SERIES_TYPE_COLORS: Record<SeriesType, string> = {
@@ -58,10 +60,18 @@ export function LibraryPage() {
   const [selectedTag, setSelectedTag] = useState("");
   const [sortBy, setSortBy] = useState("recent");
   const [favoriteError, setFavoriteError] = useState("");
+  const [adultAccessUnlocked, setAdultAccessUnlocked] = useState(() =>
+    hasAdultAccess(getPreferences().adultPinHash),
+  );
+  const [isAdultPromptOpen, setIsAdultPromptOpen] = useState(false);
+  const [disableSafeModeAfterUnlock, setDisableSafeModeAfterUnlock] =
+    useState(false);
   const [preferences, setPreferences] = useState<Preferences>(getPreferences);
   const requestedView = searchParams.get("view");
   const view =
-    requestedView === "favorites" || requestedView === "continue"
+    requestedView === "favorites" ||
+    requestedView === "continue" ||
+    requestedView === "adult"
       ? requestedView
       : "all";
 
@@ -78,6 +88,10 @@ export function LibraryPage() {
   useEffect(() => {
     void loadEntries();
   }, []);
+
+  useEffect(() => {
+    setAdultAccessUnlocked(hasAdultAccess(preferences.adultPinHash));
+  }, [preferences.adultPinHash]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -125,6 +139,11 @@ export function LibraryPage() {
   }
 
   function toggleSafeMode(): void {
+    if (preferences.safeMode && !adultAccessUnlocked) {
+      setDisableSafeModeAfterUnlock(true);
+      setIsAdultPromptOpen(true);
+      return;
+    }
     const nextPreferences = savePreferences({
       ...preferences,
       safeMode: !preferences.safeMode,
@@ -132,13 +151,29 @@ export function LibraryPage() {
     setPreferences(nextPreferences);
   }
 
-  const filteredEntries = filterLibraryEntries(entries, {
+  function finishAdultUnlock(): void {
+    setAdultAccessUnlocked(true);
+    setIsAdultPromptOpen(false);
+    if (disableSafeModeAfterUnlock) {
+      setPreferences(savePreferences({ ...getPreferences(), safeMode: false }));
+      setDisableSafeModeAfterUnlock(false);
+    }
+  }
+
+  const accessibleEntries = entries.filter(
+    (entry) =>
+      adultAccessUnlocked ||
+      !/(18\+?|adult|mature|r-?18|nc-?17)/i.test(entry.ageRating ?? ""),
+  );
+
+  const filteredEntries = filterLibraryEntries(accessibleEntries, {
     query,
     type: selectedType,
     tag: selectedTag,
     favoriteOnly: view === "favorites",
     continueOnly: view === "continue",
-    safeOnly: preferences.safeMode,
+    safeOnly: view !== "adult" && preferences.safeMode,
+    adultOnly: view === "adult",
   });
   const visibleEntries = [...filteredEntries].sort((left, right) => {
     if (sortBy === "title") {
@@ -155,12 +190,14 @@ export function LibraryPage() {
     );
   });
   const availableTags = Array.from(
-    new Set(entries.flatMap((entry) => entry.tags)),
+    new Set(accessibleEntries.flatMap((entry) => entry.tags)),
   ).sort((left, right) => left.localeCompare(right));
   const resumeEntries = [...entries]
     .filter(
       (entry) =>
         entry.resume &&
+        (adultAccessUnlocked ||
+          !/(18\+?|adult|mature|r-?18|nc-?17)/i.test(entry.ageRating ?? "")) &&
         (!preferences.safeMode ||
           !/(18\+?|adult|mature|r-?18|nc-?17)/i.test(entry.ageRating ?? "")),
     )
@@ -170,11 +207,13 @@ export function LibraryPage() {
     )
     .slice(0, 5);
   const pageTitle =
-    view === "favorites"
-      ? "Favorites"
-      : view === "continue"
-        ? "Continue reading"
-        : "Your library";
+    view === "adult"
+      ? "18+ Vault"
+      : view === "favorites"
+        ? "Favorites"
+        : view === "continue"
+          ? "Continue reading"
+          : "Your library";
 
   return (
     <main style={styles.page}>
@@ -202,6 +241,10 @@ export function LibraryPage() {
               )}
               {preferences.safeMode ? "Safe" : "18+"}
             </button>
+            <Link to="/?view=adult" className="libraryImportLink">
+              <ShieldAlert size={16} />
+              <span>18+ Vault</span>
+            </Link>
             <Link to="/import" className="libraryImportLink">
               <Upload size={16} />
               <span>Import books</span>
@@ -209,26 +252,36 @@ export function LibraryPage() {
           </div>
         </header>
 
-        <div style={styles.statsRow}>
+        {isAdultPromptOpen || (view === "adult" && !adultAccessUnlocked) ? (
+          <AdultAccessPrompt onUnlocked={finishAdultUnlock} />
+        ) : null}
+
+        <div className="statsRow" style={styles.statsRow}>
           <div style={styles.statItem}>
-            <span style={styles.statValue}>{entries.length}</span>
+            <span style={styles.statValue}>{accessibleEntries.length}</span>
             <span style={styles.statLabel}>Series</span>
           </div>
           <div style={styles.statItem}>
             <span style={styles.statValue}>
-              {entries.reduce((total, entry) => total + entry.chapterCount, 0)}
+              {accessibleEntries.reduce(
+                (total, entry) => total + entry.chapterCount,
+                0,
+              )}
             </span>
             <span style={styles.statLabel}>Chapters</span>
           </div>
           <div style={styles.statItem}>
             <span style={styles.statValue}>
-              {entries.reduce((total, entry) => total + entry.pageCount, 0)}
+              {accessibleEntries.reduce(
+                (total, entry) => total + entry.pageCount,
+                0,
+              )}
             </span>
             <span style={styles.statLabel}>Pages</span>
           </div>
           <div style={styles.statItem}>
             <span style={styles.statValue}>
-              {entries.filter((entry) => entry.isFavorite).length}
+              {accessibleEntries.filter((entry) => entry.isFavorite).length}
             </span>
             <span style={styles.statLabel}>Favorites</span>
           </div>
@@ -312,7 +365,9 @@ export function LibraryPage() {
                   ? "Saved series"
                   : view === "continue"
                     ? "Reading in progress"
-                    : "All series"}
+                    : view === "adult"
+                      ? "Vault titles"
+                      : "All series"}
               </h2>
               <p style={styles.sectionDescription}>
                 {visibleEntries.length}{" "}
@@ -322,7 +377,7 @@ export function LibraryPage() {
             </div>
             <span style={styles.viewCount}>
               <SlidersHorizontal size={14} />
-              {visibleEntries.length} / {entries.length}
+              {visibleEntries.length} / {accessibleEntries.length}
             </span>
           </header>
 
@@ -343,25 +398,6 @@ export function LibraryPage() {
                   style={styles.searchInput}
                 />
               </span>
-            </label>
-            <label style={styles.filterField}>
-              <span style={styles.filterLabel}>Content type</span>
-              <select
-                value={selectedType}
-                onChange={(event) =>
-                  setSelectedType(
-                    event.currentTarget.value as SeriesType | "all",
-                  )
-                }
-                style={styles.filterInput}
-              >
-                <option value="all">All types</option>
-                {SERIES_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {SERIES_TYPE_LABELS[type]}
-                  </option>
-                ))}
-              </select>
             </label>
             <label style={styles.filterField}>
               <span style={styles.filterLabel}>Topic</span>
@@ -405,10 +441,10 @@ export function LibraryPage() {
                 ...(selectedType === "all" ? styles.categoryChipActive : {}),
               }}
             >
-              All types <span>{entries.length}</span>
+              All types <span>{accessibleEntries.length}</span>
             </button>
             {SERIES_TYPES.map((type) => {
-              const count = entries.filter((entry) =>
+              const count = accessibleEntries.filter((entry) =>
                 type === "manga"
                   ? entry.type === "manga" || entry.type === "manhwa"
                   : entry.type === type,
@@ -454,18 +490,22 @@ export function LibraryPage() {
             <div style={styles.emptyCard}>
               <BookOpen size={22} />
               <strong>
-                {view === "favorites"
-                  ? "No favorites yet"
-                  : view === "continue"
-                    ? "Nothing in progress"
-                    : "No matches found"}
+                {view === "adult"
+                  ? "No saved 18+ titles"
+                  : view === "favorites"
+                    ? "No favorites yet"
+                    : view === "continue"
+                      ? "Nothing in progress"
+                      : "No matches found"}
               </strong>
               <span>
-                {view === "favorites"
-                  ? "Save a title with the heart button and it will appear here."
-                  : view === "continue"
-                    ? "Open any chapter and your reading position will appear here."
-                    : "Try another title, tag, or content type."}
+                {view === "adult"
+                  ? "Titles marked for mature readers will appear here after they are added to your library."
+                  : view === "favorites"
+                    ? "Save a title with the heart button and it will appear here."
+                    : view === "continue"
+                      ? "Open any chapter and your reading position will appear here."
+                      : "Try another title, tag, or content type."}
               </span>
             </div>
           ) : (

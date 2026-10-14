@@ -5,6 +5,8 @@ import {
   deleteBookmark,
   clearLibraryData,
   getBookmark,
+  getBookmarksForChapter,
+  getLinkedFolder,
   getProgress,
   getBlob,
   getSeries,
@@ -14,14 +16,17 @@ import {
   listPages,
   listProgress,
   listSeries,
+  openKageDb,
   putChapter,
   putBookmark,
+  putLinkedFolder,
   putPage,
   putProgress,
   putSeries,
   resetDbCache,
   saveBlob,
   deleteSeriesWithContents,
+  deleteLinkedFolder,
   wipeDatabase,
 } from "./db";
 
@@ -108,7 +113,7 @@ describe("blob storage", () => {
 
     await expect(getSeries(series.id)).resolves.toBeUndefined();
     await expect(listSeries()).resolves.toEqual([
-      { ...unrelatedSeries, schemaVersion: 2 },
+      { ...unrelatedSeries, schemaVersion: 4 },
     ]);
     await expect(listChapters(series.id)).resolves.toEqual([]);
     await expect(listPages(chapter.id)).resolves.toEqual([]);
@@ -244,18 +249,76 @@ describe("blob storage", () => {
   });
 
   it("persists and removes a page bookmark", async () => {
-    const bookmark = {
+    const firstBookmark = {
       schemaVersion: 2,
       chapterId: "chapter:bookmark",
       pageIndex: 3,
       createdAt: 20,
     };
+    const secondBookmark = {
+      ...firstBookmark,
+      pageIndex: 8,
+      createdAt: 30,
+      note: "A favorite scene",
+    };
 
-    await putBookmark(bookmark);
-    await expect(getBookmark(bookmark.chapterId)).resolves.toEqual(bookmark);
+    const savedBookmark = await putBookmark(firstBookmark);
+    await putBookmark(secondBookmark);
+    await expect(
+      getBookmarksForChapter(firstBookmark.chapterId),
+    ).resolves.toHaveLength(2);
+    await expect(getBookmark(firstBookmark.chapterId)).resolves.toMatchObject({
+      pageIndex: 3,
+      note: "",
+    });
 
-    await deleteBookmark(bookmark.chapterId);
-    await expect(getBookmark(bookmark.chapterId)).resolves.toBeUndefined();
+    await deleteBookmark(savedBookmark.id);
+    await expect(
+      getBookmarksForChapter(firstBookmark.chapterId),
+    ).resolves.toMatchObject([{ pageIndex: 8, note: "A favorite scene" }]);
+  });
+
+  it("migrates legacy chapter bookmarks into the multi-bookmark store", async () => {
+    const chapterId = "chapter:legacy-bookmark";
+    const db = await openKageDb();
+    await db.put("bookmarks", {
+      schemaVersion: 2,
+      chapterId,
+      pageIndex: 4,
+      createdAt: 25,
+    });
+
+    resetDbCache();
+    const migrated = await listBookmarks();
+    expect(migrated).toMatchObject([
+      {
+        id: `legacy:${chapterId}`,
+        chapterId,
+        pageIndex: 4,
+        createdAt: 25,
+        note: "",
+        schemaVersion: 4,
+      },
+    ]);
+
+    resetDbCache();
+    await expect(listBookmarks()).resolves.toEqual(migrated);
+  });
+
+  it("persists and removes a linked folder handle", async () => {
+    const handle = {
+      kind: "directory",
+      name: "Comics",
+    } as FileSystemDirectoryHandle;
+
+    await putLinkedFolder(handle);
+    await expect(getLinkedFolder()).resolves.toMatchObject({
+      id: "primary",
+      handle: { name: "Comics", kind: "directory" },
+    });
+
+    await deleteLinkedFolder();
+    await expect(getLinkedFolder()).resolves.toBeUndefined();
   });
 
   it("clears all library records and stored page blobs", async () => {

@@ -1,8 +1,34 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Check, FileUp, FolderOpen, Upload } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  FileUp,
+  FolderOpen,
+  RefreshCw,
+  Unlink,
+  Upload,
+} from "lucide-react";
 import { importArchiveSources } from "../../lib/import/importer";
+import { collectLinkedFolderSources } from "../../lib/import/linkedFolder";
 import type { ImportProgressEvent } from "../../lib/import/types";
+import {
+  deleteLinkedFolder,
+  getLinkedFolder,
+  putLinkedFolder,
+} from "../../lib/storage/db";
+import type { ArchiveSource } from "../../lib/import/types";
+
+type DirectoryPermissionHandle = FileSystemDirectoryHandle & {
+  queryPermission(options: { mode: "read" }): Promise<PermissionState>;
+  requestPermission(options: { mode: "read" }): Promise<PermissionState>;
+};
+
+type WindowWithDirectoryPicker = Window & {
+  showDirectoryPicker?: (options: {
+    mode: "read";
+  }) => Promise<DirectoryPermissionHandle>;
+};
 
 type ImportLogItem = ImportProgressEvent & { key: string };
 
@@ -19,16 +45,22 @@ export function ImportPage() {
   const [statusItems, setStatusItems] = useState<ImportLogItem[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [linkedFolderName, setLinkedFolderName] = useState("");
+  const [folderMessage, setFolderMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const directoryInputRef = useRef<HTMLInputElement>(null);
+  const scanLinkedFolderRef = useRef<
+    (
+      directory?: FileSystemDirectoryHandle,
+      requestPermission?: boolean,
+    ) => Promise<void>
+  >(() => Promise.resolve());
+  const supportsDirectoryLinking =
+    typeof (window as WindowWithDirectoryPicker).showDirectoryPicker ===
+    "function";
 
-  useEffect(() => {
-    directoryInputRef.current?.setAttribute("webkitdirectory", "");
-    directoryInputRef.current?.setAttribute("directory", "");
-  }, []);
-
-  async function importFiles(files: FileList | File[]): Promise<void> {
-    if (isImporting || files.length === 0) return;
+  async function importSources(sources: ArchiveSource[]): Promise<void> {
+    if (isImporting || sources.length === 0) return;
 
     setStatusItems([]);
     setIsImporting(true);
@@ -46,7 +78,7 @@ export function ImportPage() {
     };
 
     try {
-      await importArchiveSources(toArchiveSources(files), updateStatus);
+      await importArchiveSources(sources, updateStatus);
     } catch (error) {
       updateStatus({
         fileName: "Import failed",
@@ -58,6 +90,89 @@ export function ImportPage() {
     } finally {
       setIsImporting(false);
     }
+  }
+
+  async function importFiles(files: FileList | File[]): Promise<void> {
+    await importSources(toArchiveSources(files));
+  }
+
+  async function scanLinkedFolder(
+    directory?: FileSystemDirectoryHandle,
+    requestPermission = true,
+  ): Promise<void> {
+    try {
+      const handle = (directory ?? (await getLinkedFolder())?.handle) as
+        | DirectoryPermissionHandle
+        | undefined;
+      if (!handle) {
+        setFolderMessage("Link a folder before rescanning.");
+        return;
+      }
+
+      let permission = await handle.queryPermission({ mode: "read" });
+      if (permission !== "granted" && requestPermission) {
+        permission = await handle.requestPermission({ mode: "read" });
+      }
+      if (permission !== "granted") {
+        setFolderMessage("Rescan the linked folder to grant read access.");
+        return;
+      }
+
+      const sources = await collectLinkedFolderSources(handle);
+      if (sources.length === 0) {
+        setFolderMessage(`No supported files found in ${handle.name}.`);
+        return;
+      }
+      setFolderMessage(`Scanning ${sources.length} files from ${handle.name}.`);
+      await importSources(sources);
+      setFolderMessage(`Finished scanning ${handle.name}.`);
+    } catch (error) {
+      setFolderMessage(
+        error instanceof Error ? error.message : "Could not scan this folder.",
+      );
+    }
+  }
+
+  useEffect(() => {
+    scanLinkedFolderRef.current = scanLinkedFolder;
+  });
+
+  useEffect(() => {
+    directoryInputRef.current?.setAttribute("webkitdirectory", "");
+    directoryInputRef.current?.setAttribute("directory", "");
+    void getLinkedFolder().then((linkedFolder) => {
+      if (!linkedFolder) return;
+      setLinkedFolderName(linkedFolder.handle.name);
+      void scanLinkedFolderRef.current(linkedFolder.handle, false);
+    });
+  }, []);
+
+  async function linkLocalFolder(): Promise<void> {
+    const picker = (window as WindowWithDirectoryPicker).showDirectoryPicker;
+    if (!picker) {
+      setFolderMessage(
+        "Persistent folder linking is unavailable in this browser.",
+      );
+      return;
+    }
+
+    try {
+      const handle = await picker.call(window, { mode: "read" });
+      await putLinkedFolder(handle);
+      setLinkedFolderName(handle.name);
+      await scanLinkedFolder(handle);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setFolderMessage(
+        error instanceof Error ? error.message : "Could not link this folder.",
+      );
+    }
+  }
+
+  async function unlinkLocalFolder(): Promise<void> {
+    await deleteLinkedFolder();
+    setLinkedFolderName("");
+    setFolderMessage("Folder unlinked.");
   }
 
   const completedCount = statusItems.filter(
@@ -147,10 +262,52 @@ export function ImportPage() {
             <FolderOpen size={16} />
             Choose image folder
           </button>
+          {supportsDirectoryLinking ? (
+            <>
+              <button
+                type="button"
+                className="importSecondaryButton"
+                disabled={isImporting}
+                onClick={() => void linkLocalFolder()}
+              >
+                <FolderOpen size={16} />
+                {linkedFolderName
+                  ? "Change linked folder"
+                  : "Link local folder"}
+              </button>
+              {linkedFolderName ? (
+                <>
+                  <button
+                    type="button"
+                    className="importSecondaryButton"
+                    disabled={isImporting}
+                    onClick={() => void scanLinkedFolder()}
+                  >
+                    <RefreshCw size={16} />
+                    Rescan linked folder
+                  </button>
+                  <button
+                    type="button"
+                    className="importSecondaryButton"
+                    disabled={isImporting}
+                    onClick={() => void unlinkLocalFolder()}
+                  >
+                    <Unlink size={16} />
+                    Unlink folder
+                  </button>
+                </>
+              ) : null}
+            </>
+          ) : null}
         </div>
         <span className="importPrivacyNote">
           <Check size={13} /> Files stay on this device
         </span>
+        {folderMessage ? (
+          <p className="importPrivacyNote" role="status">
+            {folderMessage}
+          </p>
+        ) : null}
       </section>
 
       {statusItems.length > 0 ? (

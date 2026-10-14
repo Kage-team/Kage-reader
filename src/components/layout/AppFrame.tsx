@@ -95,6 +95,50 @@ export function AppFrame({ children }: PropsWithChildren) {
         </div>
       </aside>
 
+      <nav className="appMobileNav" aria-label="Primary navigation">
+        <NavLink
+          to="/"
+          end
+          className={() => navClass(isLibraryRoute && view === "all")}
+          aria-label="All series"
+        >
+          <BookOpen size={18} />
+          <span>Library</span>
+        </NavLink>
+        <NavLink
+          to="/?view=continue"
+          className={() => navClass(isLibraryRoute && view === "continue")}
+          aria-label="Continue reading"
+        >
+          <Clock3 size={18} />
+          <span>Continue</span>
+        </NavLink>
+        <NavLink
+          to="/?view=favorites"
+          className={() => navClass(isLibraryRoute && view === "favorites")}
+          aria-label="Favorites"
+        >
+          <Bookmark size={18} />
+          <span>Saved</span>
+        </NavLink>
+        <NavLink
+          to="/import"
+          className={({ isActive }) => navClass(isActive)}
+          aria-label="Import books"
+        >
+          <FileUp size={18} />
+          <span>Import</span>
+        </NavLink>
+        <NavLink
+          to="/settings"
+          className={({ isActive }) => navClass(isActive)}
+          aria-label="Settings"
+        >
+          <Settings size={18} />
+          <span>Settings</span>
+        </NavLink>
+      </nav>
+
       <div className="appMainShell">
         <header className="appTopbar">
           <div className="appBreadcrumb">

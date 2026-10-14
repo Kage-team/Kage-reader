@@ -84,9 +84,16 @@ export type Preferences = {
   theme: ColorTheme;
   accent: AccentColor;
   safeMode: boolean;
+  adultPinSalt: string;
+  adultPinHash: string;
+  stealthMode: boolean;
   readerWidth: number;
   comicPageGap: number;
   comicInfiniteScroll: boolean;
+  comicBrightness: number;
+  comicContrast: number;
+  comicInvert: number;
+  comicSepia: number;
   novelInfiniteScroll: boolean;
   immersiveMode: boolean;
   readerAutoHide: boolean;
@@ -112,9 +119,16 @@ export const DEFAULT_PREFERENCES: Preferences = {
   theme: "oled",
   accent: "pure",
   safeMode: true,
+  adultPinSalt: "",
+  adultPinHash: "",
+  stealthMode: false,
   readerWidth: 1600,
   comicPageGap: 0,
   comicInfiniteScroll: true,
+  comicBrightness: 100,
+  comicContrast: 100,
+  comicInvert: 0,
+  comicSepia: 0,
   novelInfiniteScroll: true,
   immersiveMode: false,
   readerAutoHide: true,
@@ -226,6 +240,18 @@ function normalizePreferences(value: unknown): Preferences {
       typeof candidate.safeMode === "boolean"
         ? candidate.safeMode
         : DEFAULT_PREFERENCES.safeMode,
+    adultPinSalt:
+      typeof candidate.adultPinSalt === "string"
+        ? candidate.adultPinSalt
+        : DEFAULT_PREFERENCES.adultPinSalt,
+    adultPinHash:
+      typeof candidate.adultPinHash === "string"
+        ? candidate.adultPinHash
+        : DEFAULT_PREFERENCES.adultPinHash,
+    stealthMode:
+      typeof candidate.stealthMode === "boolean"
+        ? candidate.stealthMode
+        : DEFAULT_PREFERENCES.stealthMode,
     readerWidth: Number.isFinite(readerWidth)
       ? Math.min(2200, Math.max(720, Math.round(readerWidth / 50) * 50))
       : DEFAULT_PREFERENCES.readerWidth,
@@ -239,6 +265,18 @@ function normalizePreferences(value: unknown): Preferences {
       typeof candidate.comicInfiniteScroll === "boolean"
         ? candidate.comicInfiniteScroll
         : DEFAULT_PREFERENCES.comicInfiniteScroll,
+    comicBrightness: Number.isFinite(Number(candidate.comicBrightness))
+      ? Math.min(150, Math.max(50, Number(candidate.comicBrightness)))
+      : DEFAULT_PREFERENCES.comicBrightness,
+    comicContrast: Number.isFinite(Number(candidate.comicContrast))
+      ? Math.min(150, Math.max(50, Number(candidate.comicContrast)))
+      : DEFAULT_PREFERENCES.comicContrast,
+    comicInvert: Number.isFinite(Number(candidate.comicInvert))
+      ? Math.min(100, Math.max(0, Number(candidate.comicInvert)))
+      : DEFAULT_PREFERENCES.comicInvert,
+    comicSepia: Number.isFinite(Number(candidate.comicSepia))
+      ? Math.min(100, Math.max(0, Number(candidate.comicSepia)))
+      : DEFAULT_PREFERENCES.comicSepia,
     novelInfiniteScroll:
       typeof candidate.novelInfiniteScroll === "boolean"
         ? candidate.novelInfiniteScroll

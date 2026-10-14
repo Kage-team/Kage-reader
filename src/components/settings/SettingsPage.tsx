@@ -24,6 +24,12 @@ import type {
   ColorTheme,
   ReadingDirection,
 } from "../../lib/preferences/preferences";
+import {
+  clearAdultAccess,
+  createAdultPinCredential,
+  grantAdultAccess,
+} from "../../lib/security/adultPin";
+import { applyStealthMode } from "../../lib/security/stealth";
 
 type StorageStatus = {
   usage?: number;
@@ -175,6 +181,9 @@ export function SettingsPage({
   const [isRestoring, setIsRestoring] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [installMessage, setInstallMessage] = useState("");
+  const [adultPin, setAdultPin] = useState("");
+  const [adultPinConfirmation, setAdultPinConfirmation] = useState("");
+  const [securityMessage, setSecurityMessage] = useState("");
 
   useEffect(() => {
     const storageManager = navigator.storage;
@@ -208,6 +217,42 @@ export function SettingsPage({
     const nextPreferences = savePreferences({ ...preferences, ...update });
     setPreferences(nextPreferences);
     applyPreferencesToDocument(nextPreferences);
+    applyStealthMode(nextPreferences.stealthMode);
+  }
+
+  async function saveAdultPin(): Promise<void> {
+    if (!/^\d{4,6}$/.test(adultPin)) {
+      setSecurityMessage("PIN must contain 4 to 6 digits.");
+      return;
+    }
+    if (adultPin !== adultPinConfirmation) {
+      setSecurityMessage("PIN entries do not match.");
+      return;
+    }
+
+    try {
+      const credential = await createAdultPinCredential(adultPin);
+      updatePreferences({
+        adultPinSalt: credential.salt,
+        adultPinHash: credential.hash,
+      });
+      grantAdultAccess(credential.hash);
+      setAdultPin("");
+      setAdultPinConfirmation("");
+      setSecurityMessage("Adult access PIN saved.");
+    } catch {
+      setSecurityMessage("Could not create a PIN in this browser.");
+    }
+  }
+
+  function removeAdultPin(): void {
+    clearAdultAccess();
+    updatePreferences({
+      adultPinSalt: "",
+      adultPinHash: "",
+      safeMode: true,
+    });
+    setSecurityMessage("Adult access PIN removed; Safe mode is on.");
   }
 
   async function requestPersistentStorage(): Promise<void> {
@@ -334,7 +379,7 @@ export function SettingsPage({
 
   return (
     <main style={styles.page}>
-      <section style={styles.panel}>
+      <section className="settingsPagePanel" style={styles.panel}>
         <header style={styles.header}>
           <div>
             <p style={styles.kicker}>Preferences</p>
@@ -345,7 +390,11 @@ export function SettingsPage({
           </Link>
         </header>
 
-        <nav style={styles.settingsJumpNav} aria-label="Settings sections">
+        <nav
+          className="settingsSectionNav"
+          style={styles.settingsJumpNav}
+          aria-label="Settings sections"
+        >
           <a href="#appearance-heading" style={styles.settingsJumpLink}>
             Appearance
           </a>
@@ -354,6 +403,9 @@ export function SettingsPage({
           </a>
           <a href="#content-heading" style={styles.settingsJumpLink}>
             Content
+          </a>
+          <a href="#adult-access-heading" style={styles.settingsJumpLink}>
+            Privacy
           </a>
           <a href="#storage-heading" style={styles.settingsJumpLink}>
             Storage
@@ -364,9 +416,16 @@ export function SettingsPage({
           <a href="#shortcuts-heading" style={styles.settingsJumpLink}>
             Shortcuts
           </a>
+          <a href="#install-heading" style={styles.settingsJumpLink}>
+            Installation
+          </a>
         </nav>
 
-        <section style={styles.section} aria-labelledby="appearance-heading">
+        <section
+          className="settingsSection"
+          style={styles.section}
+          aria-labelledby="appearance-heading"
+        >
           <div>
             <h2 id="appearance-heading" style={styles.sectionTitle}>
               Color themes & appearance
@@ -463,7 +522,11 @@ export function SettingsPage({
           </label>
         </section>
 
-        <section style={styles.section} aria-labelledby="reading-heading">
+        <section
+          className="settingsSection"
+          style={styles.section}
+          aria-labelledby="reading-heading"
+        >
           <div style={styles.readerSettingsHeader}>
             <h2 id="reading-heading" style={styles.sectionTitle}>
               Reading mode & format
@@ -761,7 +824,11 @@ export function SettingsPage({
           </label>
         </section>
 
-        <section style={styles.section} aria-labelledby="content-heading">
+        <section
+          className="settingsSection"
+          style={styles.section}
+          aria-labelledby="content-heading"
+        >
           <div>
             <h2 id="content-heading" style={styles.sectionTitle}>
               Content filter
@@ -787,7 +854,96 @@ export function SettingsPage({
           </label>
         </section>
 
-        <section style={styles.section} aria-labelledby="storage-heading">
+        <section
+          className="settingsSection"
+          style={styles.section}
+          aria-labelledby="adult-access-heading"
+        >
+          <div>
+            <h2 id="adult-access-heading" style={styles.sectionTitle}>
+              Adult access
+            </h2>
+            <p style={styles.description}>
+              A local privacy gate only. It does not encrypt imported files or
+              protect data from someone with browser storage access.
+            </p>
+          </div>
+          <p style={styles.description}>
+            {preferences.adultPinHash ? "PIN is set." : "No PIN is set."}
+          </p>
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>New 4–6 digit PIN</span>
+            <input
+              type="password"
+              inputMode="numeric"
+              autoComplete="new-password"
+              pattern="[0-9]{4,6}"
+              maxLength={6}
+              value={adultPin}
+              onChange={(event) => setAdultPin(event.currentTarget.value)}
+              style={styles.select}
+            />
+          </label>
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>Confirm PIN</span>
+            <input
+              type="password"
+              inputMode="numeric"
+              autoComplete="new-password"
+              pattern="[0-9]{4,6}"
+              maxLength={6}
+              value={adultPinConfirmation}
+              onChange={(event) =>
+                setAdultPinConfirmation(event.currentTarget.value)
+              }
+              style={styles.select}
+            />
+          </label>
+          <div style={styles.backupActions}>
+            <button
+              type="button"
+              style={styles.secondaryButton}
+              onClick={() => void saveAdultPin()}
+            >
+              Save PIN
+            </button>
+            {preferences.adultPinHash ? (
+              <button
+                type="button"
+                style={styles.dangerButton}
+                onClick={removeAdultPin}
+              >
+                Remove PIN
+              </button>
+            ) : null}
+          </div>
+          {securityMessage ? (
+            <p role="status" style={styles.description}>
+              {securityMessage}
+            </p>
+          ) : null}
+          <label style={styles.toggleRow}>
+            <span>
+              <span style={styles.fieldLabel}>Stealth disguise</span>
+              <span style={styles.description}>
+                Use a neutral browser-tab title and icon.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={preferences.stealthMode}
+              onChange={(event) =>
+                updatePreferences({ stealthMode: event.currentTarget.checked })
+              }
+            />
+          </label>
+        </section>
+
+        <section
+          className="settingsSection"
+          style={styles.section}
+          aria-labelledby="storage-heading"
+        >
           <div>
             <h2 id="storage-heading" style={styles.sectionTitle}>
               Browser storage
@@ -872,7 +1028,11 @@ export function SettingsPage({
           ) : null}
         </section>
 
-        <section style={styles.section} aria-labelledby="backup-heading">
+        <section
+          className="settingsSection"
+          style={styles.section}
+          aria-labelledby="backup-heading"
+        >
           <div>
             <h2 id="backup-heading" style={styles.sectionTitle}>
               Backup and recovery
@@ -924,7 +1084,11 @@ export function SettingsPage({
           ) : null}
         </section>
 
-        <section style={styles.section} aria-labelledby="shortcuts-heading">
+        <section
+          className="settingsSection"
+          style={styles.section}
+          aria-labelledby="shortcuts-heading"
+        >
           <div>
             <h2 id="shortcuts-heading" style={styles.sectionTitle}>
               Keyboard controls
@@ -963,7 +1127,11 @@ export function SettingsPage({
           </dl>
         </section>
 
-        <section style={styles.section} aria-labelledby="install-heading">
+        <section
+          className="settingsSection"
+          style={styles.section}
+          aria-labelledby="install-heading"
+        >
           <div>
             <h2 id="install-heading" style={styles.sectionTitle}>
               App installation
@@ -1004,7 +1172,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: "var(--font-body)",
   },
   panel: {
-    maxWidth: 900,
+    maxWidth: 1240,
     margin: "0 auto",
     display: "grid",
     gap: 22,
@@ -1012,10 +1180,13 @@ const styles: Record<string, React.CSSProperties> = {
   settingsJumpNav: {
     position: "sticky",
     zIndex: 4,
-    top: 66,
+    top: "var(--settings-nav-top, 66px)",
     display: "flex",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     gap: 6,
+    overflowX: "auto",
+    overscrollBehaviorX: "contain",
+    scrollbarWidth: "none",
     padding: "9px 0",
     borderBottom: "1px solid var(--app-border)",
     background: "color-mix(in srgb, var(--app-bg) 94%, transparent)",
@@ -1083,6 +1254,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 16,
     padding: "22px 0",
     borderTop: "1px solid var(--app-border)",
+    scrollMarginTop: 124,
   },
   themeGrid: {
     display: "grid",

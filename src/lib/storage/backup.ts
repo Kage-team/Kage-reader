@@ -15,7 +15,7 @@ import {
 } from "./db";
 import {
   SCHEMA_VERSION,
-  type Bookmark,
+  type BookmarkInput,
   type Chapter,
   type Page,
   type Progress,
@@ -46,7 +46,7 @@ type BackupManifest = {
     chapters: Chapter[];
     pages: Page[];
     progress: Progress[];
-    bookmarks: Bookmark[];
+    bookmarks: BookmarkInput[];
   };
   blobs: BackupBlob[];
   preferences: Preferences;
@@ -148,10 +148,12 @@ function isProgress(value: unknown): value is Progress {
   );
 }
 
-function isBookmark(value: unknown): value is Bookmark {
+function isBookmark(value: unknown): value is BookmarkInput {
   if (!isObject(value)) return false;
   return (
     hasString(value, "chapterId") &&
+    (value.id === undefined || hasString(value, "id")) &&
+    (value.note === undefined || typeof value.note === "string") &&
     Number.isInteger(value.schemaVersion) &&
     Number.isInteger(value.pageIndex) &&
     (value.pageIndex as number) >= 0 &&
@@ -308,7 +310,7 @@ function parseManifest(bytes: Uint8Array): BackupManifest {
   const chapters = records.chapters as Chapter[];
   const pages = records.pages as Page[];
   const progress = records.progress as Progress[];
-  const bookmarks = records.bookmarks as Bookmark[];
+  const bookmarks = records.bookmarks as BookmarkInput[];
   const seriesIds = new Set(series.map((record) => record.id));
   const chapterById = new Map(chapters.map((record) => [record.id, record]));
   const pageStorageKeys = new Set(pages.map((record) => record.storageKey));
@@ -330,7 +332,10 @@ function parseManifest(bytes: Uint8Array): BackupManifest {
     !hasUniqueIds(pages, (record) => record.storageKey) ||
     !hasUniqueIds(pages, (record) => `${record.chapterId}:${record.index}`) ||
     !hasUniqueIds(progress, (record) => record.chapterId) ||
-    !hasUniqueIds(bookmarks, (record) => record.chapterId) ||
+    !hasUniqueIds(
+      bookmarks,
+      (record) => record.id ?? `legacy:${record.chapterId}`,
+    ) ||
     chapters.some((record) => !seriesIds.has(record.seriesId)) ||
     pages.some((record) => {
       const chapter = chapterById.get(record.chapterId);

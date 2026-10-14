@@ -1,5 +1,6 @@
 :root {
   color-scheme: dark;
+  --settings-nav-top: 66px;
   --app-bg: #050606;
   --app-sidebar: #090b0a;
   --app-topbar: #080909ef;
@@ -9,6 +10,13 @@
   --app-border-strong: #383d3c;
   --app-text: #f2f3f1;
   --app-muted: #929a99;
+  --app-focus-ring: var(--app-lime);
+  --app-hover: #ffffff0a;
+  --app-selected: #d5f36b12;
+  --app-shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.22);
+  --app-radius-control: 8px;
+  --app-motion-fast: 140ms ease;
+  --app-motion-standard: 200ms ease;
   --app-lime: #f4f5f4;
   --app-coral: #ff9679;
   --app-danger: #ff7770;
@@ -130,16 +138,25 @@ select {
 button,
 a,
 input,
-select {
+select,
+textarea,
+summary {
   -webkit-tap-highlight-color: transparent;
 }
 
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
-select:focus-visible {
-  outline: 2px solid var(--app-lime);
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--app-focus-ring);
   outline-offset: 3px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
 }
 
 .appShell {
@@ -226,19 +243,19 @@ select:focus-visible {
   font-weight: 600;
   text-decoration: none;
   transition:
-    background 140ms ease,
-    color 140ms ease,
-    border-color 140ms ease;
+    background var(--app-motion-fast),
+    color var(--app-motion-fast),
+    border-color var(--app-motion-fast);
 }
 
 .appNavLink:hover {
-  background: #ffffff08;
+  background: var(--app-hover);
   color: var(--app-text);
 }
 
 .appNavLinkActive {
   border-color: #39452f;
-  background: #d5f36b12;
+  background: var(--app-selected);
   color: var(--app-lime);
 }
 
@@ -266,6 +283,74 @@ select:focus-visible {
   border-radius: 50%;
   background: var(--app-lime);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-lime) 12%, transparent);
+}
+
+.appMobileNav {
+  display: none;
+}
+
+.settingsSectionNav {
+  scrollbar-width: none;
+}
+
+.settingsSectionNav::-webkit-scrollbar {
+  display: none;
+}
+
+.settingsSectionNav > a {
+  flex: 0 0 auto;
+}
+
+.settingsPagePanel {
+  grid-template-columns: 205px minmax(0, 1fr);
+  column-gap: 36px;
+  row-gap: 0;
+}
+
+.settingsPagePanel > header {
+  grid-column: 1 / -1;
+  padding-bottom: 8px;
+}
+
+.settingsPagePanel > .settingsSectionNav {
+  position: sticky !important;
+  top: 82px !important;
+  display: grid !important;
+  grid-column: 1;
+  grid-row: 2 / span 8;
+  align-content: start;
+  justify-content: stretch;
+  gap: 5px;
+  height: fit-content;
+  padding: 8px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-panel);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.settingsPagePanel > .settingsSectionNav a {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: var(--app-muted);
+  font-size: 12px;
+  transition:
+    color var(--app-motion-fast),
+    background var(--app-motion-fast);
+}
+
+.settingsPagePanel > .settingsSectionNav a:hover,
+.settingsPagePanel > .settingsSectionNav a:focus-visible {
+  background: var(--app-hover);
+  color: var(--app-text);
+}
+
+.settingsPagePanel > .settingsSection {
+  grid-column: 2;
+  padding: 24px 0;
 }
 
 .appMainShell {
@@ -369,7 +454,7 @@ select:focus-visible {
 
 .libraryFilters {
   display: grid;
-  grid-template-columns: minmax(190px, 2fr) repeat(3, minmax(125px, 1fr));
+  grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(145px, 1fr));
   align-items: end;
 }
 
@@ -661,14 +746,21 @@ select:focus-visible {
     position: sticky;
     z-index: 10;
     top: 0;
-    height: auto;
-    gap: 12px;
-    padding: 12px 16px 9px;
+    height: 56px;
+    flex: 0 0 56px;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 16px;
     border-right: 0;
     border-bottom: 1px solid var(--app-border);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
   }
 
   .appBrand {
+    min-width: 0;
     padding: 0 2px;
   }
 
@@ -681,49 +773,97 @@ select:focus-visible {
     font-size: 16px;
   }
 
-  .appNavGroup {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    width: 100%;
-    gap: 5px;
-  }
-
-  .appNavGroup:last-of-type {
-    position: absolute;
-    top: 11px;
-    right: 12px;
-    width: auto;
-    grid-template-columns: 1fr;
-  }
-
-  .appNavGroup:last-of-type .appNavLink {
-    min-height: 32px;
-    padding: 0 8px;
-  }
-
-  .appNavLabel,
+  .appBrandName span,
   .appSidebarFooter {
     display: none;
   }
 
-  .appNavLink {
-    min-width: 0;
-    min-height: 34px;
-    justify-content: center;
-    gap: 5px;
-    padding: 0 4px;
-    font-size: 10px;
-    white-space: nowrap;
+  .appNavGroup {
+    display: none;
   }
 
-  .appNavLink svg {
-    width: 15px;
-    height: 15px;
+  .appMobileNav {
+    position: fixed;
+    z-index: 30;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    min-height: calc(64px + env(safe-area-inset-bottom));
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--app-border);
+    background: color-mix(in srgb, var(--app-sidebar) 94%, transparent);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.18);
+  }
+
+  .appMobileNav .appNavLink {
+    display: grid;
+    min-width: 0;
+    min-height: 48px;
+    align-content: center;
+    justify-items: center;
+    gap: 3px;
+    padding: 3px 2px;
+    border-radius: var(--app-radius-control);
+    font-size: 10px;
+    line-height: 1.1;
+  }
+
+  .appMobileNav .appNavLinkActive {
+    border-color: transparent;
+    background: var(--app-selected);
+  }
+
+  .appMainShell {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
 
   .appTopbar {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+  }
+
+  .settingsPagePanel {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 14px;
+  }
+
+  .settingsPagePanel > header,
+  .settingsPagePanel > .settingsSection {
+    grid-column: 1;
+  }
+
+  .settingsPagePanel > .settingsSectionNav {
+    position: sticky !important;
+    top: var(--settings-nav-top) !important;
+    display: flex !important;
+    grid-column: 1;
+    grid-row: auto;
+    width: calc(100vw - 32px);
+    margin: 0 -16px;
+    padding: 7px 16px;
+    border: 0;
+    border-bottom: 1px solid var(--app-border);
+    border-radius: 0;
+    background: color-mix(in srgb, var(--app-bg) 94%, transparent);
+    box-shadow: none;
+  }
+
+  .settingsPagePanel > .settingsSection {
+    padding: 18px 0;
+  }
+
+  .appTopbar {
+    top: 56px;
     min-height: 50px;
     padding: 0 18px;
+  }
+
+  :root {
+    --settings-nav-top: 106px;
   }
 
   .appStatusText {
@@ -742,10 +882,8 @@ select:focus-visible {
 
   .libraryHeaderActions {
     justify-content: start;
-  }
-
-  .libraryHeaderActions button {
     width: 100%;
+    gap: 8px;
   }
 
   .libraryFilters {
@@ -763,6 +901,20 @@ select:focus-visible {
 
   .libraryFilters select {
     min-width: 0;
+  }
+
+  .statsRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    row-gap: 12px;
+    padding: 12px 0;
+  }
+
+  .statsRow .statItem {
+    padding: 0 12px;
+  }
+
+  .statsRow .statItem:nth-child(2) {
+    border-right: 0;
   }
 
   .importPage {
@@ -877,9 +1029,19 @@ select:focus-visible {
   z-index: 23;
   bottom: max(12px, env(safe-area-inset-bottom));
   left: 50% !important;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: center;
   width: max-content;
   max-width: calc(100vw - 24px);
   transform: translateX(-50%) !important;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-panel) 94%, transparent);
+  box-shadow: var(--app-shadow-soft);
+  backdrop-filter: blur(18px);
   transition:
     opacity 180ms ease,
     transform 180ms ease,
@@ -948,11 +1110,93 @@ select:focus-visible {
 }
 
 .readerToolbar .readerModeButtons .modeButton {
-  display: grid;
-  width: 38px;
+  display: flex;
+  width: auto;
   height: 36px;
-  place-items: center;
-  padding: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 10px;
+}
+
+.readerModeLabel {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.readerToolbarMain,
+.readerToolbarTools,
+.readerPageControls {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.readerPageControls {
+  justify-content: center;
+}
+
+.readerMoreMenu {
+  position: relative;
+}
+
+.readerMoreMenu summary {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-control);
+  background: var(--app-panel-raised);
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.readerMoreMenu summary::-webkit-details-marker {
+  display: none;
+}
+
+.readerMoreMenu[open] summary {
+  border-color: var(--app-lime);
+  background: var(--app-selected);
+}
+
+.readerMoreMenuPanel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  display: grid;
+  width: 220px;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 10px;
+  background: var(--app-panel);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.readerMoreMenuPanel button {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.readerMoreMenuPanel button:hover,
+.readerMoreMenuPanel button[aria-pressed="true"] {
+  background: var(--app-hover);
 }
 
 .readerSettingsPanel {
@@ -1026,14 +1270,42 @@ select:focus-visible {
     bottom: max(7px, env(safe-area-inset-bottom));
     width: calc(100vw - 14px);
     max-width: none;
-    max-height: min(42dvh, 280px);
-    justify-content: center;
-    align-content: center;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px 8px;
+    padding: 7px 8px;
+    border-radius: 11px;
+  }
+
+  .readerToolbarMain {
+    grid-column: 1;
+    grid-row: 1;
+    justify-content: space-between;
     gap: 6px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    padding: 8px;
-    border-radius: 10px;
+  }
+
+  .readerToolbarTools {
+    display: grid;
+    grid-column: 1;
+    grid-template-columns: auto minmax(40px, 1fr) auto;
+    grid-row: 3;
+    gap: 8px;
+  }
+
+  .readerPageControls {
+    grid-column: 1;
+    grid-row: 2;
+    gap: 4px;
+  }
+
+  .readerPageControls .navButton {
+    width: 40px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .readerPageControls .pageIndicator {
+    min-width: 42px;
+    text-align: center;
   }
 
   .readerToolbar button,
@@ -1053,6 +1325,10 @@ select:focus-visible {
     padding: 0;
   }
 
+  .readerToolbar .readerModeLabel {
+    display: none;
+  }
+
   .readerToolbar .modeButton {
     min-height: 36px;
     padding: 0 8px;
@@ -1066,13 +1342,15 @@ select:focus-visible {
 
   .readerToolbar .readerZoomControls {
     justify-content: center;
-    order: 8;
+    grid-column: 3;
   }
 
-  .readerToolbar .pageScrubber {
+  .readerToolbar .readerPageScrubber {
+    grid-column: 2;
+    grid-row: 1;
     width: 100%;
     min-width: 0;
-    order: 5;
+    margin: 0;
   }
 
   .readerToolbar .readerButtonLabel {
@@ -1086,17 +1364,32 @@ select:focus-visible {
 
   .readerToolbar .readerPageScrubber {
     width: 100% !important;
-    flex: 1 0 100%;
-    order: 10;
-    margin: 0 4px;
+  }
+
+  .readerToolbarTools .readerMoreMenu summary {
+    width: 40px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .readerToolbarTools .readerMoreMenu summary span {
+    display: none;
+  }
+
+  .readerMoreMenuPanel {
+    right: auto;
+    left: 0;
+    width: min(240px, calc(100vw - 32px));
   }
 
   .readerSettingsPanel {
-    inset: auto 8px max(8px, env(safe-area-inset-bottom)) !important;
+    inset: auto 0 0 !important;
     width: auto !important;
-    height: min(86dvh, 760px) !important;
-    max-height: calc(100dvh - 16px) !important;
-    border-radius: 14px 14px 8px 8px;
+    height: min(88dvh, 780px) !important;
+    max-height: calc(100dvh - env(safe-area-inset-top)) !important;
+    padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    border-radius: 16px 16px 0 0;
+    border-bottom: 0;
   }
 
   .readerSettingsPanel .readerSettingsSection {
@@ -1117,9 +1410,12 @@ select:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .readerHeader,
-  .readerProgress,
-  .readerToolbar {
-    transition: none;
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -247,5 +247,10 @@ describe("buildLibraryEntries", () => {
       "series:safe",
       "series:mature",
     ]);
+    expect(
+      filterLibraryEntries(entries, { adultOnly: true }).map(
+        (entry) => entry.id,
+      ),
+    ).toEqual(["series:mature"]);
   });
 });
