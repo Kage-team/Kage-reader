@@ -1153,9 +1153,6 @@ export function ReaderPage() {
           zoomTransform.translateY + deltaY,
         ),
       });
-    } else if (readerMode === "webtoon") {
-      event.preventDefault();
-      frame.scrollBy({ top: -deltaY, behavior: "instant" });
     } else if (readerMode === "flip") {
       event.preventDefault();
     }
@@ -2772,7 +2769,10 @@ export function ReaderPage() {
               : isImmersive
                 ? "1px solid rgba(255,255,255,0.12)"
                 : styles.viewerFrame.border,
-            touchAction: isNovel ? "pan-y" : "none",
+            touchAction:
+              isNovel || (readerMode === "webtoon" && zoomLevel <= 1)
+                ? "pan-y"
+                : "none",
           }}
         >
           {isNovelContinuous ? (

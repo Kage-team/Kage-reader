@@ -1086,6 +1086,7 @@ button:disabled {
   max-width: none !important;
   margin: 0 !important;
   overflow: auto !important;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   border: 0 !important;
   border-radius: 0 !important;
