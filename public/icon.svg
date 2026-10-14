@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Kage Reader">
-  <rect width="128" height="128" rx="28" fill="#0b1210" />
-  <path d="M30 34h22v60H30z" fill="#d1f7d6" />
-  <path d="M56 34h42a10 10 0 0 1 10 10v40a10 10 0 0 1-10 10H56z" fill="#76c893" />
-  <path d="M56 44h34" stroke="#0b1210" stroke-width="6" stroke-linecap="round" />
-  <path d="M56 58h28" stroke="#0b1210" stroke-width="6" stroke-linecap="round" />
-  <path d="M56 72h22" stroke="#0b1210" stroke-width="6" stroke-linecap="round" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="Kage Reader">
+  <rect width="600" height="600" fill="#000" />
+  <path
+    d="M153 136h112v73h35v-37h36v-36h115v109h-41v36h-36v37h36v37h41v110H336v-36h-36v-38h-35v74H153z"
+    fill="#fff"
+    shape-rendering="crispEdges"
+  />
 </svg>
