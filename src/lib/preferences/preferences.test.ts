@@ -60,6 +60,7 @@ describe("preferences", () => {
         readerAutoHideDelay: 4000,
         readerPageFit: "width",
         readerZoom: 140,
+        disableZoomOut: true,
         readerTapBehavior: "page-turn",
       },
       storage,
@@ -91,6 +92,7 @@ describe("preferences", () => {
       readerAutoHideDelay: 4000,
       readerPageFit: "width",
       readerZoom: 140,
+      disableZoomOut: true,
       readerTapBehavior: "page-turn",
     });
     expect(getPreferences(storage)).toEqual(updated);
@@ -113,6 +115,7 @@ describe("preferences", () => {
         readerAutoHideDelay: 8750,
         readerPageFit: "invalid",
         readerZoom: 327,
+        disableZoomOut: "invalid",
         readerTapBehavior: "invalid",
       }),
     );
@@ -122,6 +125,7 @@ describe("preferences", () => {
       readerAutoHideDelay: 6000,
       readerPageFit: "screen",
       readerZoom: 300,
+      disableZoomOut: false,
       readerTapBehavior: "controls",
     });
   });

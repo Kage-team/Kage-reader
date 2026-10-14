@@ -94,6 +94,7 @@ export type Preferences = {
   readerAutoHideDelay: number;
   readerPageFit: ReaderPageFit;
   readerZoom: number;
+  disableZoomOut: boolean;
   readerTapBehavior: ReaderTapBehavior;
 };
 
@@ -122,6 +123,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   readerAutoHideDelay: 2500,
   readerPageFit: "screen",
   readerZoom: 100,
+  disableZoomOut: false,
   readerTapBehavior: "controls",
 };
 
@@ -273,6 +275,10 @@ function normalizePreferences(value: unknown): Preferences {
           Math.max(50, Math.round(Number(candidate.readerZoom) / 10) * 10),
         )
       : DEFAULT_PREFERENCES.readerZoom,
+    disableZoomOut:
+      typeof candidate.disableZoomOut === "boolean"
+        ? candidate.disableZoomOut
+        : DEFAULT_PREFERENCES.disableZoomOut,
     readerTapBehavior:
       candidate.readerTapBehavior === "controls" ||
       candidate.readerTapBehavior === "toggle-controls" ||
