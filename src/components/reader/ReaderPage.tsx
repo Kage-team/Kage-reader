@@ -13,8 +13,8 @@ import {
   Eye,
   EyeOff,
   List,
+  BookmarkCheck,
   Minimize2,
-  MoreHorizontal,
   Minus,
   PanelsTopLeft,
   Plus,
@@ -317,6 +317,11 @@ export function ReaderPage() {
         window.clearTimeout(chromeHideTimerRef.current);
         chromeHideTimerRef.current = undefined;
       }
+      return;
+    }
+
+    if (isImmersive) {
+      setIsUiVisible(false);
       return;
     }
 
@@ -1227,10 +1232,14 @@ export function ReaderPage() {
     );
   }
 
+  function setImmersiveMode(enabled: boolean): void {
+    setIsImmersive(enabled);
+    setIsUiVisible(!enabled);
+    updateReaderPreferences({ immersiveMode: enabled });
+  }
+
   function toggleImmersiveMode(): void {
-    const next = !isImmersive;
-    setIsImmersive(next);
-    updateReaderPreferences({ immersiveMode: next });
+    setImmersiveMode(!isImmersive);
   }
 
   function handleViewerScroll(event: React.UIEvent<HTMLDivElement>): void {
@@ -1370,24 +1379,10 @@ export function ReaderPage() {
     Math.max(280, viewportWidth - 32),
     1800,
   );
-  const sliderRangeMin = 60;
-  const sliderRangeMax = 100;
   const minimumReaderWidth = Math.min(280, maxViewportReaderWidth);
   const normalizedReaderWidth = Math.min(
     Math.max(readerPreferences.readerWidth, minimumReaderWidth),
     maxViewportReaderWidth,
-  );
-  const widthPercent = Math.max(
-    sliderRangeMin,
-    Math.min(
-      sliderRangeMax,
-      Math.round(
-        sliderRangeMin +
-          ((normalizedReaderWidth - minimumReaderWidth) /
-            Math.max(1, maxViewportReaderWidth - minimumReaderWidth)) *
-            (sliderRangeMax - sliderRangeMin),
-      ),
-    ),
   );
   const textPages = pages
     .map((page, index) => ({ page, index, text: pageTexts[index] }))
@@ -1469,19 +1464,6 @@ export function ReaderPage() {
     chapterPosition >= 0 ? seriesChapters[chapterPosition + 1] : undefined;
   const pageProgress =
     totalPages > 0 ? ((currentIndex + 1) / totalPages) * 100 : 0;
-  const widthPresets = [72, 82, 90, 100];
-  const setReaderWidthFromPercent = (percent: number): void => {
-    const safePercent = Math.min(
-      sliderRangeMax,
-      Math.max(sliderRangeMin, Number(percent) || sliderRangeMin),
-    );
-    const nextWidth = Math.round(
-      minimumReaderWidth +
-        ((safePercent - sliderRangeMin) / (sliderRangeMax - sliderRangeMin)) *
-          (maxViewportReaderWidth - minimumReaderWidth),
-    );
-    updateReaderPreferences({ readerWidth: nextWidth });
-  };
   const comicPageImageStyle = (
     isCurrentPage: boolean,
     isContinuous: boolean,
@@ -1529,21 +1511,35 @@ export function ReaderPage() {
             ...(isImmersive ? styles.headerRowImmersive : {}),
           }}
         >
-          <div style={styles.readerTitleGroup}>
+          <div
+            className="readerTitleGroup flex items-center gap-3"
+            style={styles.readerTitleGroup}
+          >
             <Link
               to={`/series/${encodeURIComponent(chapter.seriesId)}`}
+              className="backLink"
               style={styles.backLink}
             >
               <ArrowLeft size={15} /> Library
             </Link>
-            <h1 style={styles.title}>
+            <h1 className="title" style={styles.title}>
               {isNovel ? activeNovelChapter?.title : chapter.title}
             </h1>
           </div>
-          <div style={styles.actionRow}>
-            <label style={styles.chapterSelectLabel}>
-              <span>Chapter</span>
+          <div className="actionRow" style={styles.actionRow}>
+            <div className="readerChapterPicker">
+              <BookOpen
+                className="readerChapterPickerIcon"
+                size={15}
+                aria-hidden="true"
+              />
+              <label className="srOnly" htmlFor="reader-chapter-select">
+                Chapter
+              </label>
               <select
+                id="reader-chapter-select"
+                className="readerChapterSelect"
+                aria-label="Chapter"
                 value={navigationChapterId}
                 onChange={(event) =>
                   navigate(
@@ -1552,16 +1548,113 @@ export function ReaderPage() {
                 }
                 style={styles.chapterSelect}
               >
-                {seriesChapters.map((seriesChapter, index) => (
+                {seriesChapters.map((seriesChapter) => (
                   <option key={seriesChapter.id} value={seriesChapter.id}>
-                    {index + 1}. {seriesChapter.title}
+                    {seriesChapter.title}
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
+            <div
+              className="readerHeaderQuickActions"
+              role="group"
+              aria-label="Reader shortcuts"
+            >
+              <button
+                type="button"
+                className="readerHeaderQuickButton"
+                aria-label={
+                  isCurrentPageBookmarked
+                    ? "Remove page bookmark"
+                    : "Bookmark current page"
+                }
+                aria-pressed={isCurrentPageBookmarked}
+                title={
+                  isCurrentPageBookmarked
+                    ? "Remove page bookmark"
+                    : "Bookmark current page"
+                }
+                onClick={() => void toggleBookmark()}
+                style={{
+                  ...styles.iconButton,
+                  ...(isCurrentPageBookmarked
+                    ? styles.activeBookmarkButton
+                    : {}),
+                }}
+              >
+                <Bookmark
+                  size={16}
+                  fill={isCurrentPageBookmarked ? "currentColor" : "none"}
+                />
+              </button>
+              <button
+                type="button"
+                className="readerHeaderQuickButton"
+                aria-label="Open bookmarks"
+                aria-pressed={isBookmarkDrawerOpen}
+                title="Open bookmarks"
+                onClick={() => void openBookmarkDrawer()}
+                style={styles.iconButton}
+              >
+                <BookmarkCheck size={16} />
+              </button>
+              {isNovel ? (
+                <button
+                  type="button"
+                  className="readerHeaderQuickButton"
+                  aria-label="Table of contents"
+                  aria-pressed={isContentsOpen}
+                  title="Table of contents"
+                  onClick={() => setIsContentsOpen(true)}
+                  style={styles.iconButton}
+                >
+                  <List size={16} />
+                </button>
+              ) : null}
+              {!isNovel ? (
+                <button
+                  type="button"
+                  className="readerHeaderQuickButton"
+                  aria-label="Open page overview"
+                  aria-pressed={isPageGridOpen}
+                  title="Page overview"
+                  onClick={() => setIsPageGridOpen(true)}
+                  style={styles.iconButton}
+                >
+                  <Grid2X2 size={16} />
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="readerHeaderQuickButton"
+                aria-label={isNovel ? "Reader formatting" : "Reader settings"}
+                aria-pressed={isReaderSettingsOpen}
+                title={isNovel ? "Reader formatting" : "Reader settings"}
+                onClick={() => setIsReaderSettingsOpen(true)}
+                style={styles.iconButton}
+              >
+                {isNovel ? <Type size={16} /> : <Settings2 size={16} />}
+              </button>
+              <button
+                type="button"
+                className="readerHeaderQuickButton"
+                aria-label={isImmersive ? "Exit focus mode" : "Focus mode"}
+                aria-pressed={isImmersive}
+                title={
+                  isImmersive
+                    ? "Exit focus mode"
+                    : "Focus mode hides controls until you tap"
+                }
+                onClick={toggleImmersiveMode}
+                style={styles.iconButton}
+              >
+                {isImmersive ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             <button
               type="button"
               aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
               onClick={() => void toggleFullscreen()}
               style={styles.iconButton}
             >
@@ -1572,7 +1665,7 @@ export function ReaderPage() {
 
         {!isNovel ? (
           <div
-            className={`readerChrome readerProgress${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
+            className={`readerChrome readerProgress${readerPreferences.readerProgressPosition === "bottom" ? " readerProgressBottom" : ""}${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
             style={{
               ...styles.readerProgressTrack,
               ...(isImmersive ? styles.readerProgressTrackImmersive : {}),
@@ -1589,6 +1682,29 @@ export function ReaderPage() {
                 width: `${pageProgress}%`,
               }}
             />
+          </div>
+        ) : null}
+
+        {!isNovel && shouldAutoHideReaderChrome && !isUiVisible ? (
+          <div
+            className={`readerHiddenProgress${readerPreferences.readerProgressPosition === "bottom" ? " readerHiddenProgressBottom" : ""}`}
+          >
+            <span className="readerHiddenProgressPercent">
+              {Math.round(pageProgress)}%
+            </span>
+            <span
+              className="readerHiddenProgressTrack"
+              role="progressbar"
+              aria-label="Page progress"
+              aria-valuemin={0}
+              aria-valuemax={Math.max(totalPages, 1)}
+              aria-valuenow={totalPages > 0 ? currentIndex + 1 : 0}
+            >
+              <span style={{ width: `${pageProgress}%` }} />
+            </span>
+            <span className="readerHiddenProgressCount">
+              {currentIndex + 1}/{totalPages || 1}
+            </span>
           </div>
         ) : null}
 
@@ -1658,78 +1774,6 @@ export function ReaderPage() {
           </div>
 
           <div className="readerToolbarTools">
-            <details className="readerMoreMenu">
-              <summary aria-label="More reading tools">
-                <MoreHorizontal size={18} />
-                <span>More</span>
-              </summary>
-              <div className="readerMoreMenuPanel">
-                {isNovel ? (
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.currentTarget
-                        .closest("details")
-                        ?.removeAttribute("open");
-                      setIsContentsOpen(true);
-                    }}
-                  >
-                    <List size={16} /> Table of contents
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.currentTarget
-                      .closest("details")
-                      ?.removeAttribute("open");
-                    setIsReaderSettingsOpen(true);
-                  }}
-                >
-                  {isNovel ? <Type size={16} /> : <Settings2 size={16} />}
-                  {isNovel ? "Formatting" : "Reader settings"}
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={isImmersive}
-                  onClick={(event) => {
-                    event.currentTarget
-                      .closest("details")
-                      ?.removeAttribute("open");
-                    toggleImmersiveMode();
-                  }}
-                >
-                  {isImmersive ? <EyeOff size={16} /> : <Eye size={16} />}
-                  {isImmersive ? "Exit focus mode" : "Focus mode"}
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={isBookmarkDrawerOpen}
-                  onClick={(event) => {
-                    event.currentTarget
-                      .closest("details")
-                      ?.removeAttribute("open");
-                    void openBookmarkDrawer();
-                  }}
-                >
-                  <Bookmark size={16} /> Bookmarks
-                </button>
-                {!isNovel ? (
-                  <button
-                    type="button"
-                    aria-pressed={isPageGridOpen}
-                    onClick={(event) => {
-                      event.currentTarget
-                        .closest("details")
-                        ?.removeAttribute("open");
-                      setIsPageGridOpen(true);
-                    }}
-                  >
-                    <Grid2X2 size={16} /> Page overview
-                  </button>
-                ) : null}
-              </div>
-            </details>
             {!isNovel ? (
               <input
                 type="range"
@@ -1840,69 +1884,13 @@ export function ReaderPage() {
                   <span className="readerButtonLabel">Next page</span>
                   <ChevronRight size={16} />
                 </button>
-                <button
-                  type="button"
-                  aria-label={
-                    isCurrentPageBookmarked
-                      ? "Remove bookmark"
-                      : "Bookmark this page"
-                  }
-                  aria-pressed={isCurrentPageBookmarked}
-                  title={
-                    isCurrentPageBookmarked
-                      ? "Remove bookmark"
-                      : "Bookmark page"
-                  }
-                  onClick={() => void toggleBookmark()}
-                  className="readerIconButton"
-                  style={{
-                    ...styles.bookmarkButton,
-                    ...(isCurrentPageBookmarked
-                      ? styles.activeBookmarkButton
-                      : {}),
-                  }}
-                >
-                  <Bookmark
-                    size={16}
-                    fill={isCurrentPageBookmarked ? "currentColor" : "none"}
-                  />
-                </button>
               </>
             ) : (
-              <>
-                <button
-                  type="button"
-                  aria-label={
-                    isCurrentPageBookmarked
-                      ? "Remove bookmark"
-                      : "Bookmark this page"
-                  }
-                  aria-pressed={isCurrentPageBookmarked}
-                  title={
-                    isCurrentPageBookmarked
-                      ? "Remove bookmark"
-                      : "Bookmark page"
-                  }
-                  onClick={() => void toggleBookmark()}
-                  className="readerIconButton"
-                  style={{
-                    ...styles.bookmarkButton,
-                    ...(isCurrentPageBookmarked
-                      ? styles.activeBookmarkButton
-                      : {}),
-                  }}
-                >
-                  <Bookmark
-                    size={15}
-                    fill={isCurrentPageBookmarked ? "currentColor" : "none"}
-                  />
-                </button>
-                <span style={styles.pageIndicator}>
-                  {isNovel
-                    ? `${chapterPosition + 1} / ${seriesChapters.length || 1} chapters`
-                    : `Page ${currentIndex + 1} / ${totalPages || 1}`}
-                </span>
-              </>
+              <span style={styles.pageIndicator}>
+                {isNovel
+                  ? `${chapterPosition + 1} / ${seriesChapters.length || 1} chapters`
+                  : `Page ${currentIndex + 1} / ${totalPages || 1}`}
+              </span>
             )}
           </div>
         </div>
@@ -2333,6 +2321,43 @@ export function ReaderPage() {
                   <h3 className="readerSettingsGroupTitle">Controls</h3>
                   <label style={styles.settingsToggleRow}>
                     <div>
+                      <div style={styles.settingsToggleHeading}>Focus mode</div>
+                      <p style={styles.settingsToggleBody}>
+                        Hide the reader controls for an unobstructed page. Tap
+                        once to reveal them temporarily.
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      aria-label="Focus mode"
+                      checked={readerPreferences.immersiveMode}
+                      onChange={(event) =>
+                        setImmersiveMode(event.currentTarget.checked)
+                      }
+                      style={styles.settingsToggleInput}
+                    />
+                  </label>
+                  <label style={styles.settingsDirectionRow}>
+                    <span style={styles.settingsSliderLabel}>
+                      Progress bar position
+                    </span>
+                    <select
+                      aria-label="Progress bar position"
+                      value={readerPreferences.readerProgressPosition}
+                      onChange={(event) =>
+                        updateReaderPreferences({
+                          readerProgressPosition: event.currentTarget
+                            .value as Preferences["readerProgressPosition"],
+                        })
+                      }
+                      style={styles.settingsSelect}
+                    >
+                      <option value="top">Top</option>
+                      <option value="bottom">Bottom</option>
+                    </select>
+                  </label>
+                  <label style={styles.settingsToggleRow}>
+                    <div>
                       <div style={styles.settingsToggleHeading}>
                         Hide controls while reading
                       </div>
@@ -2422,49 +2447,27 @@ export function ReaderPage() {
                   </label>
 
                   <div style={styles.settingsSliderRow}>
-                    <span style={styles.settingsSliderLabel}>
-                      Maximum Page Width
-                    </span>
+                    <span style={styles.settingsSliderLabel}>Page width</span>
                     <output style={styles.settingsSliderValue}>
-                      {widthPercent}%
+                      {normalizedReaderWidth}px
                     </output>
                     <input
-                      aria-label="Maximum comic page width"
+                      aria-label="Page width in pixels"
                       type="range"
-                      min={sliderRangeMin}
-                      max={sliderRangeMax}
-                      step={5}
-                      value={widthPercent}
+                      min={minimumReaderWidth}
+                      max={maxViewportReaderWidth}
+                      step={1}
+                      value={normalizedReaderWidth}
                       onChange={(event) =>
-                        setReaderWidthFromPercent(
-                          Number(event.currentTarget.value),
-                        )
+                        updateReaderPreferences({
+                          readerWidth: Number(event.currentTarget.value),
+                        })
                       }
                       style={styles.settingsRange}
                     />
-                    <div style={styles.settingsWidthPresets}>
-                      {widthPresets.map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          onClick={() => setReaderWidthFromPercent(preset)}
-                          style={{
-                            ...styles.settingsWidthButton,
-                            ...(widthPercent === preset
-                              ? styles.settingsWidthButtonActive
-                              : {}),
-                          }}
-                        >
-                          {preset < 80
-                            ? "Compact"
-                            : preset < 90
-                              ? "Comfort"
-                              : preset < 98
-                                ? "Wide"
-                                : "Full"}
-                        </button>
-                      ))}
-                    </div>
+                    <span style={styles.settingsHint}>
+                      Drag to set the maximum page width.
+                    </span>
                   </div>
 
                   <div style={styles.settingsSliderRow}>
@@ -3079,7 +3082,7 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: "0 10px 28px rgba(0,0,0,0.24)",
   },
   headerRowImmersive: {
-    borderColor: "rgba(255,255,255,0.14)",
+    border: "1px solid transparent",
     background: "rgba(9, 12, 12, 0.72)",
     position: "sticky",
     top: 12,

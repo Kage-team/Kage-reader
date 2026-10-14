@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { copyFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
@@ -30,6 +31,7 @@ function copyLibarchiveRuntime() {
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     copyLibarchiveRuntime(),
     VitePWA({
       registerType: "autoUpdate",

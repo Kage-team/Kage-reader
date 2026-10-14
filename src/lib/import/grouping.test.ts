@@ -41,6 +41,17 @@ describe("chapter grouping", () => {
     ]);
   });
 
+  it("preserves descriptive chapter folder names", () => {
+    const groups = groupArchiveEntries([
+      image("Volume 1/Chapter 4 - The Reunion/001.jpg"),
+      image("Volume 1/Chapter 4 - The Reunion/002.jpg"),
+    ]);
+
+    expect(groups.map(({ title }) => title)).toEqual([
+      "Chapter 4 - The Reunion",
+    ]);
+  });
+
   it("detects chapter markers in flat image filenames", () => {
     const groups = groupArchiveEntries([
       image("Series Chapter 1 page 001.jpg"),

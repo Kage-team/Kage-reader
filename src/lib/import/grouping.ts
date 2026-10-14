@@ -86,6 +86,13 @@ export function deriveChapterTitle(
   const fallbackTitle = baseNameWithoutExtension(
     (chapterKey || sourceName).replaceAll("\\", "/").split("/").pop() ?? "",
   );
+  if (
+    /^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+(?:\.\d+)?(?:\s+.+)$/i.test(
+      fallbackTitle,
+    )
+  ) {
+    return fallbackTitle;
+  }
   if (/^\d+(?:\.\d+)?$/u.test(fallbackTitle)) {
     return `Chapter ${fallbackTitle}`;
   }
@@ -105,6 +112,13 @@ function canonicalNumber(value: string): string {
 function chapterMarker(name: string): ChapterMarker | undefined {
   const normalized = name.replaceAll("\\", "/");
   const parts = normalized.split("/");
+  const descriptiveChapterTitle = parts
+    .map((part) => baseNameWithoutExtension(part).trim())
+    .find((part) =>
+      /^(?:chapter|chap|ch|episode|ep|part)\s*[._#-]*0*\d+(?:\.\d+)?(?:\s+.+)$/i.test(
+        part,
+      ),
+    );
   let volume: string | undefined;
   let chapter: string | undefined;
   let issue: string | undefined;
@@ -134,9 +148,9 @@ function chapterMarker(name: string): ChapterMarker | undefined {
     : /\bprelude\b/i.test(normalized)
       ? "Prelude"
       : chapter
-        ? `Chapter ${canonicalNumber(chapter)}`
+        ? (descriptiveChapterTitle ?? `Chapter ${canonicalNumber(chapter)}`)
         : issue
-          ? `Issue ${canonicalNumber(issue)}`
+          ? (descriptiveChapterTitle ?? `Issue ${canonicalNumber(issue)}`)
           : `Volume ${canonicalNumber(volume ?? "")}`;
 
   return {

@@ -65,6 +65,7 @@ describe("preferences", () => {
         immersiveMode: true,
         readerAutoHide: false,
         readerAutoHideDelay: 4000,
+        readerProgressPosition: "bottom",
         readerZoom: 140,
         disableZoomOut: true,
         readerTapBehavior: "page-turn",
@@ -92,7 +93,7 @@ describe("preferences", () => {
       adultPinSalt: "salt",
       adultPinHash: "hash",
       stealthMode: true,
-      readerWidth: 1100,
+      readerWidth: 1088,
       comicPageGap: 8,
       comicInfiniteScroll: false,
       comicBrightness: 125,
@@ -103,6 +104,7 @@ describe("preferences", () => {
       immersiveMode: true,
       readerAutoHide: false,
       readerAutoHideDelay: 4000,
+      readerProgressPosition: "bottom",
       readerZoom: 140,
       disableZoomOut: true,
       readerTapBehavior: "page-turn",
@@ -128,6 +130,7 @@ describe("preferences", () => {
         readerZoom: 327,
         disableZoomOut: "invalid",
         readerTapBehavior: "invalid",
+        readerProgressPosition: "invalid",
       }),
     );
 
@@ -137,6 +140,7 @@ describe("preferences", () => {
       readerZoom: 300,
       disableZoomOut: false,
       readerTapBehavior: "controls",
+      readerProgressPosition: "top",
     });
   });
 });

@@ -21,6 +21,7 @@ export type NovelReadingTheme =
 export type NovelTextAlignment = "left" | "justify";
 export type NovelColumnWidth = "narrow" | "standard" | "wide" | "full";
 export type ReaderTapBehavior = "controls" | "toggle-controls" | "page-turn";
+export type ReaderProgressPosition = "top" | "bottom";
 const NOVEL_FONT_FAMILIES: NovelFontFamily[] = [
   "literary",
   "modern",
@@ -98,6 +99,7 @@ export type Preferences = {
   immersiveMode: boolean;
   readerAutoHide: boolean;
   readerAutoHideDelay: number;
+  readerProgressPosition: ReaderProgressPosition;
   readerZoom: number;
   disableZoomOut: boolean;
   readerTapBehavior: ReaderTapBehavior;
@@ -133,6 +135,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   immersiveMode: false,
   readerAutoHide: true,
   readerAutoHideDelay: 2500,
+  readerProgressPosition: "top",
   readerZoom: 100,
   disableZoomOut: false,
   readerTapBehavior: "controls",
@@ -253,7 +256,7 @@ function normalizePreferences(value: unknown): Preferences {
         ? candidate.stealthMode
         : DEFAULT_PREFERENCES.stealthMode,
     readerWidth: Number.isFinite(readerWidth)
-      ? Math.min(2200, Math.max(720, Math.round(readerWidth / 50) * 50))
+      ? Math.min(2200, Math.max(280, Math.round(readerWidth)))
       : DEFAULT_PREFERENCES.readerWidth,
     comicPageGap: Number.isFinite(Number(candidate.comicPageGap))
       ? Math.min(
@@ -298,6 +301,11 @@ function normalizePreferences(value: unknown): Preferences {
           ),
         )
       : DEFAULT_PREFERENCES.readerAutoHideDelay,
+    readerProgressPosition:
+      candidate.readerProgressPosition === "bottom" ||
+      candidate.readerProgressPosition === "top"
+        ? candidate.readerProgressPosition
+        : DEFAULT_PREFERENCES.readerProgressPosition,
     readerZoom: Number.isFinite(Number(candidate.readerZoom))
       ? Math.min(
           300,
