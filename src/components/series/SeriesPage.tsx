@@ -5,6 +5,8 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  Check,
+  Circle,
   Download,
   MoreVertical,
   Play,
@@ -32,10 +34,7 @@ import {
   putSeries,
   putProgress,
 } from "../../lib/storage/db";
-import {
-  createChapterExport,
-  createSeriesExport,
-} from "../../lib/storage/export";
+import { createSeriesExport } from "../../lib/storage/export";
 
 const SERIES_TYPES: Array<{ value: SeriesType; label: string }> = [
   { value: "manga", label: "Manga" },
@@ -74,9 +73,6 @@ export function SeriesPage() {
   const [coverUrl, setCoverUrl] = useState("");
   const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [openChapterMenuId, setOpenChapterMenuId] = useState<string | null>(
-    null,
-  );
   const [isSeriesActionsOpen, setIsSeriesActionsOpen] = useState(false);
   const [isAppending, setIsAppending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -302,24 +298,6 @@ export function SeriesPage() {
     anchor.download = filename;
     anchor.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  async function exportChapter(chapterId: string): Promise<void> {
-    setIsExporting(true);
-    setExportMessage("");
-    try {
-      const exported = await createChapterExport(chapterId);
-      downloadBlob(exported.blob, exported.name);
-      setExportMessage(`Exported ${exported.name}.`);
-    } catch (error) {
-      setExportMessage(
-        error instanceof Error
-          ? error.message
-          : "Could not export this chapter.",
-      );
-    } finally {
-      setIsExporting(false);
-    }
   }
 
   async function exportSeries(): Promise<void> {
@@ -821,7 +799,7 @@ export function SeriesPage() {
                 disabled={isAppending}
                 onClick={() => archiveInputRef.current?.click()}
               >
-                <Upload size={14} />
+                <Plus size={14} />
                 {isAppending ? "Adding..." : "Add Chapters"}
               </button>
             </div>
@@ -840,27 +818,14 @@ export function SeriesPage() {
                     const titleLabel =
                       chapterTitle ||
                       `Chapter ${chapter.number ?? chapterIndex + 1}`;
-                    const progressPercent = progress
-                      ? Math.min(
-                          100,
-                          ((progress.pageIndex + 1) / chapter.pageCount) * 100,
-                        )
-                      : 0;
                     return (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 10,
-                          width: "100%",
-                        }}
-                      >
+                      <div className="seriesChapterRow">
                         <Link
                           to={`/read/${encodeURIComponent(chapter.id)}`}
                           style={{ ...styles.chapterLink, flex: 1 }}
                         >
-                          <span style={styles.chapterDetails}>
-                            <span>
+                          <span className="chapterTitleLine">
+                            <strong>
                               {titleLabel}
                               {chapter.volume !== undefined
                                 ? ` · Vol. ${chapter.volume}`
@@ -868,84 +833,28 @@ export function SeriesPage() {
                               {chapter.number !== undefined
                                 ? ` · #${chapter.number}`
                                 : ""}
-                            </span>
-                            {progress ? (
-                              <span style={styles.progressLabel}>
-                                {progress.completedAt
-                                  ? "Completed"
-                                  : `Continue · page ${progress.pageIndex + 1} of ${chapter.pageCount}`}
-                              </span>
-                            ) : null}
-                            {progress ? (
-                              <span
-                                style={styles.progressTrack}
-                                aria-hidden="true"
-                              >
-                                <span
-                                  style={{
-                                    ...styles.progressFill,
-                                    width: `${progressPercent}%`,
-                                  }}
-                                />
-                              </span>
-                            ) : null}
+                            </strong>
                           </span>
-                          <span>{chapter.pageCount} pages</span>
+                          <span className="chapterPageCount">
+                            {chapter.pageCount} pages
+                          </span>
                         </Link>
-                        <div className="chapterActionMenu">
-                          <button
-                            type="button"
-                            className="chapterMenuTrigger"
-                            aria-label={`Actions for ${chapter.title}`}
-                            aria-expanded={openChapterMenuId === chapter.id}
-                            onClick={() =>
-                              setOpenChapterMenuId((current) =>
-                                current === chapter.id ? null : chapter.id,
-                              )
-                            }
-                          >
-                            <MoreVertical size={18} />
-                          </button>
-                          {openChapterMenuId === chapter.id ? (
-                            <div
-                              className="chapterMenu"
-                              role="group"
-                              aria-label={`${chapter.title} actions`}
-                              onBlur={(event) => {
-                                if (
-                                  !event.currentTarget.contains(
-                                    event.relatedTarget as Node | null,
-                                  )
-                                ) {
-                                  setOpenChapterMenuId(null);
-                                }
-                              }}
-                            >
-                              <button
-                                type="button"
-                                aria-pressed={Boolean(progress?.completedAt)}
-                                onClick={() => {
-                                  void toggleChapterCompletion(chapter);
-                                  setOpenChapterMenuId(null);
-                                }}
-                              >
-                                {progress?.completedAt
-                                  ? "Mark unread"
-                                  : "Mark complete"}
-                              </button>
-                              <button
-                                type="button"
-                                disabled={isExporting}
-                                onClick={() => {
-                                  void exportChapter(chapter.id);
-                                  setOpenChapterMenuId(null);
-                                }}
-                              >
-                                Export chapter
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
+                        <button
+                          type="button"
+                          className="chapterStatusToggle"
+                          aria-label={`${progress?.completedAt ? "Mark unread" : "Mark read"}: ${titleLabel}`}
+                          aria-pressed={Boolean(progress?.completedAt)}
+                          title={
+                            progress?.completedAt ? "Mark unread" : "Mark read"
+                          }
+                          onClick={() => void toggleChapterCompletion(chapter)}
+                        >
+                          {progress?.completedAt ? (
+                            <Check size={14} />
+                          ) : (
+                            <Circle size={14} />
+                          )}
+                        </button>
                       </div>
                     );
                   })()}
@@ -964,14 +873,14 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: "100vh",
     background: "var(--app-bg)",
     color: "var(--app-text)",
-    padding: "clamp(20px, 3vw, 40px)",
+    padding: "clamp(14px, 2vw, 28px)",
     fontFamily: "var(--font-body)",
   },
   panel: {
     maxWidth: 1160,
     margin: "0 auto",
     display: "grid",
-    gap: 20,
+    gap: 16,
   },
   headerRow: {
     display: "flex",
@@ -1187,14 +1096,14 @@ const styles: Record<string, React.CSSProperties> = {
   startReadingButton: {
     display: "inline-flex",
     alignItems: "center",
-    gap: 9,
-    marginTop: 3,
-    padding: "11px 14px",
+    gap: 7,
+    marginTop: 8,
+    padding: "8px 11px",
     border: "1px solid #e2fa94",
     borderRadius: 7,
     background: "var(--app-lime)",
     color: "#182014",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
     textDecoration: "none",
   },
@@ -1213,24 +1122,25 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 12,
   },
   appendMessage: { margin: 0, color: "var(--app-muted)", fontSize: 12 },
-  chapterSection: { display: "grid", gap: 15 },
+  chapterSection: { display: "grid", gap: 10 },
   chapterHeader: {
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "end",
-    gap: 15,
+    justifyContent: "flex-start",
+    alignItems: "center",
+    gap: 10,
   },
   chapterHeading: {
     margin: 0,
     fontFamily: "var(--font-display)",
-    fontSize: 20,
+    fontSize: 18,
+    fontWeight: 600,
   },
   chapterSubheading: {
     margin: "5px 0 0",
     color: "var(--app-muted)",
     fontSize: 12,
   },
-  chapterCount: { color: "var(--app-muted)", fontSize: 11 },
+  chapterCount: { color: "var(--app-muted)", fontSize: 12 },
   linkButton: {
     color: "#182014",
     background: "var(--app-lime)",
@@ -1297,26 +1207,12 @@ const styles: Record<string, React.CSSProperties> = {
   chapterLink: {
     display: "flex",
     minWidth: 0,
+    alignItems: "center",
     justifyContent: "space-between",
-    gap: 16,
+    gap: 12,
     textDecoration: "none",
     color: "inherit",
-    padding: "14px 2px",
-  },
-  chapterDetails: { display: "grid", gap: 6, minWidth: 0 },
-  progressLabel: { color: "#afc1b2", fontSize: 13 },
-  progressTrack: {
-    display: "block",
-    width: "min(240px, 100%)",
-    height: 4,
-    overflow: "hidden",
-    borderRadius: 4,
-    background: "rgba(255, 255, 255, 0.12)",
-  },
-  progressFill: {
-    display: "block",
-    height: "100%",
-    background: "#8fc49a",
+    padding: "8px 2px",
   },
   emptyText: {
     margin: 0,

@@ -65,7 +65,10 @@ describe("preferences", () => {
         immersiveMode: true,
         readerAutoHide: false,
         readerAutoHideDelay: 4000,
-        readerProgressPosition: "bottom",
+        readerProgressIndicatorPosition: "top-right",
+        readerProgressShowPage: false,
+        readerProgressShowChapter: true,
+        readerProgressBarEnabled: false,
         readerZoom: 140,
         disableZoomOut: true,
         readerTapBehavior: "page-turn",
@@ -104,7 +107,10 @@ describe("preferences", () => {
       immersiveMode: true,
       readerAutoHide: false,
       readerAutoHideDelay: 4000,
-      readerProgressPosition: "bottom",
+      readerProgressIndicatorPosition: "top-right",
+      readerProgressShowPage: false,
+      readerProgressShowChapter: true,
+      readerProgressBarEnabled: false,
       readerZoom: 140,
       disableZoomOut: true,
       readerTapBehavior: "page-turn",
@@ -130,7 +136,10 @@ describe("preferences", () => {
         readerZoom: 327,
         disableZoomOut: "invalid",
         readerTapBehavior: "invalid",
-        readerProgressPosition: "invalid",
+        readerProgressIndicatorPosition: "invalid",
+        readerProgressShowPage: "invalid",
+        readerProgressShowChapter: "invalid",
+        readerProgressBarEnabled: "invalid",
       }),
     );
 
@@ -140,7 +149,10 @@ describe("preferences", () => {
       readerZoom: 300,
       disableZoomOut: false,
       readerTapBehavior: "controls",
-      readerProgressPosition: "top",
+      readerProgressIndicatorPosition: "bottom-center",
+      readerProgressShowPage: true,
+      readerProgressShowChapter: true,
+      readerProgressBarEnabled: true,
     });
   });
 });

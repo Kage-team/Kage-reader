@@ -21,7 +21,13 @@ export type NovelReadingTheme =
 export type NovelTextAlignment = "left" | "justify";
 export type NovelColumnWidth = "narrow" | "standard" | "wide" | "full";
 export type ReaderTapBehavior = "controls" | "toggle-controls" | "page-turn";
-export type ReaderProgressPosition = "top" | "bottom";
+export type ReaderProgressIndicatorPosition =
+  | "top-left"
+  | "top-center"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-center"
+  | "bottom-right";
 const NOVEL_FONT_FAMILIES: NovelFontFamily[] = [
   "literary",
   "modern",
@@ -99,7 +105,10 @@ export type Preferences = {
   immersiveMode: boolean;
   readerAutoHide: boolean;
   readerAutoHideDelay: number;
-  readerProgressPosition: ReaderProgressPosition;
+  readerProgressIndicatorPosition: ReaderProgressIndicatorPosition;
+  readerProgressShowPage: boolean;
+  readerProgressShowChapter: boolean;
+  readerProgressBarEnabled: boolean;
   readerZoom: number;
   disableZoomOut: boolean;
   readerTapBehavior: ReaderTapBehavior;
@@ -139,7 +148,10 @@ export const DEFAULT_PREFERENCES: Preferences = {
   immersiveMode: false,
   readerAutoHide: true,
   readerAutoHideDelay: 2500,
-  readerProgressPosition: "top",
+  readerProgressIndicatorPosition: "bottom-center",
+  readerProgressShowPage: true,
+  readerProgressShowChapter: true,
+  readerProgressBarEnabled: true,
   readerZoom: 100,
   disableZoomOut: false,
   readerTapBehavior: "controls",
@@ -309,11 +321,27 @@ function normalizePreferences(value: unknown): Preferences {
           ),
         )
       : DEFAULT_PREFERENCES.readerAutoHideDelay,
-    readerProgressPosition:
-      candidate.readerProgressPosition === "bottom" ||
-      candidate.readerProgressPosition === "top"
-        ? candidate.readerProgressPosition
-        : DEFAULT_PREFERENCES.readerProgressPosition,
+    readerProgressIndicatorPosition:
+      candidate.readerProgressIndicatorPosition === "top-left" ||
+      candidate.readerProgressIndicatorPosition === "top-center" ||
+      candidate.readerProgressIndicatorPosition === "top-right" ||
+      candidate.readerProgressIndicatorPosition === "bottom-left" ||
+      candidate.readerProgressIndicatorPosition === "bottom-center" ||
+      candidate.readerProgressIndicatorPosition === "bottom-right"
+        ? candidate.readerProgressIndicatorPosition
+        : DEFAULT_PREFERENCES.readerProgressIndicatorPosition,
+    readerProgressShowPage:
+      typeof candidate.readerProgressShowPage === "boolean"
+        ? candidate.readerProgressShowPage
+        : DEFAULT_PREFERENCES.readerProgressShowPage,
+    readerProgressShowChapter:
+      typeof candidate.readerProgressShowChapter === "boolean"
+        ? candidate.readerProgressShowChapter
+        : DEFAULT_PREFERENCES.readerProgressShowChapter,
+    readerProgressBarEnabled:
+      typeof candidate.readerProgressBarEnabled === "boolean"
+        ? candidate.readerProgressBarEnabled
+        : DEFAULT_PREFERENCES.readerProgressBarEnabled,
     readerZoom: Number.isFinite(Number(candidate.readerZoom))
       ? Math.min(
           300,

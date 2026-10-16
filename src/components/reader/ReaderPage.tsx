@@ -5,6 +5,12 @@ import {
   AlignLeft,
   AudioLines,
   ArrowLeft,
+  ArrowDownLeft,
+  ArrowDownRight,
+  ArrowDown,
+  ArrowUpLeft,
+  ArrowUpRight,
+  ArrowUp,
   Bookmark,
   BookOpen,
   ChevronLeft,
@@ -20,13 +26,11 @@ import {
   Camera,
   Download,
   Minimize2,
-  MoreVertical,
   Minus,
   PanelsTopLeft,
   Plus,
   RotateCcw,
   Search,
-  Share2,
   Settings2,
   Trash2,
   Type,
@@ -182,6 +186,7 @@ export function ReaderPage() {
   const [pageUrls, setPageUrls] = useState<Array<string | null>>([]);
   const [pageTexts, setPageTexts] = useState<Array<string | null>>([]);
   const [readerMode, setReaderMode] = useState<ReaderMode>("flip");
+  const isNovel = seriesType === "novel" || readerMode === "novel";
   const [bookmarks, setBookmarks] = useState<BookmarkRecord[]>([]);
   const [bookmarkDrawerEntries, setBookmarkDrawerEntries] = useState<
     Array<{
@@ -220,9 +225,6 @@ export function ReaderPage() {
   const [isReaderSettingsOpen, setIsReaderSettingsOpen] = useState(false);
   const [isChapterPickerOpen, setIsChapterPickerOpen] = useState(false);
   const [chapterPickerQuery, setChapterPickerQuery] = useState("");
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-  const [shareMessage, setShareMessage] = useState("");
-  const [novelScrollProgress, setNovelScrollProgress] = useState(0);
   const [isImmersive, setIsImmersive] = useState(false);
   const [isUiVisible, setIsUiVisible] = useState(true);
   const [readerPreferences, setReaderPreferences] = useState<Preferences>(() =>
@@ -230,6 +232,11 @@ export function ReaderPage() {
   );
   const readerRootRef = useRef<HTMLElement>(null);
   const viewerFrameRef = useRef<HTMLDivElement>(null);
+  const novelScrollProgressRef = useRef(0);
+  const novelProgressInputRef = useRef<HTMLInputElement>(null);
+  const novelProgressIndicatorRef = useRef<HTMLSpanElement>(null);
+  const readerProgressTrackRef = useRef<HTMLDivElement>(null);
+  const readerProgressFillRef = useRef<HTMLSpanElement>(null);
   const changeZoomRef = useRef<(nextZoom: number) => void>(() => undefined);
   const pointerPositionsRef = useRef(
     new Map<number, { x: number; y: number }>(),
@@ -895,7 +902,7 @@ export function ReaderPage() {
         setIsPageGridOpen((current) => !current);
         return;
       }
-      if (event.key.toLowerCase() === "b") {
+      if (event.key.toLowerCase() === "b" && isNovel) {
         event.preventDefault();
         void openBookmarkDrawer();
         return;
@@ -944,6 +951,7 @@ export function ReaderPage() {
     chapterId,
     pages.length,
     readingDirection,
+    isNovel,
     isImmersive,
     readerPreferences.readerAutoHide,
     readerPreferences.readerAutoHideDelay,
@@ -1648,6 +1656,29 @@ export function ReaderPage() {
     setImmersiveMode(!isImmersive);
   }
 
+  function updateNovelProgressDisplay(progress: number): void {
+    const normalizedProgress = Math.min(1, Math.max(0, progress));
+    novelScrollProgressRef.current = normalizedProgress;
+    const progressPercent = Math.round(normalizedProgress * 100);
+    if (novelProgressInputRef.current) {
+      novelProgressInputRef.current.value = String(
+        Math.round(normalizedProgress * 1000),
+      );
+    }
+    if (novelProgressIndicatorRef.current) {
+      novelProgressIndicatorRef.current.textContent = `Progress ${progressPercent}%`;
+    }
+    if (readerProgressTrackRef.current) {
+      readerProgressTrackRef.current.setAttribute(
+        "aria-valuenow",
+        String(progressPercent),
+      );
+    }
+    if (readerProgressFillRef.current) {
+      readerProgressFillRef.current.style.width = `${progressPercent}%`;
+    }
+  }
+
   function handleViewerScroll(event: React.UIEvent<HTMLDivElement>): void {
     const now = performance.now();
     if (now - lastReaderScrollHandledAtRef.current < 32) return;
@@ -1655,9 +1686,9 @@ export function ReaderPage() {
 
     if (readerMode === "novel") {
       const frame = event.currentTarget;
-      setNovelScrollProgress(
-        frame.scrollTop / Math.max(1, frame.scrollHeight - frame.clientHeight),
-      );
+      const progress =
+        frame.scrollTop / Math.max(1, frame.scrollHeight - frame.clientHeight);
+      updateNovelProgressDisplay(progress);
       const chapterElements = Array.from(
         frame.querySelectorAll<HTMLElement>("[data-novel-chapter-id]"),
       );
@@ -1818,22 +1849,6 @@ export function ReaderPage() {
     navigate(`/read/${encodeURIComponent(selectedChapter.id)}`);
   }
 
-  async function shareCurrentChapter(): Promise<void> {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: chapter?.title ?? "Kage Reader", url });
-        setShareMessage("Shared chapter.");
-      } else {
-        await navigator.clipboard.writeText(url);
-        setShareMessage("Chapter link copied.");
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      setShareMessage("Could not share this chapter.");
-    }
-  }
-
   if (!chapter) {
     return (
       <main style={styles.page}>
@@ -1874,7 +1889,6 @@ export function ReaderPage() {
     if (searchQuery.trim()) phrases.push(searchQuery.trim());
     return phrases.length > 0 ? highlightReaderText(markup, phrases) : markup;
   };
-  const isNovel = seriesType === "novel" || readerMode === "novel";
   const viewportWidth = viewportSize.width || 1280;
   const maxViewportReaderWidth = Math.min(
     Math.max(280, viewportWidth - 32),
@@ -1963,6 +1977,9 @@ export function ReaderPage() {
     chapterPosition >= 0 ? seriesChapters[chapterPosition + 1] : undefined;
   const pageProgress =
     totalPages > 0 ? ((currentIndex + 1) / totalPages) * 100 : 0;
+  const progressPercent = Math.round(
+    isNovel ? novelScrollProgressRef.current * 100 : pageProgress,
+  );
   const comicPageImageStyle = (
     isCurrentPage: boolean,
     isContinuous: boolean,
@@ -2051,33 +2068,118 @@ export function ReaderPage() {
               role="group"
               aria-label="Reader controls"
             >
-              <button
-                type="button"
-                className="readerHeaderQuickButton"
-                aria-label={
-                  isCurrentPageBookmarked
-                    ? "Remove page bookmark"
-                    : "Bookmark current page"
-                }
-                aria-pressed={isCurrentPageBookmarked}
-                title={
-                  isCurrentPageBookmarked
-                    ? "Remove page bookmark"
-                    : "Bookmark current page"
-                }
-                onClick={() => void toggleBookmark()}
-                style={{
-                  ...styles.iconButton,
-                  ...(isCurrentPageBookmarked
-                    ? styles.activeBookmarkButton
-                    : {}),
-                }}
-              >
-                <Bookmark
-                  size={16}
-                  fill={isCurrentPageBookmarked ? "currentColor" : "none"}
-                />
-              </button>
+              {isNovel ? (
+                <>
+                  <button
+                    type="button"
+                    className="readerHeaderQuickButton"
+                    aria-label={
+                      isCurrentPageBookmarked
+                        ? "Remove page bookmark"
+                        : "Bookmark current page"
+                    }
+                    aria-pressed={isCurrentPageBookmarked}
+                    title={
+                      isCurrentPageBookmarked
+                        ? "Remove page bookmark"
+                        : "Bookmark current page"
+                    }
+                    onClick={() => void toggleBookmark()}
+                    style={{
+                      ...styles.iconButton,
+                      ...(isCurrentPageBookmarked
+                        ? styles.activeBookmarkButton
+                        : {}),
+                    }}
+                  >
+                    <Bookmark
+                      size={16}
+                      fill={isCurrentPageBookmarked ? "currentColor" : "none"}
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    className="readerHeaderQuickButton"
+                    aria-label="Notes and bookmarks"
+                    title="Notes and bookmarks"
+                    onClick={() => void openBookmarkDrawer()}
+                    style={styles.iconButton}
+                  >
+                    <BookmarkCheck size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="readerHeaderQuickButton"
+                    aria-label="Search this book"
+                    title="Search this book"
+                    onClick={() => setIsSearchOpen(true)}
+                    style={styles.iconButton}
+                  >
+                    <Search size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="readerHeaderQuickButton"
+                    aria-label={
+                      isSpeaking ? "Stop reading aloud" : "Read aloud"
+                    }
+                    title={isSpeaking ? "Stop reading aloud" : "Read aloud"}
+                    onClick={toggleSpeech}
+                    style={styles.iconButton}
+                  >
+                    {isSpeaking ? <X size={16} /> : <AudioLines size={16} />}
+                  </button>
+                  <button
+                    type="button"
+                    className="readerHeaderQuickButton"
+                    aria-label="Table of contents"
+                    title="Table of contents"
+                    onClick={() => setIsContentsOpen(true)}
+                    style={styles.iconButton}
+                  >
+                    <List size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="readerHeaderQuickButton"
+                    aria-label="Annotate selection"
+                    title="Annotate selection"
+                    onClick={() => void annotateTextSelection()}
+                    style={styles.iconButton}
+                  >
+                    <Highlighter size={16} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="readerHeaderQuickButton"
+                    aria-label="Page overview"
+                    title="Page overview"
+                    onClick={() => setIsPageGridOpen(true)}
+                    style={styles.iconButton}
+                  >
+                    <Grid2X2 size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="readerHeaderQuickButton"
+                    aria-label="Capture page"
+                    title="Capture page"
+                    disabled={!currentPageMime.startsWith("image/")}
+                    onClick={() =>
+                      void downloadPanelImage(
+                        isComicContinuous ? activeComicChapter.id : chapter.id,
+                        currentIndex,
+                      )
+                    }
+                    style={styles.iconButton}
+                  >
+                    <Camera size={16} />
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 className="readerHeaderQuickButton"
@@ -2089,197 +2191,73 @@ export function ReaderPage() {
               >
                 {isNovel ? <Type size={16} /> : <Settings2 size={16} />}
               </button>
-              <div className="readerMoreActions">
-                <button
-                  type="button"
-                  className="readerHeaderQuickButton"
-                  aria-label="More reader actions"
-                  aria-haspopup="menu"
-                  aria-expanded={isMoreMenuOpen}
-                  onClick={() => setIsMoreMenuOpen((current) => !current)}
-                  style={styles.iconButton}
-                >
-                  <MoreVertical size={17} />
-                </button>
-                {isMoreMenuOpen ? (
-                  <div className="readerMoreMenu" role="menu">
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        void openBookmarkDrawer();
-                        setIsMoreMenuOpen(false);
-                      }}
-                    >
-                      <BookmarkCheck size={15} /> Notes &amp; bookmarks
-                    </button>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setIsSearchOpen(true);
-                        setIsMoreMenuOpen(false);
-                      }}
-                    >
-                      <Search size={15} /> Search this book
-                    </button>
-                    {isNovel ? (
-                      <>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            toggleSpeech();
-                            setIsMoreMenuOpen(false);
-                          }}
-                        >
-                          {isSpeaking ? (
-                            <X size={15} />
-                          ) : (
-                            <AudioLines size={15} />
-                          )}
-                          {isSpeaking ? "Stop reading aloud" : "Read aloud"}
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            void annotateTextSelection();
-                            setIsMoreMenuOpen(false);
-                          }}
-                        >
-                          <Highlighter size={15} /> Annotate selection
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setIsContentsOpen(true);
-                            setIsMoreMenuOpen(false);
-                          }}
-                        >
-                          <List size={15} /> Table of contents
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setIsPageGridOpen(true);
-                            setIsMoreMenuOpen(false);
-                          }}
-                        >
-                          <Grid2X2 size={15} /> Page overview
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          disabled={!currentPageMime.startsWith("image/")}
-                          onClick={() => {
-                            void downloadPanelImage(
-                              isComicContinuous
-                                ? activeComicChapter.id
-                                : chapter.id,
-                              currentIndex,
-                            );
-                            setIsMoreMenuOpen(false);
-                          }}
-                        >
-                          <Camera size={15} /> Capture page
-                        </button>
-                      </>
-                    )}
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        void shareCurrentChapter();
-                      }}
-                    >
-                      <Share2 size={15} /> Share chapter
-                    </button>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        toggleImmersiveMode();
-                        setIsMoreMenuOpen(false);
-                      }}
-                    >
-                      {isImmersive ? <EyeOff size={15} /> : <Eye size={15} />}
-                      {isImmersive ? "Exit focus mode" : "Focus mode"}
-                    </button>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        void toggleFullscreen();
-                        setIsMoreMenuOpen(false);
-                      }}
-                    >
-                      {isFullscreen ? (
-                        <Minimize2 size={15} />
-                      ) : (
-                        <Expand size={15} />
-                      )}
-                      {isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-                    </button>
-                    {shareMessage ? (
-                      <span className="readerShareMessage" role="status">
-                        {shareMessage}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
+              <button
+                type="button"
+                className="readerHeaderQuickButton"
+                aria-label={isImmersive ? "Exit focus mode" : "Focus mode"}
+                aria-pressed={isImmersive}
+                title={isImmersive ? "Exit focus mode" : "Focus mode"}
+                onClick={toggleImmersiveMode}
+                style={styles.iconButton}
+              >
+                {isImmersive ? <Eye size={16} /> : <EyeOff size={16} />}
+              </button>
+              <button
+                type="button"
+                className="readerHeaderQuickButton"
+                aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                onClick={() => void toggleFullscreen()}
+                style={styles.iconButton}
+              >
+                {isFullscreen ? <Minimize2 size={16} /> : <Expand size={16} />}
+              </button>
             </div>
           </div>
         </header>
 
-        {!isNovel ? (
+        {readerPreferences.readerProgressBarEnabled ? (
           <div
-            className={`readerChrome readerProgress${readerPreferences.readerProgressPosition === "bottom" ? " readerProgressBottom" : ""}${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
-            style={{
-              ...styles.readerProgressTrack,
-              ...(isImmersive ? styles.readerProgressTrackImmersive : {}),
-            }}
+            ref={readerProgressTrackRef}
+            className="readerProgress"
+            style={styles.readerProgressTrack}
             role="progressbar"
-            aria-label="Page progress"
+            aria-label="Reading progress"
             aria-valuemin={0}
-            aria-valuemax={Math.max(totalPages, 1)}
-            aria-valuenow={totalPages > 0 ? currentIndex + 1 : 0}
+            aria-valuemax={100}
+            aria-valuenow={progressPercent}
           >
             <span
+              ref={readerProgressFillRef}
               style={{
                 ...styles.readerProgressFill,
-                width: `${pageProgress}%`,
+                width: `${progressPercent}%`,
+                height: "100%",
               }}
             />
           </div>
         ) : null}
 
-        {!isNovel && shouldAutoHideReaderChrome && !isUiVisible ? (
+        {readerPreferences.readerProgressShowPage ||
+        readerPreferences.readerProgressShowChapter ? (
           <div
-            className={`readerHiddenProgress${readerPreferences.readerProgressPosition === "bottom" ? " readerHiddenProgressBottom" : ""}`}
+            className={`readerProgressIndicator readerProgressIndicator-${readerPreferences.readerProgressIndicatorPosition}`}
+            role="group"
+            aria-label="Reading progress details"
           >
-            <span className="readerHiddenProgressPercent">
-              {Math.round(pageProgress)}%
-            </span>
-            <span
-              className="readerHiddenProgressTrack"
-              role="progressbar"
-              aria-label="Page progress"
-              aria-valuemin={0}
-              aria-valuemax={Math.max(totalPages, 1)}
-              aria-valuenow={totalPages > 0 ? currentIndex + 1 : 0}
-            >
-              <span style={{ width: `${pageProgress}%` }} />
-            </span>
-            <span className="readerHiddenProgressCount">
-              {currentIndex + 1}/{totalPages || 1}
-            </span>
+            {readerPreferences.readerProgressShowPage ? (
+              <span ref={isNovel ? novelProgressIndicatorRef : undefined}>
+                {isNovel
+                  ? `Progress ${progressPercent}%`
+                  : `Page ${currentIndex + 1} / ${totalPages || 1}`}
+              </span>
+            ) : null}
+            {readerPreferences.readerProgressShowChapter ? (
+              <span>
+                Chapter {chapterPosition >= 0 ? chapterPosition + 1 : 1} /{" "}
+                {seriesChapters.length || 1}
+              </span>
+            ) : null}
           </div>
         ) : null}
 
@@ -2289,19 +2267,20 @@ export function ReaderPage() {
           <div className="readerToolbarMain">
             {isNovel ? (
               <input
+                ref={novelProgressInputRef}
                 className="readerNovelProgress"
                 type="range"
                 min={0}
                 max={1000}
-                value={Math.round(novelScrollProgress * 1000)}
+                value={Math.round(novelScrollProgressRef.current * 1000)}
                 aria-label="Novel reading progress"
                 onChange={(event) => {
                   const progress = Number(event.currentTarget.value) / 1000;
                   const frame = viewerFrameRef.current;
                   if (!frame) return;
+                  updateNovelProgressDisplay(progress);
                   frame.scrollTop =
                     progress * (frame.scrollHeight - frame.clientHeight);
-                  setNovelScrollProgress(progress);
                 }}
               />
             ) : (
@@ -2342,29 +2321,31 @@ export function ReaderPage() {
             )}
             {!isNovel ? (
               <div className="readerModeButtons" style={styles.modeButtons}>
-                {modeOptions.map((mode) => (
-                  <button
-                    key={mode.value}
-                    type="button"
-                    aria-label={`Switch to ${mode.label} mode`}
-                    aria-pressed={readerMode === mode.value}
-                    title={mode.label}
-                    onClick={() => void persistReaderMode(mode.value)}
-                    style={{
-                      ...styles.modeButton,
-                      ...(readerMode === mode.value
-                        ? styles.activeModeButton
-                        : {}),
-                    }}
-                  >
-                    {mode.value === "flip" ? (
-                      <BookOpen size={16} />
-                    ) : (
-                      <PanelsTopLeft size={16} />
-                    )}
-                    <span className="readerModeLabel">{mode.label}</span>
-                  </button>
-                ))}
+                <button
+                  type="button"
+                  className="modeButton"
+                  aria-label={`Switch to ${readerMode === "webtoon" ? "paginated" : "web"} mode`}
+                  aria-pressed={readerMode === "webtoon"}
+                  title={`Switch to ${readerMode === "webtoon" ? "paginated" : "web"} mode`}
+                  onClick={() =>
+                    void persistReaderMode(
+                      readerMode === "webtoon" ? "flip" : "webtoon",
+                    )
+                  }
+                  style={{
+                    ...styles.modeButton,
+                    ...styles.activeModeButton,
+                  }}
+                >
+                  {readerMode === "webtoon" ? (
+                    <PanelsTopLeft size={16} />
+                  ) : (
+                    <BookOpen size={16} />
+                  )}
+                  <span className="readerModeLabel">
+                    {readerMode === "webtoon" ? "Web" : "Paginated"}
+                  </span>
+                </button>
               </div>
             ) : null}
           </div>
@@ -2598,8 +2579,8 @@ export function ReaderPage() {
                 right: 0,
                 bottom: 0,
                 left: 0,
-                height: "50dvh",
-                maxHeight: "50dvh",
+                height: "min(60dvh, 600px)",
+                maxHeight: "60dvh",
                 transform: "none",
               }}
               className="readerSettingsPanel"
@@ -2618,11 +2599,6 @@ export function ReaderPage() {
                         ? "Reading Atmosphere & Typography"
                         : "Reader Settings"}
                     </h2>
-                    <p style={styles.settingsSubtitle}>
-                      {isNovel
-                        ? "Tune the page to your reading comfort."
-                        : "Tune page scale, flow, and navigation."}
-                    </p>
                   </div>
                 </div>
                 <button
@@ -2640,328 +2616,290 @@ export function ReaderPage() {
                   className="readerSettingsSection"
                   style={styles.settingsSection}
                 >
-                  <section style={styles.novelSettingGroup}>
-                    <span style={styles.novelSettingLabel}>Color theme</span>
-                    <div style={styles.novelThemeRow}>
-                      {NOVEL_THEME_OPTIONS.map((theme) => (
-                        <button
-                          key={theme.value}
-                          type="button"
-                          aria-label={theme.label}
-                          aria-pressed={
-                            readerPreferences.novelReadingTheme === theme.value
-                          }
-                          title={theme.label}
-                          onClick={() =>
-                            updateReaderPreferences({
-                              novelReadingTheme: theme.value,
-                            })
-                          }
-                          style={{
-                            ...styles.novelThemeSwatch,
-                            background: theme.swatch,
-                            ...(readerPreferences.novelReadingTheme ===
-                            theme.value
-                              ? styles.novelThemeSwatchActive
-                              : {}),
-                          }}
-                        >
-                          {readerPreferences.novelReadingTheme === theme.value
-                            ? "✓"
-                            : null}
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section style={styles.novelSettingGroup}>
-                    <span style={styles.novelSettingLabel}>Font family</span>
-                    <div style={styles.novelFontGrid}>
-                      {NOVEL_FONT_OPTIONS.map((font) => (
-                        <button
-                          key={font.value}
-                          type="button"
-                          aria-pressed={
-                            readerPreferences.novelFontFamily === font.value
-                          }
-                          onClick={() =>
-                            updateReaderPreferences({
-                              novelFontFamily: font.value,
-                            })
-                          }
-                          style={{
-                            ...styles.novelFontButton,
-                            fontFamily: font.font,
-                            ...(readerPreferences.novelFontFamily === font.value
-                              ? styles.novelControlActive
-                              : {}),
-                          }}
-                        >
-                          {font.label}
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section style={styles.novelSettingGroup}>
-                    <div style={styles.novelControlHeader}>
-                      <span style={styles.novelSettingLabel}>Font size</span>
-                      <output>{readerPreferences.novelFontSize}px</output>
-                    </div>
-                    <div style={styles.novelSizeRow}>
-                      <button
-                        type="button"
-                        aria-label="Decrease font size"
-                        disabled={readerPreferences.novelFontSize <= 14}
-                        style={styles.novelSizeButton}
-                        onClick={() =>
-                          updateReaderPreferences({
-                            novelFontSize: readerPreferences.novelFontSize - 1,
-                          })
-                        }
-                      >
-                        <Minus size={15} />
-                      </button>
-                      <input
-                        aria-label="Novel font size"
-                        type="range"
-                        min={14}
-                        max={30}
-                        value={readerPreferences.novelFontSize}
-                        onChange={(event) =>
-                          updateReaderPreferences({
-                            novelFontSize: Number(event.currentTarget.value),
-                          })
-                        }
-                        style={styles.novelFontRange}
-                      />
-                      <button
-                        type="button"
-                        aria-label="Increase font size"
-                        disabled={readerPreferences.novelFontSize >= 30}
-                        style={styles.novelSizeButton}
-                        onClick={() =>
-                          updateReaderPreferences({
-                            novelFontSize: readerPreferences.novelFontSize + 1,
-                          })
-                        }
-                      >
-                        <Plus size={15} />
-                      </button>
-                    </div>
-                  </section>
-
-                  <div style={styles.novelControlGrid}>
+                  <details className="novelSettingsAccordion" open>
+                    <summary>Font</summary>
                     <section style={styles.novelSettingGroup}>
-                      <span style={styles.novelSettingLabel}>Line spacing</span>
-                      <div style={styles.novelSegmentRow}>
-                        {[1.5, 1.8, 2.1].map((spacing) => (
+                      <span style={styles.novelSettingLabel}>Color theme</span>
+                      <div style={styles.novelThemeRow}>
+                        {NOVEL_THEME_OPTIONS.map((theme) => (
                           <button
-                            key={spacing}
+                            key={theme.value}
+                            type="button"
+                            aria-label={theme.label}
+                            aria-pressed={
+                              readerPreferences.novelReadingTheme ===
+                              theme.value
+                            }
+                            title={theme.label}
+                            onClick={() =>
+                              updateReaderPreferences({
+                                novelReadingTheme: theme.value,
+                              })
+                            }
+                            style={{
+                              ...styles.novelThemeSwatch,
+                              background: theme.swatch,
+                              ...(readerPreferences.novelReadingTheme ===
+                              theme.value
+                                ? styles.novelThemeSwatchActive
+                                : {}),
+                            }}
+                          >
+                            {readerPreferences.novelReadingTheme === theme.value
+                              ? "✓"
+                              : null}
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section style={styles.novelSettingGroup}>
+                      <span style={styles.novelSettingLabel}>Font family</span>
+                      <div style={styles.novelFontGrid}>
+                        {NOVEL_FONT_OPTIONS.map((font) => (
+                          <button
+                            key={font.value}
                             type="button"
                             aria-pressed={
-                              readerPreferences.novelLineSpacing === spacing
+                              readerPreferences.novelFontFamily === font.value
+                            }
+                            onClick={() =>
+                              updateReaderPreferences({
+                                novelFontFamily: font.value,
+                              })
+                            }
+                            style={{
+                              ...styles.novelFontButton,
+                              fontFamily: font.font,
+                              ...(readerPreferences.novelFontFamily ===
+                              font.value
+                                ? styles.novelControlActive
+                                : {}),
+                            }}
+                          >
+                            {font.label}
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section style={styles.novelSettingGroup}>
+                      <div style={styles.novelControlHeader}>
+                        <span style={styles.novelSettingLabel}>Font size</span>
+                        <output>{readerPreferences.novelFontSize}px</output>
+                      </div>
+                      <div className="readerSettingSlider">
+                        <input
+                          aria-label="Novel font size"
+                          type="range"
+                          min={14}
+                          max={30}
+                          value={readerPreferences.novelFontSize}
+                          onChange={(event) =>
+                            updateReaderPreferences({
+                              novelFontSize: Number(event.currentTarget.value),
+                            })
+                          }
+                          className="settingsRange"
+                        />
+                      </div>
+                    </section>
+                  </details>
+
+                  <details className="novelSettingsAccordion">
+                    <summary>Layout</summary>
+                    <div style={styles.novelControlGrid}>
+                      <section style={styles.novelSettingGroup}>
+                        <span style={styles.novelSettingLabel}>
+                          Line spacing
+                        </span>
+                        <div style={styles.novelSegmentRow}>
+                          {[1.5, 1.8, 2.1].map((spacing) => (
+                            <button
+                              key={spacing}
+                              type="button"
+                              aria-pressed={
+                                readerPreferences.novelLineSpacing === spacing
+                              }
+                              style={{
+                                ...styles.novelSegmentButton,
+                                ...(readerPreferences.novelLineSpacing ===
+                                spacing
+                                  ? styles.novelControlActive
+                                  : {}),
+                              }}
+                              onClick={() =>
+                                updateReaderPreferences({
+                                  novelLineSpacing: spacing,
+                                })
+                              }
+                            >
+                              {spacing}
+                            </button>
+                          ))}
+                        </div>
+                      </section>
+                      <section style={styles.novelSettingGroup}>
+                        <span style={styles.novelSettingLabel}>Alignment</span>
+                        <div style={styles.novelSegmentRow}>
+                          <button
+                            type="button"
+                            aria-label="Align text left"
+                            aria-pressed={
+                              readerPreferences.novelTextAlignment === "left"
                             }
                             style={{
                               ...styles.novelSegmentButton,
-                              ...(readerPreferences.novelLineSpacing === spacing
+                              ...(readerPreferences.novelTextAlignment ===
+                              "left"
                                 ? styles.novelControlActive
                                 : {}),
                             }}
                             onClick={() =>
                               updateReaderPreferences({
-                                novelLineSpacing: spacing,
+                                novelTextAlignment: "left",
                               })
                             }
                           >
-                            {spacing}
+                            <AlignLeft size={15} />
                           </button>
-                        ))}
-                      </div>
-                    </section>
-                    <section style={styles.novelSettingGroup}>
-                      <span style={styles.novelSettingLabel}>Alignment</span>
-                      <div style={styles.novelSegmentRow}>
-                        <button
-                          type="button"
-                          aria-label="Align text left"
-                          aria-pressed={
-                            readerPreferences.novelTextAlignment === "left"
-                          }
-                          style={{
-                            ...styles.novelSegmentButton,
-                            ...(readerPreferences.novelTextAlignment === "left"
-                              ? styles.novelControlActive
-                              : {}),
-                          }}
-                          onClick={() =>
+                          <button
+                            type="button"
+                            aria-label="Justify text"
+                            aria-pressed={
+                              readerPreferences.novelTextAlignment === "justify"
+                            }
+                            style={{
+                              ...styles.novelSegmentButton,
+                              ...(readerPreferences.novelTextAlignment ===
+                              "justify"
+                                ? styles.novelControlActive
+                                : {}),
+                            }}
+                            onClick={() =>
+                              updateReaderPreferences({
+                                novelTextAlignment: "justify",
+                              })
+                            }
+                          >
+                            <AlignJustify size={15} />
+                          </button>
+                        </div>
+                      </section>
+                      <label className="readerProgressToggle novelIndentToggle">
+                        <span>Paragraph indent</span>
+                        <input
+                          type="checkbox"
+                          aria-label="Paragraph indentation"
+                          checked={readerPreferences.novelParagraphIndent}
+                          onChange={(event) =>
                             updateReaderPreferences({
-                              novelTextAlignment: "left",
+                              novelParagraphIndent: event.currentTarget.checked,
                             })
                           }
-                        >
-                          <AlignLeft size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Justify text"
-                          aria-pressed={
-                            readerPreferences.novelTextAlignment === "justify"
-                          }
-                          style={{
-                            ...styles.novelSegmentButton,
-                            ...(readerPreferences.novelTextAlignment ===
-                            "justify"
-                              ? styles.novelControlActive
-                              : {}),
-                          }}
-                          onClick={() =>
-                            updateReaderPreferences({
-                              novelTextAlignment: "justify",
-                            })
-                          }
-                        >
-                          <AlignJustify size={15} />
-                        </button>
-                      </div>
-                    </section>
-                    <label style={styles.novelSettingGroup}>
-                      <span style={styles.novelSettingLabel}>
-                        Paragraph indent
-                      </span>
-                      <select
-                        aria-label="Paragraph indentation"
-                        value={
-                          readerPreferences.novelParagraphIndent ? "on" : "off"
-                        }
-                        onChange={(event) =>
-                          updateReaderPreferences({
-                            novelParagraphIndent:
-                              event.currentTarget.value === "on",
-                          })
-                        }
-                        style={styles.settingsSelect}
-                      >
-                        <option value="off">None</option>
-                        <option value="on">Indented</option>
-                      </select>
-                    </label>
+                        />
+                      </label>
+                      <section style={styles.novelSettingGroup}>
+                        <span style={styles.novelSettingLabel}>
+                          Paragraph gap
+                        </span>
+                        <div style={styles.novelSegmentRow}>
+                          {[
+                            { value: 0, label: "None" },
+                            { value: 16, label: "Normal" },
+                            { value: 28, label: "Open" },
+                          ].map((gap) => (
+                            <button
+                              key={gap.value}
+                              type="button"
+                              aria-pressed={
+                                readerPreferences.novelParagraphGap ===
+                                gap.value
+                              }
+                              style={{
+                                ...styles.novelSegmentButton,
+                                ...(readerPreferences.novelParagraphGap ===
+                                gap.value
+                                  ? styles.novelControlActive
+                                  : {}),
+                              }}
+                              onClick={() =>
+                                updateReaderPreferences({
+                                  novelParagraphGap: gap.value,
+                                })
+                              }
+                            >
+                              {gap.label}
+                            </button>
+                          ))}
+                        </div>
+                      </section>
+                    </div>
+
                     <section style={styles.novelSettingGroup}>
-                      <span style={styles.novelSettingLabel}>
-                        Paragraph gap
-                      </span>
+                      <div style={styles.novelControlHeader}>
+                        <span style={styles.novelSettingLabel}>
+                          Column width
+                        </span>
+                        <output>{novelColumnLabel}</output>
+                      </div>
                       <div style={styles.novelSegmentRow}>
                         {[
-                          { value: 0, label: "None" },
-                          { value: 16, label: "Normal" },
-                          { value: 28, label: "Open" },
-                        ].map((gap) => (
+                          { value: "narrow", label: "Narrow" },
+                          { value: "standard", label: "Standard" },
+                          { value: "wide", label: "Wide" },
+                          { value: "full", label: "100%" },
+                        ].map((width) => (
                           <button
-                            key={gap.value}
+                            key={width.value}
                             type="button"
                             aria-pressed={
-                              readerPreferences.novelParagraphGap === gap.value
+                              readerPreferences.novelColumnWidth === width.value
                             }
                             style={{
                               ...styles.novelSegmentButton,
-                              ...(readerPreferences.novelParagraphGap ===
-                              gap.value
+                              ...(readerPreferences.novelColumnWidth ===
+                              width.value
                                 ? styles.novelControlActive
                                 : {}),
                             }}
                             onClick={() =>
                               updateReaderPreferences({
-                                novelParagraphGap: gap.value,
+                                novelColumnWidth:
+                                  width.value as Preferences["novelColumnWidth"],
                               })
                             }
                           >
-                            {gap.label}
+                            {width.label}
                           </button>
                         ))}
                       </div>
                     </section>
-                  </div>
+                  </details>
 
-                  <section style={styles.novelSettingGroup}>
-                    <div style={styles.novelControlHeader}>
-                      <span style={styles.novelSettingLabel}>Column width</span>
-                      <output>{novelColumnLabel}</output>
-                    </div>
-                    <div style={styles.novelSegmentRow}>
-                      {[
-                        { value: "narrow", label: "Narrow" },
-                        { value: "standard", label: "Standard" },
-                        { value: "wide", label: "Wide" },
-                        { value: "full", label: "100%" },
-                      ].map((width) => (
-                        <button
-                          key={width.value}
-                          type="button"
-                          aria-pressed={
-                            readerPreferences.novelColumnWidth === width.value
-                          }
-                          style={{
-                            ...styles.novelSegmentButton,
-                            ...(readerPreferences.novelColumnWidth ===
-                            width.value
-                              ? styles.novelControlActive
-                              : {}),
-                          }}
-                          onClick={() =>
+                  <details className="novelSettingsAccordion">
+                    <summary>Flow</summary>
+                    <section style={styles.novelFlowSection}>
+                      <div style={styles.novelControlHeader}>
+                        <span style={styles.novelSettingLabel}>
+                          Chapter flow
+                        </span>
+                      </div>
+                      <label className="readerProgressToggle novelFlowToggle">
+                        <span>Continuous chapters</span>
+                        <input
+                          type="checkbox"
+                          aria-label="Continuous chapter flow"
+                          checked={readerPreferences.novelInfiniteScroll}
+                          onChange={(event) =>
                             updateReaderPreferences({
-                              novelColumnWidth:
-                                width.value as Preferences["novelColumnWidth"],
+                              novelInfiniteScroll: event.currentTarget.checked,
                             })
                           }
-                        >
-                          {width.label}
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section style={styles.novelFlowSection}>
-                    <div style={styles.novelControlHeader}>
-                      <span style={styles.novelSettingLabel}>Chapter flow</span>
-                      <span style={styles.novelFlowBadge}>
-                        {readerPreferences.novelInfiniteScroll
-                          ? "INFINITE SCROLL"
-                          : "SINGLE CHAPTER"}
-                      </span>
-                    </div>
-                    <div style={styles.settingsRowTwo}>
-                      {[true, false].map((infinite) => (
-                        <button
-                          key={String(infinite)}
-                          type="button"
-                          aria-pressed={
-                            readerPreferences.novelInfiniteScroll === infinite
-                          }
-                          style={{
-                            ...styles.readerModeCard,
-                            ...(readerPreferences.novelInfiniteScroll ===
-                            infinite
-                              ? styles.readerModeCardActive
-                              : {}),
-                          }}
-                          onClick={() =>
-                            updateReaderPreferences({
-                              novelInfiniteScroll: infinite,
-                            })
-                          }
-                        >
-                          <span style={styles.readerModeTitle}>
-                            {infinite ? "∞ Infinite Scroll" : "Single Chapter"}
-                          </span>
-                          <span style={styles.readerModeBody}>
-                            {infinite
-                              ? "Read the book as one continuous stream."
-                              : "Stop at chapter ends and choose when to continue."}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </section>
+                        />
+                      </label>
+                    </section>
+                  </details>
                 </div>
               ) : (
                 <div
@@ -3014,25 +2952,116 @@ export function ReaderPage() {
                       style={styles.settingsToggleInput}
                     />
                   </label>
-                  <label style={styles.settingsDirectionRow}>
-                    <span style={styles.settingsSliderLabel}>
-                      Progress bar position
-                    </span>
-                    <select
-                      aria-label="Progress bar position"
-                      value={readerPreferences.readerProgressPosition}
-                      onChange={(event) =>
-                        updateReaderPreferences({
-                          readerProgressPosition: event.currentTarget
-                            .value as Preferences["readerProgressPosition"],
-                        })
-                      }
-                      style={styles.settingsSelect}
+                  <h3 className="readerSettingsGroupTitle">
+                    Progress indicator
+                  </h3>
+                  <div className="readerProgressSettings">
+                    <label className="readerProgressToggle">
+                      <span>{isNovel ? "Reading progress" : "Page"}</span>
+                      <input
+                        type="checkbox"
+                        aria-label={
+                          isNovel
+                            ? "Reading progress indicator"
+                            : "Page progress indicator"
+                        }
+                        checked={readerPreferences.readerProgressShowPage}
+                        onChange={(event) =>
+                          updateReaderPreferences({
+                            readerProgressShowPage: event.currentTarget.checked,
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="readerProgressToggle">
+                      <span>Chapter</span>
+                      <input
+                        type="checkbox"
+                        aria-label="Chapter progress indicator"
+                        checked={readerPreferences.readerProgressShowChapter}
+                        onChange={(event) =>
+                          updateReaderPreferences({
+                            readerProgressShowChapter:
+                              event.currentTarget.checked,
+                          })
+                        }
+                      />
+                    </label>
+                    <div
+                      className="readerProgressIndicatorPlacement"
+                      role="group"
+                      aria-label="Progress indicator position"
                     >
-                      <option value="top">Top</option>
-                      <option value="bottom">Bottom</option>
-                    </select>
-                  </label>
+                      {[
+                        {
+                          value: "top-left",
+                          label: "Top left",
+                          Icon: ArrowUpLeft,
+                        },
+                        {
+                          value: "top-center",
+                          label: "Top center",
+                          Icon: ArrowUp,
+                        },
+                        {
+                          value: "top-right",
+                          label: "Top right",
+                          Icon: ArrowUpRight,
+                        },
+                        {
+                          value: "bottom-left",
+                          label: "Bottom left",
+                          Icon: ArrowDownLeft,
+                        },
+                        {
+                          value: "bottom-center",
+                          label: "Bottom center",
+                          Icon: ArrowDown,
+                        },
+                        {
+                          value: "bottom-right",
+                          label: "Bottom right",
+                          Icon: ArrowDownRight,
+                        },
+                      ].map(({ value, label, Icon }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-label={`${label} progress indicator`}
+                          aria-pressed={
+                            readerPreferences.readerProgressIndicatorPosition ===
+                            value
+                          }
+                          title={label}
+                          onClick={() =>
+                            updateReaderPreferences({
+                              readerProgressIndicatorPosition:
+                                value as Preferences["readerProgressIndicatorPosition"],
+                            })
+                          }
+                        >
+                          <Icon size={17} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <h3 className="readerSettingsGroupTitle">Progress bar</h3>
+                  <div className="readerProgressSettings">
+                    <label className="readerProgressToggle">
+                      <span>Show progress bar</span>
+                      <input
+                        type="checkbox"
+                        aria-label="Show progress bar"
+                        checked={readerPreferences.readerProgressBarEnabled}
+                        onChange={(event) =>
+                          updateReaderPreferences({
+                            readerProgressBarEnabled:
+                              event.currentTarget.checked,
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
                   <label style={styles.settingsToggleRow}>
                     <div>
                       <div style={styles.settingsToggleHeading}>
@@ -4030,7 +4059,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: "100%",
     borderRadius: 999,
     background: "var(--app-lime)",
-    transition: "width 140ms ease",
+    transition: "width 140ms ease, height 140ms ease",
   },
   toolbar: {
     display: "flex",
