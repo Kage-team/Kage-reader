@@ -113,12 +113,20 @@ function chapterMarker(name: string): ChapterMarker | undefined {
   const normalized = name.replaceAll("\\", "/");
   const parts = normalized.split("/");
   const descriptiveChapterTitle = parts
-    .map((part) => baseNameWithoutExtension(part).trim())
-    .find((part) =>
-      /^(?:chapter|chap|ch|episode|ep|part)\s*[._#-]*0*\d+(?:\.\d+)?(?:\s+.+)$/i.test(
-        part,
-      ),
-    );
+    .map((part) => {
+      const baseName = baseNameWithoutExtension(part).trim();
+      const match = baseName.match(
+        /(?:^|[^a-z0-9])((?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+(?:\.\d+)?)(?:\s*[-_:–—]\s*|\s+)(.+)$/i,
+      );
+      const description = match?.[2]
+        .replace(/(?:^|\s+)(?:page|pg)\s*0*\d+$/i, "")
+        .replace(/[_-]+/g, " ")
+        .trim();
+      return match && description
+        ? `${match[1].replace(/\s+/g, " ").trim()} - ${description}`
+        : undefined;
+    })
+    .find((title) => Boolean(title));
   let volume: string | undefined;
   let chapter: string | undefined;
   let issue: string | undefined;

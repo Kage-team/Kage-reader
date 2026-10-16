@@ -45,6 +45,8 @@ export function ImportPage() {
   const [statusItems, setStatusItems] = useState<ImportLogItem[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [importStartedAt, setImportStartedAt] = useState(0);
+  const [expectedImportFileCount, setExpectedImportFileCount] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [linkedFolderName, setLinkedFolderName] = useState("");
   const [folderMessage, setFolderMessage] = useState("");
@@ -70,6 +72,8 @@ export function ImportPage() {
     setStatusItems([]);
     setIsImporting(true);
     setIsPaused(false);
+    setImportStartedAt(Date.now());
+    setExpectedImportFileCount(sources.length);
     pausedRef.current = false;
     latestSourcesRef.current = sources;
     const controller = new AbortController();
@@ -103,6 +107,7 @@ export function ImportPage() {
         index: 1,
         total: 1,
         state: "error",
+        progress: 100,
         message: error instanceof Error ? error.message : String(error),
       });
     } finally {
@@ -233,6 +238,39 @@ export function ImportPage() {
   const cancelledCount = statusItems.filter(
     (item) => item.state === "cancelled",
   ).length;
+  const importFileCount = statusItems[0]?.total ?? expectedImportFileCount;
+  const processedFileCount = completedCount + failedCount + cancelledCount;
+  const importProgressPercent = importFileCount
+    ? Math.min(
+        100,
+        Math.round(
+          statusItems.reduce(
+            (total, item) =>
+              total + (item.state === "working" ? (item.progress ?? 0) : 100),
+            0,
+          ) / importFileCount,
+        ),
+      )
+    : 0;
+  const currentImportItem = statusItems.find(
+    (item) => item.state === "working",
+  );
+  const elapsedImportSeconds = importStartedAt
+    ? (Date.now() - importStartedAt) / 1000
+    : 0;
+  const remainingImportSeconds =
+    importProgressPercent > 0 && importProgressPercent < 100
+      ? Math.ceil(
+          (elapsedImportSeconds * (100 - importProgressPercent)) /
+            importProgressPercent,
+        )
+      : null;
+  const remainingImportLabel =
+    remainingImportSeconds === null
+      ? "Estimating time remaining"
+      : remainingImportSeconds < 60
+        ? `About ${remainingImportSeconds}s remaining`
+        : `About ${Math.floor(remainingImportSeconds / 60)}m ${remainingImportSeconds % 60}s remaining`;
 
   return (
     <main className="importPage">
@@ -249,6 +287,66 @@ export function ImportPage() {
           <ArrowRight size={16} />
         </Link>
       </header>
+
+      {isImporting ? (
+        <div className="importProgressBackdrop" role="presentation">
+          <section
+            className="importProgressModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="import-progress-title"
+            aria-describedby="import-progress-status"
+          >
+            <header className="importProgressModalHeader">
+              <div>
+                <p className="importKicker">LOCAL IMPORT</p>
+                <h2 id="import-progress-title">
+                  {isPaused ? "Import paused" : "Adding to your library"}
+                </h2>
+              </div>
+              <strong>{importProgressPercent}%</strong>
+            </header>
+            <div
+              className="importProgressTrack"
+              role="progressbar"
+              aria-label="Overall import progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={importProgressPercent}
+            >
+              <span style={{ width: `${importProgressPercent}%` }} />
+            </div>
+            <p className="importProgressFilename">
+              {currentImportItem?.fileName ?? "Preparing files…"}
+            </p>
+            <p id="import-progress-status" className="importProgressMessage">
+              {currentImportItem?.message ?? "Preparing the import queue…"}
+            </p>
+            <div className="importProgressMeta">
+              <span>
+                {processedFileCount} of {importFileCount} files processed
+              </span>
+              <span>{remainingImportLabel}</span>
+            </div>
+            <footer className="importProgressActions">
+              <button
+                type="button"
+                className="importSecondaryButton"
+                onClick={toggleImportPause}
+              >
+                {isPaused ? "Resume" : "Pause after current file"}
+              </button>
+              <button
+                type="button"
+                className="importSecondaryButton"
+                onClick={cancelImport}
+              >
+                Cancel remaining files
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
 
       <input
         ref={fileInputRef}

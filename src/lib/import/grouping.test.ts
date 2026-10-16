@@ -66,6 +66,20 @@ describe("chapter grouping", () => {
     ]);
   });
 
+  it("preserves descriptive titles in series-prefixed image filenames", () => {
+    const groups = groupArchiveEntries([
+      image("Series Name - Chapter 7 - The Reunion page 001.jpg"),
+      image("Series Name - Chapter 7 - The Reunion page 002.jpg"),
+      image("Series Name - Chapter 8 page 001.jpg"),
+      image("Series Name - Chapter 8 page 002.jpg"),
+    ]);
+
+    expect(groups.map((group) => group.title)).toEqual([
+      "Chapter 7 - The Reunion",
+      "Chapter 8",
+    ]);
+  });
+
   it("keeps prologue labels when a prologue includes a chapter number", () => {
     const groups = groupArchiveEntries([
       image("Berserk/Chapter 1/001.jpg"),

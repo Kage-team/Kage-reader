@@ -1009,6 +1009,96 @@ button:disabled {
   font-size: 11px;
 }
 
+.importProgressBackdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.74);
+  backdrop-filter: blur(5px);
+}
+
+.importProgressModal {
+  display: grid;
+  gap: 16px;
+  width: min(520px, 100%);
+  padding: 22px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 8px;
+  background: var(--app-panel);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.importProgressModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.importProgressModalHeader h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.importProgressModalHeader > strong {
+  color: var(--app-lime);
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.importProgressTrack {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--app-panel-raised);
+}
+
+.importProgressTrack > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--app-lime);
+  transition: width 180ms ease;
+}
+
+.importProgressFilename,
+.importProgressMessage {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.importProgressFilename {
+  font-weight: 650;
+}
+
+.importProgressMessage {
+  color: var(--app-muted);
+}
+
+.importProgressMeta,
+.importProgressActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.importProgressMeta {
+  color: var(--app-muted);
+  font-size: 11px;
+}
+
+.importProgressActions {
+  justify-content: end;
+  flex-wrap: wrap;
+}
+
 .importQueue {
   display: grid;
   gap: 14px;
@@ -1081,6 +1171,11 @@ button:disabled {
 .novelTextContent p {
   margin-block: 0 var(--novel-paragraph-gap, 16px);
   text-indent: var(--novel-paragraph-indent, 0);
+}
+
+.novelChapterBlock {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1200px;
 }
 
 .novelTextContent p:first-of-type,
@@ -1294,6 +1389,15 @@ button:disabled {
     align-items: start;
   }
 
+  .importProgressActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .importProgressActions button {
+    width: 100%;
+  }
+
   .importQueueItem {
     grid-template-columns: 8px minmax(0, 1fr);
   }
@@ -1435,6 +1539,36 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.readerPanelContextMenu {
+  position: fixed;
+  z-index: 70;
+  min-width: 168px;
+  padding: 4px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: var(--app-panel-raised);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.readerPanelContextMenu button {
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--app-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.readerPanelContextMenu button:hover {
+  background: var(--app-hover);
 }
 
 .readerHeader .readerHeaderQuickButton {

@@ -15,6 +15,7 @@ export type ImportProgressEvent = {
   total: number;
   state: "working" | "saved" | "error" | "cancelled";
   message?: string;
+  progress?: number;
   pageCount?: number;
 };
 

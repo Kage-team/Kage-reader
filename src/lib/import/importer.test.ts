@@ -112,6 +112,19 @@ async function loadFixture(
 }
 
 describe("importer metadata and grouping", () => {
+  it("reports per-file progress from extraction through completion", async () => {
+    const progressValues: number[] = [];
+    await importArchiveSources([await loadFixture("meta.cbz")], (event) =>
+      progressValues.push(event.progress ?? -1),
+    );
+
+    expect(progressValues).toContain(0);
+    expect(
+      progressValues.some((progress) => progress > 0 && progress < 100),
+    ).toBe(true);
+    expect(progressValues.at(-1)).toBe(100);
+  });
+
   it("parses ComicInfo metadata and cover art", async () => {
     const result = await importArchiveSources([await loadFixture("meta.cbz")]);
 

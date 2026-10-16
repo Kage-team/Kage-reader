@@ -31,10 +31,12 @@ import type {
 async function saveArchiveAsChapter(
   source: ArchiveSource,
   targetSeriesId?: string,
-  reportStage?: (message: string) => void,
+  reportStage?: (message: string, progress?: number) => void,
 ): Promise<ImportedChapterSummary> {
-  const bundle = await extractArchiveBundleInWorker(source, reportStage);
-  reportStage?.(`Read ${bundle.entries.length} files; detecting chapters…`);
+  const bundle = await extractArchiveBundleInWorker(source, (message) =>
+    reportStage?.(message, 2),
+  );
+  reportStage?.(`Read ${bundle.entries.length} files; detecting chapters…`, 8);
   const comicInfo = bundle.comicInfoXml
     ? parseComicInfoXml(bundle.comicInfoXml)
     : { tags: [] };
@@ -87,8 +89,12 @@ async function saveArchiveAsChapter(
   };
 
   for (const [groupIndex, chapterGroup] of chapterGroups.entries()) {
+    const groupProgressStart =
+      10 + (84 * groupIndex) / Math.max(chapterGroups.length, 1);
+    const groupProgressSpan = 84 / Math.max(chapterGroups.length, 1);
     reportStage?.(
       `Preparing chapter ${groupIndex + 1} of ${chapterGroups.length}: ${chapterGroup.title}`,
+      Math.round(groupProgressStart),
     );
     const chapterBlob = new Blob(
       chapterGroup.entries.map((entry) => entry.blob),
@@ -112,6 +118,11 @@ async function saveArchiveAsChapter(
       ) {
         reportStage?.(
           `Saving chapter ${groupIndex + 1}/${chapterGroups.length} · page ${index + 1}/${chapterGroup.entries.length}`,
+          Math.round(
+            groupProgressStart +
+              (groupProgressSpan * (index + 1)) /
+                Math.max(chapterGroup.entries.length, 1),
+          ),
         );
       }
       const storageKey = `${chapterId}/${index}`;
@@ -197,6 +208,7 @@ async function saveArchiveAsChapter(
     }
   }
 
+  reportStage?.("Finishing library records…", 98);
   const existingSeriesType =
     existingSeries?.type ?? (isNovelArchive ? "novel" : "manga");
   const existingTags = existingSeries?.tags ?? [];
@@ -279,6 +291,7 @@ export async function importArchiveSources(
           index: index + cancelledIndex + 1,
           total: normalizedSources.length,
           state: "cancelled",
+          progress: 100,
           message: "Cancelled before processing.",
         });
       }
@@ -288,13 +301,14 @@ export async function importArchiveSources(
     if (!isSupportedArchiveName(source.name)) {
       const message = `Unsupported file "${source.name}". Supported formats include CBZ, CBR/RAR, ZIP, 7z, TAR, EPUB, and common image files.`;
       errors.push(message);
-      onProgress?.({ ...progressBase, state: "error", message });
+      onProgress?.({ ...progressBase, state: "error", progress: 100, message });
       continue;
     }
 
     onProgress?.({
       ...progressBase,
       state: "working",
+      progress: 0,
       message: "Opening archive and extracting locally…",
     });
 
@@ -302,8 +316,13 @@ export async function importArchiveSources(
       const summary = await saveArchiveAsChapter(
         source,
         targetSeriesId,
-        (message) =>
-          onProgress?.({ ...progressBase, state: "working", message }),
+        (message, progress) =>
+          onProgress?.({
+            ...progressBase,
+            state: "working",
+            progress,
+            message,
+          }),
       );
       if (summary.pageCount > 0) {
         imported.push(summary);
@@ -311,12 +330,13 @@ export async function importArchiveSources(
       onProgress?.({
         ...progressBase,
         state: "saved",
+        progress: 100,
         pageCount: summary.pageCount,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       errors.push(message);
-      onProgress?.({ ...progressBase, state: "error", message });
+      onProgress?.({ ...progressBase, state: "error", progress: 100, message });
     }
   }
 

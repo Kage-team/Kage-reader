@@ -16,6 +16,8 @@ import {
   EyeOff,
   List,
   BookmarkCheck,
+  Camera,
+  Download,
   Minimize2,
   Minus,
   PanelsTopLeft,
@@ -154,6 +156,13 @@ export function ReaderPage() {
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [seriesType, setSeriesType] = useState<SeriesType | null>(null);
   const [seriesChapters, setSeriesChapters] = useState<Chapter[]>([]);
+  const [activeComicChapterId, setActiveComicChapterId] = useState("");
+  const [comicFlowContent, setComicFlowContent] = useState<
+    Array<{
+      chapter: Chapter;
+      pages: Array<{ page: Page; url: string | null }>;
+    }>
+  >([]);
   const [activeNovelChapterId, setActiveNovelChapterId] = useState("");
   const [novelFlowContent, setNovelFlowContent] = useState<
     Array<{ chapter: Chapter; content: string; illustrations: string[] }>
@@ -197,6 +206,12 @@ export function ReaderPage() {
   }));
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPageGridOpen, setIsPageGridOpen] = useState(false);
+  const [panelContextMenu, setPanelContextMenu] = useState<{
+    left: number;
+    top: number;
+    chapterId: string;
+    pageIndex: number;
+  } | null>(null);
   const [isContentsOpen, setIsContentsOpen] = useState(false);
   const [contentsQuery, setContentsQuery] = useState("");
   const [isReaderSettingsOpen, setIsReaderSettingsOpen] = useState(false);
@@ -224,15 +239,16 @@ export function ReaderPage() {
   );
   const pendingTapRef = useRef<number | undefined>(undefined);
   const lastPointerTypeRef = useRef<string | null>(null);
-  const comicChapterPrefetchRef = useRef<{
-    chapterId: string;
-    blobs: Promise<Map<string, Blob | undefined>>;
-  } | null>(null);
-  const autoAdvancedChapterRef = useRef<string | null>(null);
+  const comicFlowLoadedChapterIdsRef = useRef(new Set<string>());
+  const comicFlowLoadingChapterIdsRef = useRef(new Set<string>());
+  const comicFlowObjectUrlsRef = useRef<string[]>([]);
+  const comicInitialPositionRestoredRef = useRef(false);
+  const comicProgressSavedAtRef = useRef(0);
   const zoomPersistTimerRef = useRef<number | undefined>(undefined);
   const chromeHideTimerRef = useRef<number | undefined>(undefined);
   const novelProgressSavedAtRef = useRef(0);
   const novelScrollRatioRef = useRef(0);
+  const lastReaderScrollHandledAtRef = useRef(0);
   const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const searchIndexRef = useRef<{
     seriesId: string;
@@ -240,6 +256,27 @@ export function ReaderPage() {
     promise: Promise<TextSearchDocument[]>;
   } | null>(null);
   const currentPageRef = useRef(currentPage);
+  const isComicContinuous =
+    readerMode === "webtoon" &&
+    readerPreferences.comicInfiniteScroll &&
+    pages.some((page) => page.mime.startsWith("image/"));
+
+  useEffect(() => {
+    comicFlowObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    comicFlowObjectUrlsRef.current = [];
+    comicFlowLoadedChapterIdsRef.current.clear();
+    comicFlowLoadingChapterIdsRef.current.clear();
+    comicInitialPositionRestoredRef.current = false;
+    setComicFlowContent([]);
+    setActiveComicChapterId(chapterId ? decodeURIComponent(chapterId) : "");
+  }, [chapterId]);
+
+  useEffect(
+    () => () => {
+      comicFlowObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    },
+    [],
+  );
 
   useEffect(() => {
     currentPageRef.current = currentPage;
@@ -488,20 +525,11 @@ export function ReaderPage() {
     let objectUrls: string[] = [];
 
     void (async () => {
-      const decodedChapterId = decodeURIComponent(chapterId);
-      const prefetched =
-        comicChapterPrefetchRef.current?.chapterId === decodedChapterId
-          ? comicChapterPrefetchRef.current.blobs
-          : undefined;
-      if (prefetched) comicChapterPrefetchRef.current = null;
-      const prefetchedBlobs = prefetched ? await prefetched : undefined;
       const loadedUrls: Array<string | null> = [];
       const loadedTexts: Array<string | null> = [];
 
       for (const page of pages) {
-        const blob =
-          prefetchedBlobs?.get(page.storageKey) ??
-          (await getBlob(page.storageKey));
+        const blob = await getBlob(page.storageKey);
         if (!blob) {
           loadedUrls.push(null);
           loadedTexts.push(null);
@@ -541,43 +569,101 @@ export function ReaderPage() {
   }, [chapterId, loadedChapterId, pages]);
 
   useEffect(() => {
-    if (
-      !chapter ||
-      readerMode !== "webtoon" ||
-      !readerPreferences.comicInfiniteScroll
-    ) {
-      return;
-    }
+    if (!isComicContinuous || !chapter || seriesChapters.length === 0) return;
 
-    const currentChapterIndex = seriesChapters.findIndex(
-      (entry) => entry.id === chapter.id,
+    const centerId = activeComicChapterId || chapter.id;
+    const centerIndex = seriesChapters.findIndex(
+      (entry) => entry.id === centerId,
     );
-    const nextChapter = seriesChapters[currentChapterIndex + 1];
-    if (
-      !nextChapter ||
-      comicChapterPrefetchRef.current?.chapterId === nextChapter.id
-    ) {
-      return;
-    }
+    if (centerIndex < 0) return;
 
-    const blobs = listPages(nextChapter.id)
-      .then(async (chapterPages) => {
-        const entries = await Promise.all(
-          chapterPages.map(
-            async (page) =>
-              [page.storageKey, await getBlob(page.storageKey)] as const,
-          ),
+    const nearbyChapters = seriesChapters.slice(
+      Math.max(0, centerIndex - 1),
+      centerIndex + 2,
+    );
+    const loadingChapterIds = comicFlowLoadingChapterIdsRef.current;
+    const chaptersToLoad = nearbyChapters.filter(
+      (entry) =>
+        !comicFlowLoadedChapterIdsRef.current.has(entry.id) &&
+        !loadingChapterIds.has(entry.id),
+    );
+    if (chaptersToLoad.length === 0) return;
+
+    chaptersToLoad.forEach((entry) => loadingChapterIds.add(entry.id));
+    let isCancelled = false;
+    const createdUrls: string[] = [];
+
+    void Promise.all(
+      chaptersToLoad.map(async (seriesChapter) => {
+        const chapterPages = await listPages(seriesChapter.id);
+        const loadedPages = await Promise.all(
+          chapterPages.map(async (page) => {
+            const blob = await getBlob(page.storageKey);
+            if (!blob || !page.mime.startsWith("image/")) {
+              return { page, url: null };
+            }
+            const url = URL.createObjectURL(blob);
+            createdUrls.push(url);
+            return { page, url };
+          }),
         );
-        return new Map(entries);
+        return { chapter: seriesChapter, pages: loadedPages };
+      }),
+    )
+      .then((loadedChapters) => {
+        if (isCancelled) {
+          createdUrls.forEach((url) => URL.revokeObjectURL(url));
+          return;
+        }
+        comicFlowObjectUrlsRef.current.push(...createdUrls);
+        loadedChapters.forEach((entry) =>
+          comicFlowLoadedChapterIdsRef.current.add(entry.chapter.id),
+        );
+        setComicFlowContent((current) => {
+          const byId = new Map(
+            current.map((entry) => [entry.chapter.id, entry]),
+          );
+          loadedChapters.forEach((entry) => byId.set(entry.chapter.id, entry));
+          return seriesChapters.flatMap((seriesChapter) => {
+            const entry = byId.get(seriesChapter.id);
+            return entry ? [entry] : [];
+          });
+        });
       })
-      .catch(() => new Map<string, Blob | undefined>());
-    comicChapterPrefetchRef.current = { chapterId: nextChapter.id, blobs };
-  }, [
-    chapter,
-    readerMode,
-    readerPreferences.comicInfiniteScroll,
-    seriesChapters,
-  ]);
+      .catch(() => {
+        createdUrls.forEach((url) => URL.revokeObjectURL(url));
+      })
+      .finally(() => {
+        chaptersToLoad.forEach((entry) => loadingChapterIds.delete(entry.id));
+      });
+
+    return () => {
+      isCancelled = true;
+      chaptersToLoad.forEach((entry) => loadingChapterIds.delete(entry.id));
+    };
+  }, [activeComicChapterId, chapter, isComicContinuous, seriesChapters]);
+
+  useEffect(() => {
+    if (!isComicContinuous || comicInitialPositionRestoredRef.current) return;
+    const frame = viewerFrameRef.current;
+    if (!frame) return;
+
+    const requestedChapterId = chapterId
+      ? decodeURIComponent(chapterId)
+      : chapter?.id;
+    const chapterElement = Array.from(
+      frame.querySelectorAll<HTMLElement>("[data-comic-chapter-id]"),
+    ).find((element) => element.dataset.comicChapterId === requestedChapterId);
+    const pageElement = chapterElement?.querySelector<HTMLElement>(
+      `[data-reader-page-index="${currentPage}"]`,
+    );
+    if (!pageElement) return;
+
+    comicInitialPositionRestoredRef.current = true;
+    requestAnimationFrame(() =>
+      pageElement.scrollIntoView({ behavior: "instant", block: "start" }),
+    );
+  }, [chapter, chapterId, comicFlowContent, currentPage, isComicContinuous]);
 
   useEffect(() => {
     if (
@@ -593,40 +679,60 @@ export function ReaderPage() {
     const objectUrls: string[] = [];
 
     void (async () => {
-      const chapters = await Promise.all(
-        seriesChapters.map(async (seriesChapter) => {
-          const chapterPages = await listPages(seriesChapter.id);
-          const textParts: string[] = [];
-          const illustrations: string[] = [];
+      const chapters: Array<{
+        chapter: Chapter;
+        content: string;
+        illustrations: string[];
+      }> = [];
 
-          for (const page of chapterPages) {
-            const blob = await getBlob(page.storageKey);
-            if (!blob) continue;
-            if (isTextMime(page.mime)) {
-              textParts.push(sanitizeReaderHtml(await blob.text()));
-            } else if (page.mime.startsWith("image/")) {
-              const url = URL.createObjectURL(blob);
-              objectUrls.push(url);
-              illustrations.push(url);
-            }
-          }
+      for (
+        let batchStart = 0;
+        batchStart < seriesChapters.length;
+        batchStart += 2
+      ) {
+        const batch = await Promise.all(
+          seriesChapters
+            .slice(batchStart, batchStart + 2)
+            .map(async (seriesChapter) => {
+              const chapterPages = await listPages(seriesChapter.id);
+              const textParts: string[] = [];
+              const illustrations: string[] = [];
 
-          return {
-            chapter: seriesChapter,
-            content: textParts.join("\n"),
-            illustrations,
-          };
-        }),
-      );
+              for (const page of chapterPages) {
+                const blob = await getBlob(page.storageKey);
+                if (!blob) continue;
+                if (isTextMime(page.mime)) {
+                  textParts.push(sanitizeReaderHtml(await blob.text()));
+                } else if (page.mime.startsWith("image/")) {
+                  const url = URL.createObjectURL(blob);
+                  objectUrls.push(url);
+                  illustrations.push(url);
+                }
+              }
 
-      if (isCancelled) {
-        objectUrls.forEach((url) => URL.revokeObjectURL(url));
-        return;
+              return {
+                chapter: seriesChapter,
+                content: textParts.join("\n"),
+                illustrations,
+              };
+            }),
+        );
+        chapters.push(...batch);
+
+        if (isCancelled) {
+          objectUrls.forEach((url) => URL.revokeObjectURL(url));
+          return;
+        }
+
+        setNovelFlowContent(
+          chapters.filter((entry) => entry.content.trim().length > 0),
+        );
+        if (batchStart + 2 < seriesChapters.length) {
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => resolve()),
+          );
+        }
       }
-
-      setNovelFlowContent(
-        chapters.filter((entry) => entry.content.trim().length > 0),
-      );
     })();
 
     return () => {
@@ -644,7 +750,8 @@ export function ReaderPage() {
     if (
       !chapterId ||
       loadedChapterId !== decodeURIComponent(chapterId) ||
-      pages.length === 0
+      pages.length === 0 ||
+      isComicContinuous
     ) {
       return;
     }
@@ -678,11 +785,15 @@ export function ReaderPage() {
     pages,
     readerMode,
     readerPreferences.novelInfiniteScroll,
+    isComicContinuous,
   ]);
 
   useEffect(() => {
     if (!chapterId) return;
-    const decodedChapterId = decodeURIComponent(chapterId);
+    const decodedChapterId = isComicContinuous
+      ? activeComicChapterId
+      : decodeURIComponent(chapterId);
+    if (!decodedChapterId) return;
     const timer = window.setInterval(() => {
       if (document.visibilityState !== "visible") return;
       void (async () => {
@@ -710,7 +821,7 @@ export function ReaderPage() {
       })();
     }, 60_000);
     return () => window.clearInterval(timer);
-  }, [chapterId]);
+  }, [activeComicChapterId, chapterId, isComicContinuous]);
 
   useEffect(() => {
     if (
@@ -1460,6 +1571,65 @@ export function ReaderPage() {
     );
   }
 
+  async function downloadPanelImage(
+    targetChapterId: string,
+    pageIndex: number,
+  ): Promise<void> {
+    const targetChapter =
+      seriesChapters.find((entry) => entry.id === targetChapterId) ??
+      (chapter?.id === targetChapterId ? chapter : undefined);
+    if (!targetChapter) return;
+
+    const targetPages =
+      chapter?.id === targetChapterId
+        ? pages
+        : await listPages(targetChapterId);
+    const targetPage = targetPages.find((entry) => entry.index === pageIndex);
+    if (!targetPage || !targetPage.mime.startsWith("image/")) return;
+
+    const blob = await getBlob(targetPage.storageKey);
+    if (!blob) return;
+
+    const mime = blob.type || targetPage.mime;
+    const mimeExtension = mime.split("/")[1]?.split("+")[0] ?? "jpg";
+    const extension = mimeExtension === "jpeg" ? "jpg" : mimeExtension;
+    const safeTitle = targetChapter.title.replace(/[<>:"/\\|?*]/g, "-").trim();
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = `${safeTitle || "chapter"}-page-${String(pageIndex + 1).padStart(3, "0")}.${extension}`;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  }
+
+  function handleReaderContextMenu(
+    event: React.MouseEvent<HTMLDivElement>,
+  ): void {
+    const image = (event.target as HTMLElement).closest<HTMLImageElement>(
+      "img[data-reader-page-index]",
+    );
+    if (!image) return;
+
+    const pageIndex = Number(image.dataset.readerPageIndex);
+    const chapterElement = image.closest<HTMLElement>(
+      "[data-comic-chapter-id]",
+    );
+    const targetChapterId =
+      chapterElement?.dataset.comicChapterId ??
+      (chapterId ? decodeURIComponent(chapterId) : "");
+    if (!Number.isInteger(pageIndex) || !targetChapterId) return;
+
+    event.preventDefault();
+    setPanelContextMenu({
+      left: Math.max(8, Math.min(event.clientX, window.innerWidth - 200)),
+      top: Math.max(8, Math.min(event.clientY, window.innerHeight - 60)),
+      chapterId: targetChapterId,
+      pageIndex,
+    });
+  }
+
   function setImmersiveMode(enabled: boolean): void {
     setIsImmersive(enabled);
     setIsUiVisible(!enabled);
@@ -1471,6 +1641,10 @@ export function ReaderPage() {
   }
 
   function handleViewerScroll(event: React.UIEvent<HTMLDivElement>): void {
+    const now = performance.now();
+    if (now - lastReaderScrollHandledAtRef.current < 32) return;
+    lastReaderScrollHandledAtRef.current = now;
+
     if (readerMode === "novel") {
       const frame = event.currentTarget;
       const chapterElements = Array.from(
@@ -1517,6 +1691,69 @@ export function ReaderPage() {
       return;
     }
 
+    if (isComicContinuous) {
+      const frame = event.currentTarget;
+      const chapterElements = Array.from(
+        frame.querySelectorAll<HTMLElement>("[data-comic-chapter-id]"),
+      );
+      if (chapterElements.length === 0) return;
+
+      const activeLine =
+        frame.getBoundingClientRect().top +
+        Math.min(160, frame.clientHeight * 0.35);
+      let activeElement = chapterElements[0];
+      for (const element of chapterElements) {
+        if (element.getBoundingClientRect().top <= activeLine) {
+          activeElement = element;
+        } else {
+          break;
+        }
+      }
+
+      const activeId = activeElement.dataset.comicChapterId;
+      if (!activeId) return;
+      setActiveComicChapterId(activeId);
+
+      const chapterPages = Array.from(
+        activeElement.querySelectorAll<HTMLElement>("[data-reader-page-index]"),
+      );
+      const viewportCenter =
+        frame.getBoundingClientRect().top + frame.clientHeight / 2;
+      let closestIndex = currentPage;
+      let closestDistance = Number.POSITIVE_INFINITY;
+      for (const readerPage of chapterPages) {
+        const pageCenter =
+          readerPage.getBoundingClientRect().top +
+          readerPage.getBoundingClientRect().height / 2;
+        const distance = Math.abs(viewportCenter - pageCenter);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = Number(readerPage.dataset.readerPageIndex);
+        }
+      }
+
+      if (Number.isFinite(closestIndex) && closestIndex !== currentPage) {
+        setCurrentPage(closestIndex);
+      }
+
+      const now = Date.now();
+      if (now - comicProgressSavedAtRef.current >= 900) {
+        comicProgressSavedAtRef.current = now;
+        void getProgress(activeId).then((existing) =>
+          putProgress({
+            ...existing,
+            schemaVersion: SCHEMA_VERSION,
+            chapterId: activeId,
+            pageIndex: closestIndex,
+            scrollRatio: 0,
+            updatedAt: now,
+            timeSpentSeconds: existing?.timeSpentSeconds ?? 0,
+          }),
+        );
+      }
+      return;
+    }
+
     const readerPages = Array.from(
       event.currentTarget.querySelectorAll<HTMLElement>(
         "[data-reader-page-index]",
@@ -1546,31 +1783,20 @@ export function ReaderPage() {
     if (Number.isFinite(closestIndex) && closestIndex !== currentPage) {
       setCurrentPage(closestIndex);
     }
-
-    if (
-      readerMode === "webtoon" &&
-      readerPreferences.comicInfiniteScroll &&
-      chapter &&
-      event.currentTarget.scrollHeight -
-        event.currentTarget.scrollTop -
-        event.currentTarget.clientHeight <=
-        120
-    ) {
-      const currentChapterIndex = seriesChapters.findIndex(
-        (entry) => entry.id === chapter.id,
-      );
-      const nextChapter = seriesChapters[currentChapterIndex + 1];
-      if (nextChapter && autoAdvancedChapterRef.current !== chapter.id) {
-        autoAdvancedChapterRef.current = chapter.id;
-        navigate(`/read/${encodeURIComponent(nextChapter.id)}`);
-      }
-    }
   }
 
   function selectReaderPage(index: number): void {
     setCurrentPage(index);
     setIsPageGridOpen(false);
-    viewerFrameRef.current
+    const frame = viewerFrameRef.current;
+    const activeChapterElement = isComicContinuous
+      ? Array.from(
+          frame?.querySelectorAll<HTMLElement>("[data-comic-chapter-id]") ?? [],
+        ).find(
+          (element) => element.dataset.comicChapterId === activeComicChapterId,
+        )
+      : frame;
+    activeChapterElement
       ?.querySelector<HTMLElement>(`[data-reader-page-index="${index}"]`)
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -1594,12 +1820,22 @@ export function ReaderPage() {
     );
   }
 
-  const totalPages = pages.length;
+  const activeComicChapter =
+    seriesChapters.find((entry) => entry.id === activeComicChapterId) ??
+    chapter;
+  const totalPages = isComicContinuous
+    ? activeComicChapter.pageCount
+    : pages.length;
   const currentIndex = Math.min(Math.max(currentPage, 0), totalPages - 1);
   const isCurrentPageBookmarked = bookmarks.some(
     (bookmark) => bookmark.pageIndex === currentIndex,
   );
-  const currentPageMime = pages[currentIndex]?.mime ?? "";
+  const activeComicPage = comicFlowContent
+    .find((entry) => entry.chapter.id === activeComicChapter.id)
+    ?.pages.find((entry) => entry.page.index === currentIndex)?.page;
+  const currentPageMime = isComicContinuous
+    ? (activeComicPage?.mime ?? "")
+    : (pages[currentIndex]?.mime ?? "");
   const currentTextPage = pageTexts[currentIndex] ?? "";
   const highlightedMarkup = (markup: string, pageIndex: number): string => {
     const phrases = bookmarks
@@ -1630,11 +1866,6 @@ export function ReaderPage() {
         entry.text !== null &&
         entry.text !== undefined,
     );
-  const hasImagePages = pages.some((page) => page.mime.startsWith("image/"));
-  const isComicContinuous =
-    readerMode === "webtoon" &&
-    readerPreferences.comicInfiniteScroll &&
-    hasImagePages;
   const isNovelContinuous =
     readerMode === "novel" &&
     readerPreferences.novelInfiniteScroll &&
@@ -1691,8 +1922,11 @@ export function ReaderPage() {
   const filteredContentsChapters = seriesChapters.filter((entry) =>
     entry.title.toLocaleLowerCase().includes(contentsQuery.toLocaleLowerCase()),
   );
-  const navigationChapterId =
-    isNovel && activeNovelChapter ? activeNovelChapter.id : chapter.id;
+  const navigationChapterId = isNovel
+    ? activeNovelChapter.id
+    : isComicContinuous
+      ? activeComicChapter.id
+      : chapter.id;
   const chapterPosition = seriesChapters.findIndex(
     (entry) => entry.id === navigationChapterId,
   );
@@ -1738,7 +1972,12 @@ export function ReaderPage() {
     <main
       ref={readerRootRef}
       className={`readerPageRoot${isImmersive ? " readerFocusActive" : ""}`}
-      onClickCapture={handleReaderClick}
+      onClickCapture={(event) => {
+        handleReaderClick(event);
+        if (!(event.target as HTMLElement).closest(".readerPanelContextMenu")) {
+          setPanelContextMenu(null);
+        }
+      }}
       style={styles.page}
     >
       <section style={styles.panel}>
@@ -1761,7 +2000,11 @@ export function ReaderPage() {
               <ArrowLeft size={15} /> Library
             </Link>
             <h1 className="title" style={styles.title}>
-              {isNovel ? activeNovelChapter?.title : chapter.title}
+              {isNovel
+                ? activeNovelChapter?.title
+                : isComicContinuous
+                  ? activeComicChapter.title
+                  : chapter.title}
             </h1>
           </div>
           <div className="actionRow" style={styles.actionRow}>
@@ -1896,6 +2139,24 @@ export function ReaderPage() {
                   style={styles.iconButton}
                 >
                   <Grid2X2 size={16} />
+                </button>
+              ) : null}
+              {!isNovel ? (
+                <button
+                  type="button"
+                  className="readerHeaderQuickButton"
+                  aria-label="Capture panel"
+                  title="Capture panel"
+                  disabled={!currentPageMime.startsWith("image/")}
+                  onClick={() =>
+                    void downloadPanelImage(
+                      isComicContinuous ? activeComicChapter.id : chapter.id,
+                      currentIndex,
+                    )
+                  }
+                  style={styles.iconButton}
+                >
+                  <Camera size={16} />
                 </button>
               ) : null}
               <button
@@ -3027,6 +3288,7 @@ export function ReaderPage() {
           onPointerUp={handleReaderPointerEnd}
           onPointerCancel={handleReaderPointerEnd}
           onWheel={handleReaderWheel}
+          onContextMenu={handleReaderContextMenu}
           style={{
             ...styles.viewerFrame,
             ...(isNovel ? styles.novelViewerFrame : {}),
@@ -3058,6 +3320,7 @@ export function ReaderPage() {
                 {novelFlowContent.map((entry, index) => (
                   <section
                     key={entry.chapter.id}
+                    className="novelChapterBlock"
                     data-novel-chapter-id={entry.chapter.id}
                     style={styles.novelChapterBlock}
                   >
@@ -3140,7 +3403,7 @@ export function ReaderPage() {
               }}
             />
           ) : isComicContinuous ? (
-            pageUrls.some(Boolean) ? (
+            comicFlowContent.length > 0 ? (
               <div
                 data-reader-zoom-target
                 style={{
@@ -3152,17 +3415,35 @@ export function ReaderPage() {
                   transformOrigin: "0 0",
                 }}
               >
-                {pageUrls.map((url, index) =>
-                  url ? (
-                    <img
-                      key={`${chapter.id}:${index}`}
-                      data-reader-page-index={index}
-                      src={url}
-                      alt={`${chapter.title} page ${index + 1}`}
-                      style={comicPageImageStyle(index === currentIndex, true)}
-                    />
-                  ) : null,
-                )}
+                {comicFlowContent.map((flowChapter, chapterIndex) => (
+                  <section
+                    key={flowChapter.chapter.id}
+                    data-comic-chapter-id={flowChapter.chapter.id}
+                    style={styles.comicChapterBlock}
+                  >
+                    {flowChapter.pages.map(({ page, url }) =>
+                      url ? (
+                        <img
+                          key={page.id}
+                          data-reader-page-index={page.index}
+                          src={url}
+                          alt={`${flowChapter.chapter.title} page ${page.index + 1}`}
+                          decoding="async"
+                          style={comicPageImageStyle(
+                            flowChapter.chapter.id === activeComicChapter.id &&
+                              page.index === currentIndex,
+                            true,
+                          )}
+                        />
+                      ) : null,
+                    )}
+                    {chapterIndex < comicFlowContent.length - 1 ? (
+                      <div style={styles.novelChapterDivider}>
+                        <span>{flowChapter.chapter.title}</span>
+                      </div>
+                    ) : null}
+                  </section>
+                ))}
               </div>
             ) : (
               <div style={styles.emptyViewer}>Loading pages...</div>
@@ -3179,6 +3460,32 @@ export function ReaderPage() {
             <div style={styles.emptyViewer}>Loading page...</div>
           )}
         </div>
+
+        {panelContextMenu ? (
+          <div
+            className="readerPanelContextMenu"
+            role="menu"
+            aria-label="Panel actions"
+            style={{ left: panelContextMenu.left, top: panelContextMenu.top }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setPanelContextMenu(null);
+            }}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                void downloadPanelImage(
+                  panelContextMenu.chapterId,
+                  panelContextMenu.pageIndex,
+                );
+                setPanelContextMenu(null);
+              }}
+            >
+              <Download size={15} /> Download image
+            </button>
+          </div>
+        ) : null}
 
         {isBookmarkDrawerOpen ? (
           <div

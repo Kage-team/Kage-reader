@@ -809,10 +809,14 @@ export function SeriesPage() {
               <span style={styles.chapterCount}>{chapters.length} total</span>
             </header>
             <ul style={styles.list}>
-              {chapters.map((chapter) => (
+              {chapters.map((chapter, chapterIndex) => (
                 <li key={chapter.id} style={styles.listItem}>
                   {(() => {
                     const progress = progressByChapter[chapter.id];
+                    const chapterTitle = chapter.title.trim();
+                    const titleLabel =
+                      chapterTitle ||
+                      `Chapter ${chapter.number ?? chapterIndex + 1}`;
                     const progressPercent = progress
                       ? Math.min(
                           100,
@@ -834,7 +838,7 @@ export function SeriesPage() {
                         >
                           <span style={styles.chapterDetails}>
                             <span>
-                              {chapter.title}
+                              {titleLabel}
                               {chapter.volume !== undefined
                                 ? ` · Vol. ${chapter.volume}`
                                 : ""}
