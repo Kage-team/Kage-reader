@@ -13,6 +13,8 @@ import {
   Search,
   ShieldAlert,
   ShieldCheck,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { AdultAccessPrompt } from "../security/AdultAccessPrompt";
 import {
@@ -74,6 +76,7 @@ export function LibraryPage() {
   const [selectedType, setSelectedType] = useState<SeriesType | "all">("all");
   const [selectedTag, setSelectedTag] = useState("");
   const [selectedCollection, setSelectedCollection] = useState("");
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("recent");
   const [selectionMode, setSelectionMode] = useState(false);
   const [revealedCardId, setRevealedCardId] = useState<string | null>(null);
@@ -416,14 +419,16 @@ export function LibraryPage() {
   return (
     <main style={styles.page}>
       <section style={styles.panel}>
-        <header className="libraryHeader" style={styles.headerRow}>
-          <div className="libraryHeaderCopy">
-            <p style={styles.kicker}>YOUR SHELF / LOCAL COLLECTION</p>
-            <h1 style={styles.title}>{pageTitle}</h1>
-            <p style={styles.subtitle}>
-              Your stories, organized and ready when you are.
-            </p>
-          </div>
+        <header
+          className="libraryHeader"
+          data-view={view}
+          style={styles.headerRow}
+        >
+          {!["favorites", "continue", "queue"].includes(view) ? (
+            <div className="libraryHeaderCopy">
+              <h1 style={styles.title}>{pageTitle}</h1>
+            </div>
+          ) : null}
           <div className="libraryHeaderActions" style={styles.headerActions}>
             <div
               className="librarySafeModeToggle"
@@ -543,16 +548,6 @@ export function LibraryPage() {
             style={styles.resumeSection}
             aria-labelledby="recent-chapters-title"
           >
-            <header style={styles.shelfHeader}>
-              <div>
-                <h2 id="recent-chapters-title" style={styles.sectionTitle}>
-                  Recently opened chapters
-                </h2>
-                <p style={styles.sectionDescription}>
-                  Your latest 50 chapter reading positions.
-                </p>
-              </div>
-            </header>
             {visibleRecentChapters.length > 0 ? (
               <ul style={styles.list}>
                 {visibleRecentChapters.map((item) => (
@@ -601,7 +596,10 @@ export function LibraryPage() {
           aria-label="Browse series"
           hidden={view === "insights" || view === "history"}
         >
-          <header style={styles.shelfHeader}>
+          <header
+            style={styles.shelfHeader}
+            hidden={["favorites", "continue", "queue"].includes(view)}
+          >
             <div>
               <h2 style={styles.sectionTitle}>
                 {view === "favorites"
@@ -649,11 +647,11 @@ export function LibraryPage() {
             aria-label="Filter library"
           >
             <label className="librarySearchFilter" style={styles.filterField}>
-              <span style={styles.filterLabel}>Search</span>
               <span style={styles.searchField}>
                 <Search size={16} />
                 <input
                   type="search"
+                  aria-label="Search library"
                   value={query}
                   onChange={(event) => setQuery(event.currentTarget.value)}
                   placeholder="Find a title or tag"
@@ -662,11 +660,11 @@ export function LibraryPage() {
               </span>
             </label>
             <label className="librarySortFilter" style={styles.filterField}>
-              <span style={styles.filterLabel}>Sort by</span>
               <span style={styles.sortField}>
                 <ArrowDownWideNarrow size={15} />
                 <select
                   value={sortBy}
+                  aria-label="Sort library"
                   onChange={(event) => setSortBy(event.currentTarget.value)}
                   style={styles.sortSelect}
                 >
@@ -676,6 +674,19 @@ export function LibraryPage() {
                 </select>
               </span>
             </label>
+            <button
+              type="button"
+              className="libraryAdvancedFilters"
+              aria-haspopup="dialog"
+              aria-expanded={isAdvancedFiltersOpen}
+              onClick={() => setIsAdvancedFiltersOpen(true)}
+            >
+              <SlidersHorizontal size={15} />
+              <span>Filters</span>
+              {selectedTag || selectedCollection ? (
+                <i aria-hidden="true" />
+              ) : null}
+            </button>
           </div>
 
           <div className="librarySelectionToolbar">
@@ -794,39 +805,81 @@ export function LibraryPage() {
                 );
               })}
             </div>
-            <label className="libraryFilterSelect">
-              <span>Topic</span>
-              <select
-                aria-label="Filter by topic"
-                value={selectedTag}
-                onChange={(event) => setSelectedTag(event.currentTarget.value)}
-              >
-                <option value="">All tags</option>
-                {availableTags.map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="libraryFilterSelect">
-              <span>Shelf</span>
-              <select
-                aria-label="Filter by shelf"
-                value={selectedCollection}
-                onChange={(event) =>
-                  setSelectedCollection(event.currentTarget.value)
-                }
-              >
-                <option value="">All shelves</option>
-                {availableCollections.map((collection) => (
-                  <option key={collection} value={collection}>
-                    {collection}
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
+
+          {isAdvancedFiltersOpen ? (
+            <div
+              className="filterSheetOverlay"
+              role="presentation"
+              onClick={(event) => {
+                if (event.target === event.currentTarget) {
+                  setIsAdvancedFiltersOpen(false);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setIsAdvancedFiltersOpen(false);
+              }}
+            >
+              <section
+                className="filterSheet"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="advanced-filters-title"
+              >
+                <header className="filterSheetHeader">
+                  <h2 id="advanced-filters-title">Advanced filters</h2>
+                  <button
+                    type="button"
+                    aria-label="Close filters"
+                    onClick={() => setIsAdvancedFiltersOpen(false)}
+                  >
+                    <X size={17} />
+                  </button>
+                </header>
+                <label className="libraryFilterSelect">
+                  <span>Topic</span>
+                  <select
+                    aria-label="Filter by topic"
+                    value={selectedTag}
+                    onChange={(event) =>
+                      setSelectedTag(event.currentTarget.value)
+                    }
+                  >
+                    <option value="">All tags</option>
+                    {availableTags.map((tag) => (
+                      <option key={tag} value={tag}>
+                        {tag}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="libraryFilterSelect">
+                  <span>Shelf</span>
+                  <select
+                    aria-label="Filter by shelf"
+                    value={selectedCollection}
+                    onChange={(event) =>
+                      setSelectedCollection(event.currentTarget.value)
+                    }
+                  >
+                    <option value="">All shelves</option>
+                    {availableCollections.map((collection) => (
+                      <option key={collection} value={collection}>
+                        {collection}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="filterSheetDone"
+                  onClick={() => setIsAdvancedFiltersOpen(false)}
+                >
+                  Done
+                </button>
+              </section>
+            </div>
+          ) : null}
 
           {isLoading ? (
             <p style={styles.emptyText}>Loading series...</p>
@@ -853,15 +906,20 @@ export function LibraryPage() {
                       ? "Nothing in progress"
                       : "No matches found"}
               </strong>
-              <span>
-                {view === "adult"
-                  ? "Titles marked for mature readers will appear here after they are added to your library."
-                  : view === "favorites"
-                    ? "Save a title with the heart button and it will appear here."
+              {view !== "favorites" ? (
+                <span>
+                  {view === "adult"
+                    ? "Titles marked for mature readers will appear here after they are added to your library."
                     : view === "continue"
                       ? "Open any chapter and your reading position will appear here."
                       : "Try another title, tag, or content type."}
-              </span>
+                </span>
+              ) : null}
+              {view === "favorites" ? (
+                <Link to="/" className="libraryEmptyAction">
+                  Browse library
+                </Link>
+              ) : null}
             </div>
           ) : (
             <div style={styles.grid}>

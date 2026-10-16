@@ -9,6 +9,7 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Expand,
   Grid2X2,
   Highlighter,
@@ -19,11 +20,13 @@ import {
   Camera,
   Download,
   Minimize2,
+  MoreVertical,
   Minus,
   PanelsTopLeft,
   Plus,
   RotateCcw,
   Search,
+  Share2,
   Settings2,
   Trash2,
   Type,
@@ -215,6 +218,11 @@ export function ReaderPage() {
   const [isContentsOpen, setIsContentsOpen] = useState(false);
   const [contentsQuery, setContentsQuery] = useState("");
   const [isReaderSettingsOpen, setIsReaderSettingsOpen] = useState(false);
+  const [isChapterPickerOpen, setIsChapterPickerOpen] = useState(false);
+  const [chapterPickerQuery, setChapterPickerQuery] = useState("");
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [shareMessage, setShareMessage] = useState("");
+  const [novelScrollProgress, setNovelScrollProgress] = useState(0);
   const [isImmersive, setIsImmersive] = useState(false);
   const [isUiVisible, setIsUiVisible] = useState(true);
   const [readerPreferences, setReaderPreferences] = useState<Preferences>(() =>
@@ -1647,6 +1655,9 @@ export function ReaderPage() {
 
     if (readerMode === "novel") {
       const frame = event.currentTarget;
+      setNovelScrollProgress(
+        frame.scrollTop / Math.max(1, frame.scrollHeight - frame.clientHeight),
+      );
       const chapterElements = Array.from(
         frame.querySelectorAll<HTMLElement>("[data-novel-chapter-id]"),
       );
@@ -1805,6 +1816,22 @@ export function ReaderPage() {
     setIsContentsOpen(false);
     setContentsQuery("");
     navigate(`/read/${encodeURIComponent(selectedChapter.id)}`);
+  }
+
+  async function shareCurrentChapter(): Promise<void> {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: chapter?.title ?? "Kage Reader", url });
+        setShareMessage("Shared chapter.");
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareMessage("Chapter link copied.");
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setShareMessage("Could not share this chapter.");
+    }
   }
 
   if (!chapter) {
@@ -1999,47 +2026,30 @@ export function ReaderPage() {
             >
               <ArrowLeft size={15} /> Library
             </Link>
-            <h1 className="title" style={styles.title}>
-              {isNovel
-                ? activeNovelChapter?.title
-                : isComicContinuous
-                  ? activeComicChapter.title
-                  : chapter.title}
-            </h1>
+            <button
+              type="button"
+              className="readerChapterTitleTrigger"
+              aria-label="Choose chapter"
+              onClick={() => {
+                setChapterPickerQuery("");
+                setIsChapterPickerOpen(true);
+              }}
+            >
+              <h1 className="title" style={styles.title}>
+                {isNovel
+                  ? activeNovelChapter?.title
+                  : isComicContinuous
+                    ? activeComicChapter.title
+                    : chapter.title}
+              </h1>
+              <ChevronDown size={15} />
+            </button>
           </div>
           <div className="actionRow" style={styles.actionRow}>
-            <div className="readerChapterPicker">
-              <BookOpen
-                className="readerChapterPickerIcon"
-                size={15}
-                aria-hidden="true"
-              />
-              <label className="srOnly" htmlFor="reader-chapter-select">
-                Chapter
-              </label>
-              <select
-                id="reader-chapter-select"
-                className="readerChapterSelect"
-                aria-label="Chapter"
-                value={navigationChapterId}
-                onChange={(event) =>
-                  navigate(
-                    `/read/${encodeURIComponent(event.currentTarget.value)}`,
-                  )
-                }
-                style={styles.chapterSelect}
-              >
-                {seriesChapters.map((seriesChapter) => (
-                  <option key={seriesChapter.id} value={seriesChapter.id}>
-                    {seriesChapter.title}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div
               className="readerHeaderQuickActions"
               role="group"
-              aria-label="Reader shortcuts"
+              aria-label="Reader controls"
             >
               <button
                 type="button"
@@ -2071,97 +2081,6 @@ export function ReaderPage() {
               <button
                 type="button"
                 className="readerHeaderQuickButton"
-                aria-label="Open bookmarks"
-                aria-pressed={isBookmarkDrawerOpen}
-                title="Open bookmarks"
-                onClick={() => void openBookmarkDrawer()}
-                style={styles.iconButton}
-              >
-                <BookmarkCheck size={16} />
-              </button>
-              <button
-                type="button"
-                className="readerHeaderQuickButton"
-                aria-label="Search this book"
-                aria-pressed={isSearchOpen}
-                title="Search this book"
-                onClick={() => setIsSearchOpen(true)}
-                style={styles.iconButton}
-              >
-                <Search size={16} />
-              </button>
-              {isNovel ? (
-                <button
-                  type="button"
-                  className="readerHeaderQuickButton"
-                  aria-label={isSpeaking ? "Stop reading aloud" : "Read aloud"}
-                  title={isSpeaking ? "Stop reading aloud" : "Read aloud"}
-                  aria-pressed={isSpeaking}
-                  onClick={toggleSpeech}
-                  style={styles.iconButton}
-                >
-                  {isSpeaking ? <X size={16} /> : <AudioLines size={16} />}
-                </button>
-              ) : null}
-              {isNovel ? (
-                <button
-                  type="button"
-                  className="readerHeaderQuickButton"
-                  aria-label="Annotate selected text"
-                  title="Annotate selected text"
-                  onClick={() => void annotateTextSelection()}
-                  style={styles.iconButton}
-                >
-                  <Highlighter size={16} />
-                </button>
-              ) : null}
-              {isNovel ? (
-                <button
-                  type="button"
-                  className="readerHeaderQuickButton"
-                  aria-label="Table of contents"
-                  aria-pressed={isContentsOpen}
-                  title="Table of contents"
-                  onClick={() => setIsContentsOpen(true)}
-                  style={styles.iconButton}
-                >
-                  <List size={16} />
-                </button>
-              ) : null}
-              {!isNovel ? (
-                <button
-                  type="button"
-                  className="readerHeaderQuickButton"
-                  aria-label="Open page overview"
-                  aria-pressed={isPageGridOpen}
-                  title="Page overview"
-                  onClick={() => setIsPageGridOpen(true)}
-                  style={styles.iconButton}
-                >
-                  <Grid2X2 size={16} />
-                </button>
-              ) : null}
-              {!isNovel ? (
-                <button
-                  type="button"
-                  className="readerHeaderQuickButton"
-                  aria-label="Capture panel"
-                  title="Capture panel"
-                  disabled={!currentPageMime.startsWith("image/")}
-                  onClick={() =>
-                    void downloadPanelImage(
-                      isComicContinuous ? activeComicChapter.id : chapter.id,
-                      currentIndex,
-                    )
-                  }
-                  style={styles.iconButton}
-                >
-                  <Camera size={16} />
-                </button>
-              ) : null}
-              <button
-                type="button"
-                className="readerHeaderQuickButton"
                 aria-label={isNovel ? "Reader formatting" : "Reader settings"}
                 aria-pressed={isReaderSettingsOpen}
                 title={isNovel ? "Reader formatting" : "Reader settings"}
@@ -2170,31 +2089,152 @@ export function ReaderPage() {
               >
                 {isNovel ? <Type size={16} /> : <Settings2 size={16} />}
               </button>
-              <button
-                type="button"
-                className="readerHeaderQuickButton"
-                aria-label={isImmersive ? "Exit focus mode" : "Focus mode"}
-                aria-pressed={isImmersive}
-                title={
-                  isImmersive
-                    ? "Exit focus mode"
-                    : "Focus mode hides controls until you tap"
-                }
-                onClick={toggleImmersiveMode}
-                style={styles.iconButton}
-              >
-                {isImmersive ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+              <div className="readerMoreActions">
+                <button
+                  type="button"
+                  className="readerHeaderQuickButton"
+                  aria-label="More reader actions"
+                  aria-haspopup="menu"
+                  aria-expanded={isMoreMenuOpen}
+                  onClick={() => setIsMoreMenuOpen((current) => !current)}
+                  style={styles.iconButton}
+                >
+                  <MoreVertical size={17} />
+                </button>
+                {isMoreMenuOpen ? (
+                  <div className="readerMoreMenu" role="menu">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        void openBookmarkDrawer();
+                        setIsMoreMenuOpen(false);
+                      }}
+                    >
+                      <BookmarkCheck size={15} /> Notes &amp; bookmarks
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsSearchOpen(true);
+                        setIsMoreMenuOpen(false);
+                      }}
+                    >
+                      <Search size={15} /> Search this book
+                    </button>
+                    {isNovel ? (
+                      <>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            toggleSpeech();
+                            setIsMoreMenuOpen(false);
+                          }}
+                        >
+                          {isSpeaking ? (
+                            <X size={15} />
+                          ) : (
+                            <AudioLines size={15} />
+                          )}
+                          {isSpeaking ? "Stop reading aloud" : "Read aloud"}
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            void annotateTextSelection();
+                            setIsMoreMenuOpen(false);
+                          }}
+                        >
+                          <Highlighter size={15} /> Annotate selection
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setIsContentsOpen(true);
+                            setIsMoreMenuOpen(false);
+                          }}
+                        >
+                          <List size={15} /> Table of contents
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setIsPageGridOpen(true);
+                            setIsMoreMenuOpen(false);
+                          }}
+                        >
+                          <Grid2X2 size={15} /> Page overview
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          disabled={!currentPageMime.startsWith("image/")}
+                          onClick={() => {
+                            void downloadPanelImage(
+                              isComicContinuous
+                                ? activeComicChapter.id
+                                : chapter.id,
+                              currentIndex,
+                            );
+                            setIsMoreMenuOpen(false);
+                          }}
+                        >
+                          <Camera size={15} /> Capture page
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        void shareCurrentChapter();
+                      }}
+                    >
+                      <Share2 size={15} /> Share chapter
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        toggleImmersiveMode();
+                        setIsMoreMenuOpen(false);
+                      }}
+                    >
+                      {isImmersive ? <EyeOff size={15} /> : <Eye size={15} />}
+                      {isImmersive ? "Exit focus mode" : "Focus mode"}
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        void toggleFullscreen();
+                        setIsMoreMenuOpen(false);
+                      }}
+                    >
+                      {isFullscreen ? (
+                        <Minimize2 size={15} />
+                      ) : (
+                        <Expand size={15} />
+                      )}
+                      {isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                    </button>
+                    {shareMessage ? (
+                      <span className="readerShareMessage" role="status">
+                        {shareMessage}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
-            <button
-              type="button"
-              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-              title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-              onClick={() => void toggleFullscreen()}
-              style={styles.iconButton}
-            >
-              {isFullscreen ? <Minimize2 size={17} /> : <Expand size={17} />}
-            </button>
           </div>
         </header>
 
@@ -2247,38 +2287,59 @@ export function ReaderPage() {
           className={`readerChrome readerToolbar${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
         >
           <div className="readerToolbarMain">
-            <div style={styles.chapterNav}>
-              <button
-                type="button"
-                aria-label="Previous chapter"
-                disabled={!previousChapter}
-                onClick={() => {
-                  if (previousChapter) {
-                    navigate(`/read/${encodeURIComponent(previousChapter.id)}`);
-                  }
+            {isNovel ? (
+              <input
+                className="readerNovelProgress"
+                type="range"
+                min={0}
+                max={1000}
+                value={Math.round(novelScrollProgress * 1000)}
+                aria-label="Novel reading progress"
+                onChange={(event) => {
+                  const progress = Number(event.currentTarget.value) / 1000;
+                  const frame = viewerFrameRef.current;
+                  if (!frame) return;
+                  frame.scrollTop =
+                    progress * (frame.scrollHeight - frame.clientHeight);
+                  setNovelScrollProgress(progress);
                 }}
-                style={styles.chapterNavButton}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span style={styles.chapterNavLabel}>
-                {chapterPosition >= 0 ? chapterPosition + 1 : 1} /{" "}
-                {seriesChapters.length || 1}
-              </span>
-              <button
-                type="button"
-                aria-label="Next chapter"
-                disabled={!nextChapter}
-                onClick={() => {
-                  if (nextChapter) {
-                    navigate(`/read/${encodeURIComponent(nextChapter.id)}`);
-                  }
-                }}
-                style={styles.chapterNavButton}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
+              />
+            ) : (
+              <div style={styles.chapterNav}>
+                <button
+                  type="button"
+                  aria-label="Previous chapter"
+                  disabled={!previousChapter}
+                  onClick={() => {
+                    if (previousChapter) {
+                      navigate(
+                        `/read/${encodeURIComponent(previousChapter.id)}`,
+                      );
+                    }
+                  }}
+                  style={styles.chapterNavButton}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span style={styles.chapterNavLabel}>
+                  {chapterPosition >= 0 ? chapterPosition + 1 : 1} /{" "}
+                  {seriesChapters.length || 1}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Next chapter"
+                  disabled={!nextChapter}
+                  onClick={() => {
+                    if (nextChapter) {
+                      navigate(`/read/${encodeURIComponent(nextChapter.id)}`);
+                    }
+                  }}
+                  style={styles.chapterNavButton}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
             {!isNovel ? (
               <div className="readerModeButtons" style={styles.modeButtons}>
                 {modeOptions.map((mode) => (
@@ -2379,7 +2440,7 @@ export function ReaderPage() {
           </div>
 
           <div className="readerPageControls">
-            {!isContinuousReader && !isNovel ? (
+            {!isNovel && !isContinuousReader ? (
               <>
                 <button
                   type="button"
@@ -2420,13 +2481,11 @@ export function ReaderPage() {
                   <ChevronRight size={16} />
                 </button>
               </>
-            ) : (
+            ) : !isNovel ? (
               <span style={styles.pageIndicator}>
-                {isNovel
-                  ? `${chapterPosition + 1} / ${seriesChapters.length || 1} chapters`
-                  : `Page ${currentIndex + 1} / ${totalPages || 1}`}
+                {`Page ${currentIndex + 1} / ${totalPages || 1}`}
               </span>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -2436,9 +2495,90 @@ export function ReaderPage() {
           </p>
         ) : null}
 
+        {isChapterPickerOpen ? (
+          <div
+            className="readerSheetOverlay"
+            role="presentation"
+            onClick={(event) => {
+              if (event.target === event.currentTarget)
+                setIsChapterPickerOpen(false);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setIsChapterPickerOpen(false);
+            }}
+          >
+            <section
+              className="readerChapterSheet"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="reader-chapters-title"
+            >
+              <header className="readerSheetHeader">
+                <h2 id="reader-chapters-title">Chapters</h2>
+                <button
+                  type="button"
+                  aria-label="Close chapters"
+                  onClick={() => setIsChapterPickerOpen(false)}
+                >
+                  <X size={17} />
+                </button>
+              </header>
+              <label className="readerChapterSearch">
+                <Search size={15} />
+                <input
+                  autoFocus
+                  type="search"
+                  aria-label="Search chapters"
+                  value={chapterPickerQuery}
+                  onChange={(event) =>
+                    setChapterPickerQuery(event.currentTarget.value)
+                  }
+                  placeholder="Search chapters"
+                />
+              </label>
+              <div className="readerChapterList">
+                {seriesChapters
+                  .filter((entry) =>
+                    entry.title
+                      .toLocaleLowerCase()
+                      .includes(chapterPickerQuery.trim().toLocaleLowerCase()),
+                  )
+                  .map((entry, index) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      aria-current={
+                        entry.id === navigationChapterId ? "true" : undefined
+                      }
+                      onClick={() => {
+                        setIsChapterPickerOpen(false);
+                        setChapterPickerQuery("");
+                        navigate(`/read/${encodeURIComponent(entry.id)}`);
+                      }}
+                    >
+                      <span>
+                        {entry.number !== undefined
+                          ? `Chapter ${entry.number}`
+                          : `Chapter ${index + 1}`}
+                      </span>
+                      <strong>{entry.title}</strong>
+                    </button>
+                  ))}
+                {seriesChapters.filter((entry) =>
+                  entry.title
+                    .toLocaleLowerCase()
+                    .includes(chapterPickerQuery.trim().toLocaleLowerCase()),
+                ).length === 0 ? (
+                  <p className="readerShareMessage">No matching chapters.</p>
+                ) : null}
+              </div>
+            </section>
+          </div>
+        ) : null}
+
         {isReaderSettingsOpen ? (
           <div
-            style={styles.settingsOverlay}
+            className="readerSettingsOverlay"
             role="presentation"
             onClick={(event) => {
               if (event.target === event.currentTarget) {
@@ -2452,12 +2592,14 @@ export function ReaderPage() {
             <div
               style={{
                 ...styles.settingsPanel,
-                width: isNovel ? "min(520px, 100vw)" : "min(440px, 100vw)",
+                width: "min(720px, 100vw)",
                 position: "fixed",
-                top: 0,
+                top: "auto",
                 right: 0,
                 bottom: 0,
-                left: "auto",
+                left: 0,
+                height: "50dvh",
+                maxHeight: "50dvh",
                 transform: "none",
               }}
               className="readerSettingsPanel"
@@ -3039,77 +3181,79 @@ export function ReaderPage() {
                     </span>
                   </div>
 
-                  <h3 className="readerSettingsGroupTitle">
-                    Image adjustments
-                  </h3>
-                  {[
-                    {
-                      id: "comic-brightness",
-                      label: "Brightness",
-                      value: readerPreferences.comicBrightness,
-                      min: 50,
-                      max: 150,
-                      step: 5,
-                      key: "comicBrightness",
-                    },
-                    {
-                      id: "comic-contrast",
-                      label: "Contrast",
-                      value: readerPreferences.comicContrast,
-                      min: 50,
-                      max: 150,
-                      step: 5,
-                      key: "comicContrast",
-                    },
-                    {
-                      id: "comic-invert",
-                      label: "Invert",
-                      value: readerPreferences.comicInvert,
-                      min: 0,
-                      max: 100,
-                      step: 5,
-                      key: "comicInvert",
-                    },
-                    {
-                      id: "comic-sepia",
-                      label: "Sepia",
-                      value: readerPreferences.comicSepia,
-                      min: 0,
-                      max: 100,
-                      step: 5,
-                      key: "comicSepia",
-                    },
-                  ].map((adjustment) => (
-                    <div key={adjustment.id} style={styles.settingsSliderRow}>
-                      <label
-                        htmlFor={adjustment.id}
-                        style={styles.settingsSliderLabel}
-                      >
-                        {adjustment.label}
-                      </label>
-                      <output
-                        htmlFor={adjustment.id}
-                        style={styles.settingsSliderValue}
-                      >
-                        {adjustment.value}%
-                      </output>
-                      <input
-                        id={adjustment.id}
-                        aria-label={`Comic image ${adjustment.label.toLowerCase()}`}
-                        type="range"
-                        min={adjustment.min}
-                        max={adjustment.max}
-                        step={adjustment.step}
-                        value={adjustment.value}
-                        onChange={(event) =>
-                          updateReaderPreferences({
-                            [adjustment.key]: Number(event.currentTarget.value),
-                          })
-                        }
-                        style={styles.settingsRange}
-                      />
-                    </div>
-                  ))}
+                  <details className="readerImageAdjustments">
+                    <summary>Image adjustments</summary>
+                    {[
+                      {
+                        id: "comic-brightness",
+                        label: "Brightness",
+                        value: readerPreferences.comicBrightness,
+                        min: 50,
+                        max: 150,
+                        step: 5,
+                        key: "comicBrightness",
+                      },
+                      {
+                        id: "comic-contrast",
+                        label: "Contrast",
+                        value: readerPreferences.comicContrast,
+                        min: 50,
+                        max: 150,
+                        step: 5,
+                        key: "comicContrast",
+                      },
+                      {
+                        id: "comic-invert",
+                        label: "Invert",
+                        value: readerPreferences.comicInvert,
+                        min: 0,
+                        max: 100,
+                        step: 5,
+                        key: "comicInvert",
+                      },
+                      {
+                        id: "comic-sepia",
+                        label: "Sepia",
+                        value: readerPreferences.comicSepia,
+                        min: 0,
+                        max: 100,
+                        step: 5,
+                        key: "comicSepia",
+                      },
+                    ].map((adjustment) => (
+                      <div key={adjustment.id} style={styles.settingsSliderRow}>
+                        <label
+                          htmlFor={adjustment.id}
+                          style={styles.settingsSliderLabel}
+                        >
+                          {adjustment.label}
+                        </label>
+                        <output
+                          htmlFor={adjustment.id}
+                          style={styles.settingsSliderValue}
+                        >
+                          {adjustment.value}%
+                        </output>
+                        <input
+                          id={adjustment.id}
+                          aria-label={`Comic image ${adjustment.label.toLowerCase()}`}
+                          type="range"
+                          min={adjustment.min}
+                          max={adjustment.max}
+                          step={adjustment.step}
+                          value={adjustment.value}
+                          onChange={(event) =>
+                            updateReaderPreferences({
+                              [adjustment.key]: Number(
+                                event.currentTarget.value,
+                              ),
+                            })
+                          }
+                          style={styles.settingsRange}
+                        />
+                      </div>
+                    ))}
+                  </details>
 
                   <label style={styles.settingsDirectionRow}>
                     <span style={styles.settingsSliderLabel}>

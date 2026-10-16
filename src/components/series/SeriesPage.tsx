@@ -5,9 +5,11 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  Download,
   MoreVertical,
   Play,
   Plus,
+  Trash2,
   Upload,
 } from "lucide-react";
 import { importArchiveSources } from "../../lib/import/importer";
@@ -75,6 +77,7 @@ export function SeriesPage() {
   const [openChapterMenuId, setOpenChapterMenuId] = useState<string | null>(
     null,
   );
+  const [isSeriesActionsOpen, setIsSeriesActionsOpen] = useState(false);
   const [isAppending, setIsAppending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
@@ -390,14 +393,6 @@ export function SeriesPage() {
             <button
               type="button"
               style={styles.secondaryButton}
-              disabled={isExporting || chapters.length === 0}
-              onClick={() => void exportSeries()}
-            >
-              {isExporting ? "Preparing export..." : "Export series ZIP"}
-            </button>
-            <button
-              type="button"
-              style={styles.secondaryButton}
               onClick={() => {
                 resetDrafts(series);
                 setActionError("");
@@ -406,14 +401,47 @@ export function SeriesPage() {
             >
               {isEditing ? "Close editor" : "Edit details"}
             </button>
-            <button
-              type="button"
-              style={styles.deleteButton}
-              disabled={isDeleting}
-              onClick={() => void removeSeries()}
-            >
-              {isDeleting ? "Deleting..." : "Delete series"}
-            </button>
+            <div className="seriesActionsMenu">
+              <button
+                type="button"
+                className="seriesActionsTrigger"
+                aria-label="Series actions"
+                aria-haspopup="menu"
+                aria-expanded={isSeriesActionsOpen}
+                onClick={() => setIsSeriesActionsOpen((current) => !current)}
+              >
+                <MoreVertical size={18} />
+              </button>
+              {isSeriesActionsOpen ? (
+                <div className="seriesActionsPopover" role="menu">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={isExporting || chapters.length === 0}
+                    onClick={() => {
+                      void exportSeries();
+                      setIsSeriesActionsOpen(false);
+                    }}
+                  >
+                    <Download size={15} />
+                    {isExporting ? "Preparing export..." : "Export series ZIP"}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="seriesDeleteAction"
+                    disabled={isDeleting}
+                    onClick={() => {
+                      void removeSeries();
+                      setIsSeriesActionsOpen(false);
+                    }}
+                  >
+                    <Trash2 size={15} />
+                    {isDeleting ? "Deleting..." : "Delete series"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </header>
 
@@ -768,7 +796,7 @@ export function SeriesPage() {
         ) : null}
 
         <section
-          style={styles.appendSection}
+          style={styles.chapterSection}
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => {
             event.preventDefault();
@@ -777,44 +805,32 @@ export function SeriesPage() {
             }
           }}
         >
-          <div style={styles.appendHeader}>
-            <div>
-              <h2 style={styles.chapterHeading}>Chapters &amp; Volumes</h2>
-              <p style={styles.chapterSubheading}>
-                Add later issues directly to {series.title}.
-              </p>
-            </div>
-            <div className="appendActions">
-              <button
-                type="button"
-                disabled={isAppending}
-                style={styles.startReadingButton}
-                onClick={() => archiveInputRef.current?.click()}
-              >
-                <Upload size={14} />
-                {isAppending ? "Adding..." : "Add Chapters"}
-              </button>
-            </div>
-          </div>
           {appendMessage ? (
             <p role="status" style={styles.appendMessage}>
               {appendMessage}
             </p>
           ) : null}
           {exportMessage ? <p role="status">{exportMessage}</p> : null}
-        </section>
-
-        {chapters.length === 0 ? (
-          <p style={styles.emptyText}>No chapters available for this series.</p>
-        ) : (
-          <section style={styles.chapterSection}>
-            <header style={styles.chapterHeader}>
-              <div>
-                <h2 style={styles.chapterHeading}>Chapters</h2>
-                <p style={styles.chapterSubheading}>Choose an issue to read.</p>
-              </div>
-              <span style={styles.chapterCount}>{chapters.length} total</span>
-            </header>
+          <header style={styles.chapterHeader}>
+            <h2 style={styles.chapterHeading}>Chapters</h2>
+            <div className="seriesChapterActions">
+              <span style={styles.chapterCount}>{chapters.length}</span>
+              <button
+                type="button"
+                className="seriesAddChapters"
+                disabled={isAppending}
+                onClick={() => archiveInputRef.current?.click()}
+              >
+                <Upload size={14} />
+                {isAppending ? "Adding..." : "Add Chapters"}
+              </button>
+            </div>
+          </header>
+          {chapters.length === 0 ? (
+            <p style={styles.emptyText}>
+              No chapters available for this series.
+            </p>
+          ) : (
             <ul style={styles.list}>
               {chapters.map((chapter, chapterIndex) => (
                 <li key={chapter.id} style={styles.listItem}>
@@ -936,8 +952,8 @@ export function SeriesPage() {
                 </li>
               ))}
             </ul>
-          </section>
-        )}
+          )}
+        </section>
       </section>
     </main>
   );
