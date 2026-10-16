@@ -794,15 +794,6 @@ export function SeriesPage() {
                 <Upload size={14} />
                 {isAppending ? "Adding..." : "Add Chapters"}
               </button>
-              <button
-                type="button"
-                className="appendDropzoneButton"
-                disabled={isAppending}
-                style={styles.appendDropzone}
-                onClick={() => archiveInputRef.current?.click()}
-              >
-                <Plus size={15} /> Upload &amp; append
-              </button>
             </div>
           </div>
           {appendMessage ? (
@@ -1204,19 +1195,6 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "space-between",
     alignItems: "center",
     gap: 12,
-  },
-  appendDropzone: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 7,
-    minHeight: 40,
-    padding: "0 12px",
-    border: "1px solid var(--app-border)",
-    borderRadius: 7,
-    background: "transparent",
-    color: "var(--app-text)",
-    cursor: "pointer",
   },
   appendMessage: { margin: 0, color: "var(--app-muted)", fontSize: 12 },
   chapterSection: { display: "grid", gap: 15 },
