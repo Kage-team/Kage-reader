@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   AlignJustify,
   AlignLeft,
+  AudioLines,
   ArrowLeft,
   Bookmark,
   BookOpen,
@@ -10,6 +11,7 @@ import {
   ChevronRight,
   Expand,
   Grid2X2,
+  Highlighter,
   Eye,
   EyeOff,
   List,
@@ -21,11 +23,17 @@ import {
   RotateCcw,
   Search,
   Settings2,
+  Trash2,
   Type,
   X,
 } from "lucide-react";
 import { resolveReaderMode } from "../../lib/reader/mode";
-import { sanitizeReaderHtml } from "../../lib/reader/html";
+import { highlightReaderText, sanitizeReaderHtml } from "../../lib/reader/html";
+import {
+  searchTextDocuments,
+  type TextSearchDocument,
+  type TextSearchResult,
+} from "../../lib/reader/search";
 import {
   translateAtFocalPoint,
   type ZoomTransform,
@@ -123,6 +131,22 @@ function plainTextPreview(markup: string): string {
     .trim();
 }
 
+function highlightSearchExcerpt(excerpt: string, query: string) {
+  const phrase = query.trim();
+  if (!phrase) return excerpt;
+  const index = excerpt.toLocaleLowerCase().indexOf(phrase.toLocaleLowerCase());
+  if (index < 0) return excerpt;
+  return (
+    <>
+      {excerpt.slice(0, index)}
+      <mark className="readerTextMatch">
+        {excerpt.slice(index, index + phrase.length)}
+      </mark>
+      {excerpt.slice(index + phrase.length)}
+    </>
+  );
+}
+
 export function ReaderPage() {
   const { chapterId } = useParams();
   const location = useLocation();
@@ -156,6 +180,11 @@ export function ReaderPage() {
   >([]);
   const [isBookmarkDrawerOpen, setIsBookmarkDrawerOpen] = useState(false);
   const [bookmarkError, setBookmarkError] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<TextSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [zoomTransform, setZoomTransform] = useState<ZoomTransform>({
     scale: 1,
     translateX: 0,
@@ -204,10 +233,85 @@ export function ReaderPage() {
   const chromeHideTimerRef = useRef<number | undefined>(undefined);
   const novelProgressSavedAtRef = useRef(0);
   const novelScrollRatioRef = useRef(0);
+  const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const searchIndexRef = useRef<{
+    seriesId: string;
+    chapterKey: string;
+    promise: Promise<TextSearchDocument[]>;
+  } | null>(null);
+  const currentPageRef = useRef(currentPage);
+
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+  }, [currentPage]);
 
   useEffect(() => {
     setReaderPreferences(getPreferences());
   }, [chapterId]);
+
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (!isSearchOpen || !query || !chapter) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsSearching(true);
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const chapterKey = seriesChapters
+            .map((seriesChapter) => seriesChapter.id)
+            .join("\u0000");
+          let index = searchIndexRef.current;
+          if (
+            !index ||
+            index.seriesId !== chapter.seriesId ||
+            index.chapterKey !== chapterKey
+          ) {
+            const promise = (async () => {
+              const documents: TextSearchDocument[] = [];
+              for (const seriesChapter of seriesChapters) {
+                const chapterPages = await listPages(seriesChapter.id);
+                for (const page of chapterPages) {
+                  if (!isTextMime(page.mime)) continue;
+                  const blob = await getBlob(page.storageKey);
+                  if (!blob) continue;
+                  const markup = sanitizeReaderHtml(await blob.text());
+                  documents.push({
+                    chapterId: seriesChapter.id,
+                    chapterTitle: seriesChapter.title,
+                    pageIndex: page.index,
+                    text: plainTextPreview(markup),
+                  });
+                }
+              }
+              return documents;
+            })();
+            index = { seriesId: chapter.seriesId, chapterKey, promise };
+            searchIndexRef.current = index;
+          }
+          const documents = await index.promise;
+          if (!isCancelled) {
+            setSearchResults(searchTextDocuments(documents, query));
+          }
+        } catch {
+          if (!isCancelled) {
+            setBookmarkError("Could not search this book's text.");
+          }
+        } finally {
+          if (!isCancelled) setIsSearching(false);
+        }
+      })();
+    }, 250);
+
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [isSearchOpen, searchQuery, chapter, seriesChapters]);
 
   useEffect(() => {
     if (!chapterId) {
@@ -310,6 +414,7 @@ export function ReaderPage() {
       isReaderSettingsOpen ||
       isPageGridOpen ||
       isBookmarkDrawerOpen ||
+      isSearchOpen ||
       isContentsOpen;
     if (keepChromeVisible) {
       setIsUiVisible(true);
@@ -342,6 +447,7 @@ export function ReaderPage() {
     isContentsOpen,
     isPageGridOpen,
     isBookmarkDrawerOpen,
+    isSearchOpen,
     isReaderSettingsOpen,
     isImmersive,
     pages.length,
@@ -360,6 +466,12 @@ export function ReaderPage() {
     },
     [],
   );
+
+  useEffect(() => {
+    window.speechSynthesis?.cancel();
+    setIsSpeaking(false);
+    return () => window.speechSynthesis?.cancel();
+  }, [chapterId]);
 
   useEffect(() => {
     if (
@@ -546,13 +658,19 @@ export function ReaderPage() {
     }
 
     const safeIndex = Math.min(Math.max(currentPage, 0), pages.length - 1);
-    void putProgress({
-      schemaVersion: 1,
-      chapterId: decodeURIComponent(chapterId),
-      pageIndex: safeIndex,
-      scrollRatio: 0,
-      updatedAt: Date.now(),
-    });
+    void (async () => {
+      const decodedChapterId = decodeURIComponent(chapterId);
+      const existing = await getProgress(decodedChapterId);
+      await putProgress({
+        ...existing,
+        schemaVersion: SCHEMA_VERSION,
+        chapterId: decodedChapterId,
+        pageIndex: safeIndex,
+        scrollRatio: existing?.scrollRatio ?? 0,
+        updatedAt: Date.now(),
+        timeSpentSeconds: existing?.timeSpentSeconds ?? 0,
+      });
+    })();
   }, [
     chapterId,
     currentPage,
@@ -561,6 +679,38 @@ export function ReaderPage() {
     readerMode,
     readerPreferences.novelInfiniteScroll,
   ]);
+
+  useEffect(() => {
+    if (!chapterId) return;
+    const decodedChapterId = decodeURIComponent(chapterId);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      void (async () => {
+        const existing = await getProgress(decodedChapterId);
+        const updatedAt = Date.now();
+        await putProgress({
+          ...existing,
+          schemaVersion: SCHEMA_VERSION,
+          chapterId: decodedChapterId,
+          pageIndex: currentPageRef.current,
+          scrollRatio: existing?.scrollRatio ?? 0,
+          updatedAt,
+          timeSpentSeconds: (existing?.timeSpentSeconds ?? 0) + 60,
+        });
+        const preferences = getPreferences();
+        const dayKey = new Date().toISOString().slice(0, 10);
+        savePreferences({
+          ...preferences,
+          readingDayKey: dayKey,
+          todayReadingSeconds:
+            (preferences.readingDayKey === dayKey
+              ? preferences.todayReadingSeconds
+              : 0) + 60,
+        });
+      })();
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, [chapterId]);
 
   useEffect(() => {
     if (
@@ -952,6 +1102,84 @@ export function ReaderPage() {
     } catch {
       setBookmarkError("Could not remove this bookmark.");
     }
+  }
+
+  function openTextSearchResult(result: TextSearchResult): void {
+    setIsSearchOpen(false);
+    if (result.chapterId === chapter?.id) {
+      selectReaderPage(result.pageIndex);
+      return;
+    }
+    navigate(`/read/${encodeURIComponent(result.chapterId)}`, {
+      state: { bookmarkPageIndex: result.pageIndex },
+    });
+  }
+
+  async function annotateTextSelection(): Promise<void> {
+    const selection = window.getSelection();
+    const highlightText = selection?.toString().trim();
+    if (!chapter || !highlightText) {
+      setBookmarkError("Select some novel text before saving an annotation.");
+      return;
+    }
+    const anchor = selection?.anchorNode;
+    const anchorElement =
+      anchor?.nodeType === Node.ELEMENT_NODE
+        ? (anchor as Element)
+        : anchor?.parentElement;
+    const selectedPage = anchorElement?.closest("[data-reader-page-index]");
+    const selectedChapter = anchorElement?.closest("[data-novel-chapter-id]");
+    const pageIndex = Number.parseInt(
+      selectedPage?.getAttribute("data-reader-page-index") ?? "",
+      10,
+    );
+    const targetChapterId =
+      selectedChapter?.getAttribute("data-novel-chapter-id") ?? chapter.id;
+    try {
+      const bookmark = await putBookmark({
+        schemaVersion: SCHEMA_VERSION,
+        chapterId: targetChapterId,
+        pageIndex: Number.isInteger(pageIndex) ? pageIndex : currentIndex,
+        createdAt: Date.now(),
+        note: "",
+        highlightText,
+      });
+      if (targetChapterId === chapter.id) {
+        setBookmarks((current) => [...current, bookmark]);
+      }
+      setBookmarkError("");
+    } catch {
+      setBookmarkError("Could not save this text annotation.");
+    }
+  }
+
+  function toggleSpeech(): void {
+    if (!("speechSynthesis" in window)) {
+      setBookmarkError("Text-to-speech is unavailable in this browser.");
+      return;
+    }
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      speechUtteranceRef.current = null;
+      setIsSpeaking(false);
+      return;
+    }
+    const text = textPages
+      .map((entry) => plainTextPreview(entry.text ?? ""))
+      .filter(Boolean)
+      .join("\n\n");
+    if (!text) {
+      setBookmarkError("No readable text is available in this chapter.");
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    speechUtteranceRef.current = utterance;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+    setIsSpeaking(true);
+    setBookmarkError("");
   }
 
   function selectBookmark(bookmark: BookmarkRecord): void {
@@ -1373,6 +1601,16 @@ export function ReaderPage() {
   );
   const currentPageMime = pages[currentIndex]?.mime ?? "";
   const currentTextPage = pageTexts[currentIndex] ?? "";
+  const highlightedMarkup = (markup: string, pageIndex: number): string => {
+    const phrases = bookmarks
+      .filter(
+        (bookmark) =>
+          bookmark.pageIndex === pageIndex && Boolean(bookmark.highlightText),
+      )
+      .map((bookmark) => bookmark.highlightText ?? "");
+    if (searchQuery.trim()) phrases.push(searchQuery.trim());
+    return phrases.length > 0 ? highlightReaderText(markup, phrases) : markup;
+  };
   const isNovel = seriesType === "novel" || readerMode === "novel";
   const viewportWidth = viewportSize.width || 1280;
   const maxViewportReaderWidth = Math.min(
@@ -1598,6 +1836,42 @@ export function ReaderPage() {
               >
                 <BookmarkCheck size={16} />
               </button>
+              <button
+                type="button"
+                className="readerHeaderQuickButton"
+                aria-label="Search this book"
+                aria-pressed={isSearchOpen}
+                title="Search this book"
+                onClick={() => setIsSearchOpen(true)}
+                style={styles.iconButton}
+              >
+                <Search size={16} />
+              </button>
+              {isNovel ? (
+                <button
+                  type="button"
+                  className="readerHeaderQuickButton"
+                  aria-label={isSpeaking ? "Stop reading aloud" : "Read aloud"}
+                  title={isSpeaking ? "Stop reading aloud" : "Read aloud"}
+                  aria-pressed={isSpeaking}
+                  onClick={toggleSpeech}
+                  style={styles.iconButton}
+                >
+                  {isSpeaking ? <X size={16} /> : <AudioLines size={16} />}
+                </button>
+              ) : null}
+              {isNovel ? (
+                <button
+                  type="button"
+                  className="readerHeaderQuickButton"
+                  aria-label="Annotate selected text"
+                  title="Annotate selected text"
+                  onClick={() => void annotateTextSelection()}
+                  style={styles.iconButton}
+                >
+                  <Highlighter size={16} />
+                </button>
+              ) : null}
               {isNovel ? (
                 <button
                   type="button"
@@ -2790,7 +3064,19 @@ export function ReaderPage() {
                     <article
                       className="novelTextContent"
                       style={novelTextStyle}
-                      dangerouslySetInnerHTML={{ __html: entry.content }}
+                      dangerouslySetInnerHTML={{
+                        __html: highlightReaderText(
+                          entry.content,
+                          [
+                            ...(entry.chapter.id === chapter.id
+                              ? bookmarks.map(
+                                  (bookmark) => bookmark.highlightText ?? "",
+                                )
+                              : []),
+                            searchQuery.trim(),
+                          ].filter(Boolean),
+                        ),
+                      }}
                     />
                     {entry.illustrations.map((url, imageIndex) => (
                       <img
@@ -2819,7 +3105,9 @@ export function ReaderPage() {
                   data-reader-page-index={entry.index}
                   className="novelTextContent"
                   style={novelTextStyle}
-                  dangerouslySetInnerHTML={{ __html: entry.text ?? "" }}
+                  dangerouslySetInnerHTML={{
+                    __html: highlightedMarkup(entry.text ?? "", entry.index),
+                  }}
                 />
               ))}
               {pages.map((page, index) =>
@@ -2836,7 +3124,9 @@ export function ReaderPage() {
                 <article
                   className="novelTextContent"
                   style={novelTextStyle}
-                  dangerouslySetInnerHTML={{ __html: currentTextPage }}
+                  dangerouslySetInnerHTML={{
+                    __html: highlightedMarkup(currentTextPage, currentIndex),
+                  }}
                 />
               ) : null}
             </div>
@@ -2845,7 +3135,9 @@ export function ReaderPage() {
               data-reader-page-index={currentIndex}
               className="novelTextContent"
               style={novelTextStyle}
-              dangerouslySetInnerHTML={{ __html: currentTextPage }}
+              dangerouslySetInnerHTML={{
+                __html: highlightedMarkup(currentTextPage, currentIndex),
+              }}
             />
           ) : isComicContinuous ? (
             pageUrls.some(Boolean) ? (
@@ -2901,9 +3193,9 @@ export function ReaderPage() {
             <section style={styles.bookmarkDrawerDialog}>
               <header style={styles.pageGridHeader}>
                 <div>
-                  <p style={styles.kicker}>SAVED PAGES</p>
+                  <p style={styles.kicker}>BOOKMARKS &amp; ANNOTATIONS</p>
                   <h2 id="reader-bookmarks-title" style={styles.gridTitle}>
-                    Bookmarks
+                    Saved reading notes
                   </h2>
                 </div>
                 <button
@@ -2927,17 +3219,39 @@ export function ReaderPage() {
                         <span>{entry.seriesTitle}</span>
                         <span>{entry.chapterTitle}</span>
                         <span>Page {entry.bookmark.pageIndex + 1}</span>
+                        {entry.bookmark.highlightText ? (
+                          <q>{entry.bookmark.highlightText}</q>
+                        ) : null}
                       </button>
                       <button
                         type="button"
-                        aria-label={`Remove bookmark for ${entry.chapterTitle}, page ${entry.bookmark.pageIndex + 1}`}
-                        title="Remove bookmark"
+                        aria-label={
+                          entry.bookmark.highlightText
+                            ? `Remove annotation in ${entry.chapterTitle}`
+                            : `Remove bookmark for ${entry.chapterTitle}, page ${entry.bookmark.pageIndex + 1}`
+                        }
+                        title={
+                          entry.bookmark.highlightText
+                            ? "Remove annotation"
+                            : "Remove bookmark"
+                        }
                         onClick={() =>
                           void removeBookmarkRecord(entry.bookmark)
                         }
-                        style={styles.bookmarkRemoveButton}
+                        style={
+                          entry.bookmark.highlightText
+                            ? styles.removeHighlightButton
+                            : styles.bookmarkRemoveButton
+                        }
                       >
-                        <X size={15} />
+                        {entry.bookmark.highlightText ? (
+                          <>
+                            <Trash2 size={15} />
+                            <span>Remove highlight</span>
+                          </>
+                        ) : (
+                          <X size={15} />
+                        )}
                       </button>
                     </div>
                     <textarea
@@ -2970,6 +3284,105 @@ export function ReaderPage() {
                 ))}
                 {bookmarkDrawerEntries.length === 0 ? (
                   <p style={styles.emptyText}>No saved pages yet.</p>
+                ) : null}
+              </div>
+            </section>
+          </div>
+        ) : null}
+
+        {isSearchOpen ? (
+          <div
+            style={styles.pageGridOverlay}
+            role="presentation"
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setIsSearchOpen(false);
+            }}
+          >
+            <section
+              style={styles.bookmarkDrawerDialog}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="reader-search-title"
+            >
+              <header style={styles.pageGridHeader}>
+                <div>
+                  <p style={styles.kicker}>TEXT CONTENT</p>
+                  <h2 id="reader-search-title" style={styles.gridTitle}>
+                    Search this book
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close search"
+                  onClick={() => setIsSearchOpen(false)}
+                  style={styles.iconButton}
+                >
+                  <X size={17} />
+                </button>
+              </header>
+              <div style={{ display: "flex", gap: 8, padding: 16 }}>
+                <input
+                  autoFocus
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) =>
+                    setSearchQuery(event.currentTarget.value)
+                  }
+                  placeholder="Find a phrase in text pages"
+                  aria-label="Search phrase"
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    padding: "10px 12px",
+                    border: "1px solid var(--app-border)",
+                    borderRadius: 6,
+                    background: "var(--app-panel)",
+                    color: "var(--app-text)",
+                    font: "inherit",
+                  }}
+                />
+              </div>
+              <div style={styles.bookmarkEntries} aria-live="polite">
+                {isSearching ? (
+                  <p style={styles.emptyText}>Searching this book...</p>
+                ) : searchQuery.trim() ? (
+                  <p style={styles.emptyText}>
+                    {searchResults.length}{" "}
+                    {searchResults.length === 1 ? "match" : "matches"}
+                  </p>
+                ) : null}
+                {searchResults.map((result) => (
+                  <button
+                    key={`${result.chapterId}:${result.pageIndex}:${result.matchIndex}`}
+                    type="button"
+                    onClick={() => openTextSearchResult(result)}
+                    style={{
+                      display: "grid",
+                      gap: 5,
+                      width: "100%",
+                      padding: 12,
+                      border: "1px solid var(--app-border)",
+                      borderRadius: 6,
+                      background: "var(--app-panel)",
+                      color: "var(--app-text)",
+                      textAlign: "left",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <strong>
+                      {result.chapterTitle} · Page {result.pageIndex + 1}
+                    </strong>
+                    <span className="readerSearchSnippet">
+                      {highlightSearchExcerpt(result.excerpt, searchQuery)}
+                    </span>
+                  </button>
+                ))}
+                {!isSearching &&
+                searchQuery.trim() &&
+                searchResults.length === 0 ? (
+                  <p style={styles.emptyText}>
+                    No matches in this book’s text.
+                  </p>
                 ) : null}
               </div>
             </section>
@@ -3910,6 +4323,23 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 6,
     background: "var(--app-panel-raised)",
     color: "var(--app-text)",
+    cursor: "pointer",
+  },
+  removeHighlightButton: {
+    display: "inline-flex",
+    minHeight: 34,
+    flex: "0 0 auto",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    padding: "0 9px",
+    border: "1px solid var(--app-border)",
+    borderRadius: 6,
+    background: "var(--app-panel-raised)",
+    color: "var(--app-danger)",
+    font: "inherit",
+    fontSize: 11,
+    fontWeight: 650,
     cursor: "pointer",
   },
   bookmarkNote: {

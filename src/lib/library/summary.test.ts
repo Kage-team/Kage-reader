@@ -70,7 +70,12 @@ describe("buildLibraryEntries", () => {
         type: "manga",
         ageRating: undefined,
         tags: ["adventure", "classic"],
+        collections: [],
+        queueOrder: undefined,
         isFavorite: true,
+        completedChapterCount: 0,
+        timeSpentSeconds: 0,
+        lastReadAt: undefined,
         resume: undefined,
         coverPageKey: "series:alpha/0",
         chapterCount: 2,
@@ -83,7 +88,12 @@ describe("buildLibraryEntries", () => {
         type: "novel",
         ageRating: undefined,
         tags: ["mystery"],
+        collections: [],
+        queueOrder: undefined,
         isFavorite: false,
+        completedChapterCount: 0,
+        timeSpentSeconds: 0,
+        lastReadAt: undefined,
         resume: undefined,
         coverPageKey: undefined,
         chapterCount: 1,
@@ -195,6 +205,8 @@ describe("buildLibraryEntries", () => {
         pageIndex: 30,
         scrollRatio: 0,
         updatedAt: 20,
+        completedAt: 30,
+        timeSpentSeconds: 125,
       },
     ];
 
@@ -212,6 +224,11 @@ describe("buildLibraryEntries", () => {
     expect(filterLibraryEntries(entries, { continueOnly: true })).toHaveLength(
       1,
     );
+    expect(entries[0]).toMatchObject({
+      completedChapterCount: 1,
+      timeSpentSeconds: 125,
+      lastReadAt: 20,
+    });
   });
 
   it("filters mature-rated series in safe mode only", () => {

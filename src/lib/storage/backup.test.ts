@@ -51,6 +51,8 @@ describe("library backup", () => {
       coverPageKey: "series:backup/custom-cover",
       summary: "A saved series summary.",
       tags: ["saved"],
+      collections: ["Weekend reads"],
+      queueOrder: 2,
       addedAt: 10,
       updatedAt: 20,
     };
@@ -83,12 +85,15 @@ describe("library backup", () => {
       pageIndex: 0,
       scrollRatio: 0.4,
       updatedAt: 30,
+      completedAt: 30,
+      timeSpentSeconds: 540,
     });
     await putBookmark({
       schemaVersion: 2,
       chapterId: chapter.id,
       pageIndex: 0,
       createdAt: 30,
+      highlightText: "A highlighted sentence.",
     });
     await saveBlob(
       page.storageKey,
@@ -141,9 +146,12 @@ describe("library backup", () => {
     });
     await expect(getProgress(chapter.id)).resolves.toMatchObject({
       scrollRatio: 0.4,
+      completedAt: 30,
+      timeSpentSeconds: 540,
     });
     await expect(getBookmark(chapter.id)).resolves.toMatchObject({
       pageIndex: 0,
+      highlightText: "A highlighted sentence.",
     });
     await expect((await getBlob(page.storageKey))?.text()).resolves.toBe(
       "saved page",

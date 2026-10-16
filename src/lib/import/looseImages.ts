@@ -32,9 +32,11 @@ function archiveSafePath(name: string): string[] {
 }
 
 function safeArchiveTitle(name: string): string {
-  return (
-    name.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_").trim() || "Loose Images"
-  );
+  const safeName = Array.from(name, (character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return /[<>:"/\\|?*]/.test(character) || codePoint < 32 ? "_" : character;
+  }).join("");
+  return safeName.trim() || "Loose Images";
 }
 
 export async function packageLooseImageSources(

@@ -44,11 +44,16 @@ function toArchiveSources(
 export function ImportPage() {
   const [statusItems, setStatusItems] = useState<ImportLogItem[]>([]);
   const [isImporting, setIsImporting] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [linkedFolderName, setLinkedFolderName] = useState("");
   const [folderMessage, setFolderMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const directoryInputRef = useRef<HTMLInputElement>(null);
+  const importControllerRef = useRef<AbortController | null>(null);
+  const pausedRef = useRef(false);
+  const resumeWaitersRef = useRef<Array<() => void>>([]);
+  const latestSourcesRef = useRef<ArchiveSource[]>([]);
   const scanLinkedFolderRef = useRef<
     (
       directory?: FileSystemDirectoryHandle,
@@ -64,6 +69,11 @@ export function ImportPage() {
 
     setStatusItems([]);
     setIsImporting(true);
+    setIsPaused(false);
+    pausedRef.current = false;
+    latestSourcesRef.current = sources;
+    const controller = new AbortController();
+    importControllerRef.current = controller;
     const updateStatus = (event: ImportProgressEvent): void => {
       setStatusItems((current) => {
         const item = { ...event, key: String(event.index) };
@@ -78,7 +88,15 @@ export function ImportPage() {
     };
 
     try {
-      await importArchiveSources(sources, updateStatus);
+      await importArchiveSources(sources, updateStatus, undefined, {
+        signal: controller.signal,
+        waitUntilResumed: () => {
+          if (!pausedRef.current) return Promise.resolve();
+          return new Promise<void>((resolve) =>
+            resumeWaitersRef.current.push(resolve),
+          );
+        },
+      });
     } catch (error) {
       updateStatus({
         fileName: "Import failed",
@@ -89,7 +107,30 @@ export function ImportPage() {
       });
     } finally {
       setIsImporting(false);
+      setIsPaused(false);
+      pausedRef.current = false;
+      importControllerRef.current = null;
+      resumeWaitersRef.current.splice(0).forEach((resume) => resume());
     }
+  }
+
+  function toggleImportPause(): void {
+    const nextPaused = !pausedRef.current;
+    pausedRef.current = nextPaused;
+    setIsPaused(nextPaused);
+    if (!nextPaused) {
+      resumeWaitersRef.current.splice(0).forEach((resume) => resume());
+    }
+  }
+
+  function cancelImport(): void {
+    importControllerRef.current?.abort();
+    if (pausedRef.current) toggleImportPause();
+  }
+
+  async function retryImport(index: number): Promise<void> {
+    const source = latestSourcesRef.current[index - 1];
+    if (source) await importSources([source]);
   }
 
   async function importFiles(files: FileList | File[]): Promise<void> {
@@ -138,6 +179,14 @@ export function ImportPage() {
   });
 
   useEffect(() => {
+    try {
+      localStorage.removeItem("kage-reader:opds-catalogs");
+    } catch {
+      return;
+    }
+  }, []);
+
+  useEffect(() => {
     directoryInputRef.current?.setAttribute("webkitdirectory", "");
     directoryInputRef.current?.setAttribute("directory", "");
     void getLinkedFolder().then((linkedFolder) => {
@@ -180,6 +229,9 @@ export function ImportPage() {
   ).length;
   const failedCount = statusItems.filter(
     (item) => item.state === "error",
+  ).length;
+  const cancelledCount = statusItems.filter(
+    (item) => item.state === "cancelled",
   ).length;
 
   return (
@@ -318,13 +370,38 @@ export function ImportPage() {
         >
           <header className="importQueueHeader">
             <div>
-              <h2>{isImporting ? "Importing files" : "Import complete"}</h2>
+              <h2>
+                {isImporting
+                  ? isPaused
+                    ? "Import paused"
+                    : "Importing files"
+                  : "Import complete"}
+              </h2>
               <p>
                 {completedCount} saved
                 {failedCount > 0 ? ` · ${failedCount} failed` : ""}
+                {cancelledCount > 0 ? ` · ${cancelledCount} cancelled` : ""}
                 {isImporting ? ` · ${statusItems[0]?.total ?? 0} selected` : ""}
               </p>
             </div>
+            {isImporting ? (
+              <div className="importActions">
+                <button
+                  type="button"
+                  className="importSecondaryButton"
+                  onClick={toggleImportPause}
+                >
+                  {isPaused ? "Resume" : "Pause after current file"}
+                </button>
+                <button
+                  type="button"
+                  className="importSecondaryButton"
+                  onClick={cancelImport}
+                >
+                  Cancel remaining files
+                </button>
+              </div>
+            ) : null}
             {!isImporting && completedCount > 0 ? (
               <Link to="/" className="importQueueLink">
                 Open library <ArrowRight size={15} />
@@ -340,6 +417,15 @@ export function ImportPage() {
                   {item.pageCount ? `${item.pageCount} pages` : item.state}
                 </span>
                 {item.message ? <p>{item.message}</p> : null}
+                {item.state === "error" && !isImporting ? (
+                  <button
+                    type="button"
+                    className="importSecondaryButton"
+                    onClick={() => void retryImport(item.index)}
+                  >
+                    Retry
+                  </button>
+                ) : null}
               </article>
             ))}
           </div>

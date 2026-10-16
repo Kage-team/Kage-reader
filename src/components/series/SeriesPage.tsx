@@ -9,13 +9,14 @@ import {
   Upload,
 } from "lucide-react";
 import { importArchiveSources } from "../../lib/import/importer";
-import type {
-  Chapter,
-  Progress,
-  ReaderMode,
-  ReadingDirection,
-  Series,
-  SeriesType,
+import {
+  SCHEMA_VERSION,
+  type Chapter,
+  type Progress,
+  type ReaderMode,
+  type ReadingDirection,
+  type Series,
+  type SeriesType,
 } from "../../lib/storage/types";
 import {
   deleteSeriesWithContents,
@@ -25,7 +26,12 @@ import {
   listProgress,
   saveBlob,
   putSeries,
+  putProgress,
 } from "../../lib/storage/db";
+import {
+  createChapterExport,
+  createSeriesExport,
+} from "../../lib/storage/export";
 
 const SERIES_TYPES: Array<{ value: SeriesType; label: string }> = [
   { value: "manga", label: "Manga" },
@@ -82,6 +88,8 @@ export function SeriesPage() {
   >("");
   const [actionError, setActionError] = useState("");
   const [appendMessage, setAppendMessage] = useState("");
+  const [exportMessage, setExportMessage] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
   const archiveInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -279,6 +287,71 @@ export function SeriesPage() {
     }
   }
 
+  function downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function exportChapter(chapterId: string): Promise<void> {
+    setIsExporting(true);
+    setExportMessage("");
+    try {
+      const exported = await createChapterExport(chapterId);
+      downloadBlob(exported.blob, exported.name);
+      setExportMessage(`Exported ${exported.name}.`);
+    } catch (error) {
+      setExportMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not export this chapter.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function exportSeries(): Promise<void> {
+    if (!series) return;
+    setIsExporting(true);
+    setExportMessage("");
+    try {
+      const archive = await createSeriesExport(series.id);
+      downloadBlob(
+        archive,
+        `${series.title.replace(/[<>:"/\\|?*]/g, "_")}.zip`,
+      );
+      setExportMessage("Series export downloaded.");
+    } catch (error) {
+      setExportMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not export this series.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function toggleChapterCompletion(chapter: Chapter): Promise<void> {
+    const existing = progressByChapter[chapter.id];
+    const updated: Progress = {
+      ...existing,
+      schemaVersion: SCHEMA_VERSION,
+      chapterId: chapter.id,
+      pageIndex: existing?.pageIndex ?? Math.max(0, chapter.pageCount - 1),
+      scrollRatio: existing?.scrollRatio ?? 0,
+      updatedAt: Date.now(),
+      timeSpentSeconds: existing?.timeSpentSeconds ?? 0,
+      completedAt: existing?.completedAt ? undefined : Date.now(),
+    };
+    await putProgress(updated);
+    setProgressByChapter((current) => ({ ...current, [chapter.id]: updated }));
+  }
+
   if (!series) {
     return (
       <main style={styles.page}>
@@ -309,6 +382,14 @@ export function SeriesPage() {
             <ArrowLeft size={15} /> Library
           </Link>
           <div style={styles.headerActions}>
+            <button
+              type="button"
+              style={styles.secondaryButton}
+              disabled={isExporting || chapters.length === 0}
+              onClick={() => void exportSeries()}
+            >
+              {isExporting ? "Preparing export..." : "Export series ZIP"}
+            </button>
             <button
               type="button"
               style={styles.secondaryButton}
@@ -685,6 +766,7 @@ export function SeriesPage() {
               {appendMessage}
             </p>
           ) : null}
+          {exportMessage ? <p role="status">{exportMessage}</p> : null}
         </section>
 
         {chapters.length === 0 ? (
@@ -710,42 +792,70 @@ export function SeriesPage() {
                         )
                       : 0;
                     return (
-                      <Link
-                        to={`/read/${encodeURIComponent(chapter.id)}`}
-                        style={styles.chapterLink}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          width: "100%",
+                        }}
                       >
-                        <span style={styles.chapterDetails}>
-                          <span>
-                            {chapter.title}
-                            {chapter.volume !== undefined
-                              ? ` · Vol. ${chapter.volume}`
-                              : ""}
-                            {chapter.number !== undefined
-                              ? ` · #${chapter.number}`
-                              : ""}
-                          </span>
-                          {progress ? (
-                            <span style={styles.progressLabel}>
-                              Continue · page {progress.pageIndex + 1} of{" "}
-                              {chapter.pageCount}
+                        <Link
+                          to={`/read/${encodeURIComponent(chapter.id)}`}
+                          style={{ ...styles.chapterLink, flex: 1 }}
+                        >
+                          <span style={styles.chapterDetails}>
+                            <span>
+                              {chapter.title}
+                              {chapter.volume !== undefined
+                                ? ` · Vol. ${chapter.volume}`
+                                : ""}
+                              {chapter.number !== undefined
+                                ? ` · #${chapter.number}`
+                                : ""}
                             </span>
-                          ) : null}
-                          {progress ? (
-                            <span
-                              style={styles.progressTrack}
-                              aria-hidden="true"
-                            >
+                            {progress ? (
+                              <span style={styles.progressLabel}>
+                                {progress.completedAt
+                                  ? "Completed"
+                                  : `Continue · page ${progress.pageIndex + 1} of ${chapter.pageCount}`}
+                              </span>
+                            ) : null}
+                            {progress ? (
                               <span
-                                style={{
-                                  ...styles.progressFill,
-                                  width: `${progressPercent}%`,
-                                }}
-                              />
-                            </span>
-                          ) : null}
-                        </span>
-                        <span>{chapter.pageCount} pages</span>
-                      </Link>
+                                style={styles.progressTrack}
+                                aria-hidden="true"
+                              >
+                                <span
+                                  style={{
+                                    ...styles.progressFill,
+                                    width: `${progressPercent}%`,
+                                  }}
+                                />
+                              </span>
+                            ) : null}
+                          </span>
+                          <span>{chapter.pageCount} pages</span>
+                        </Link>
+                        <button
+                          type="button"
+                          style={styles.secondaryButton}
+                          aria-pressed={Boolean(progress?.completedAt)}
+                          onClick={() => void toggleChapterCompletion(chapter)}
+                        >
+                          {progress?.completedAt
+                            ? "Mark unread"
+                            : "Mark complete"}
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.secondaryButton}
+                          disabled={isExporting}
+                          onClick={() => void exportChapter(chapter.id)}
+                        >
+                          Export
+                        </button>
+                      </div>
                     );
                   })()}
                 </li>

@@ -177,6 +177,8 @@ export function SettingsPage({
   const [storageMessage, setStorageMessage] = useState("");
   const [isRequestingPersistence, setIsRequestingPersistence] = useState(false);
   const [backupMessage, setBackupMessage] = useState("");
+  const [healthMessage, setHealthMessage] = useState("");
+  const [isCheckingLibrary, setIsCheckingLibrary] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -289,6 +291,7 @@ export function SettingsPage({
       anchor.download = `kage-reader-backup-${new Date().toISOString().slice(0, 10)}.zip`;
       anchor.click();
       window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      updatePreferences({ lastBackupAt: Date.now() });
       setBackupMessage("Backup downloaded.");
     } catch (error) {
       setBackupMessage(
@@ -296,6 +299,39 @@ export function SettingsPage({
       );
     } finally {
       setIsBackingUp(false);
+    }
+  }
+
+  async function checkLibraryHealth(): Promise<void> {
+    setIsCheckingLibrary(true);
+    setHealthMessage("");
+    try {
+      const [pages, series] = await Promise.all([listAllPages(), listSeries()]);
+      const missingPages = await Promise.all(
+        pages.map(async (page) =>
+          (await getBlob(page.storageKey)) ? undefined : page.storageKey,
+        ),
+      );
+      const missingCovers = await Promise.all(
+        series
+          .filter((entry) => entry.coverPageKey)
+          .map(async (entry) =>
+            (await getBlob(entry.coverPageKey!))
+              ? undefined
+              : entry.coverPageKey,
+          ),
+      );
+      const missingPageCount = missingPages.filter(Boolean).length;
+      const missingCoverCount = missingCovers.filter(Boolean).length;
+      setHealthMessage(
+        missingPageCount === 0 && missingCoverCount === 0
+          ? `Checked ${pages.length} pages and ${series.length} series. No missing files found.`
+          : `Found ${missingPageCount} missing page files and ${missingCoverCount} missing covers.`,
+      );
+    } catch {
+      setHealthMessage("Could not complete the library check.");
+    } finally {
+      setIsCheckingLibrary(false);
     }
   }
 
@@ -1021,6 +1057,19 @@ export function SettingsPage({
               ? "Requesting..."
               : "Protect local library"}
           </button>
+          <button
+            type="button"
+            onClick={() => void checkLibraryHealth()}
+            disabled={isCheckingLibrary}
+            style={styles.secondaryButton}
+          >
+            {isCheckingLibrary ? "Checking files..." : "Check library files"}
+          </button>
+          {healthMessage ? (
+            <p role="status" style={styles.description}>
+              {healthMessage}
+            </p>
+          ) : null}
           {storageMessage ? (
             <p role="status" style={styles.description}>
               {storageMessage}
@@ -1041,6 +1090,25 @@ export function SettingsPage({
               Backups include your local series, reading positions, bookmarks,
               and preferences. Restoring merges records and replaces matching
               IDs.
+            </p>
+            <p
+              role="status"
+              style={{
+                ...styles.description,
+                color:
+                  !preferences.lastBackupAt ||
+                  Date.now() - preferences.lastBackupAt >
+                    7 * 24 * 60 * 60 * 1000
+                    ? "var(--app-danger)"
+                    : "var(--app-muted)",
+              }}
+            >
+              {!preferences.lastBackupAt
+                ? "No backup has been downloaded on this device yet."
+                : Date.now() - preferences.lastBackupAt >
+                    7 * 24 * 60 * 60 * 1000
+                  ? "Your last backup is more than 7 days old."
+                  : `Last backup: ${new Date(preferences.lastBackupAt).toLocaleDateString()}.`}
             </p>
           </div>
           <div style={styles.backupActions}>

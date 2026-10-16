@@ -19,7 +19,9 @@ export type Series = {
   writer?: string;
   summary?: string;
   tags?: string[];
+  collections?: string[];
   isFavorite?: boolean;
+  queueOrder?: number;
   preferredMode?: ReaderMode;
   preferredDirection?: ReadingDirection;
   addedAt: number;
@@ -55,6 +57,8 @@ export type Progress = {
   pageIndex: number;
   scrollRatio: number;
   updatedAt: number;
+  completedAt?: number;
+  timeSpentSeconds?: number;
 };
 
 export type Bookmark = {
@@ -64,10 +68,11 @@ export type Bookmark = {
   pageIndex: number;
   createdAt: number;
   note: string;
+  highlightText?: string;
 };
 
 export type BookmarkInput = Omit<Bookmark, "id" | "note"> &
-  Partial<Pick<Bookmark, "id" | "note">>;
+  Partial<Pick<Bookmark, "id" | "note" | "highlightText">>;
 
 export type LinkedFolder = {
   id: "primary";

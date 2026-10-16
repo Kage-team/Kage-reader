@@ -103,6 +103,10 @@ export type Preferences = {
   readerZoom: number;
   disableZoomOut: boolean;
   readerTapBehavior: ReaderTapBehavior;
+  dailyReadingGoalMinutes: number;
+  readingDayKey: string;
+  todayReadingSeconds: number;
+  lastBackupAt: number;
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -139,6 +143,10 @@ export const DEFAULT_PREFERENCES: Preferences = {
   readerZoom: 100,
   disableZoomOut: false,
   readerTapBehavior: "controls",
+  dailyReadingGoalMinutes: 30,
+  readingDayKey: new Date().toISOString().slice(0, 10),
+  todayReadingSeconds: 0,
+  lastBackupAt: 0,
 };
 
 function isReaderMode(value: unknown): value is ReaderMode {
@@ -322,6 +330,26 @@ function normalizePreferences(value: unknown): Preferences {
       candidate.readerTapBehavior === "page-turn"
         ? candidate.readerTapBehavior
         : DEFAULT_PREFERENCES.readerTapBehavior,
+    dailyReadingGoalMinutes: Number.isFinite(
+      Number(candidate.dailyReadingGoalMinutes),
+    )
+      ? Math.min(
+          300,
+          Math.max(5, Math.round(Number(candidate.dailyReadingGoalMinutes))),
+        )
+      : DEFAULT_PREFERENCES.dailyReadingGoalMinutes,
+    readingDayKey: new Date().toISOString().slice(0, 10),
+    todayReadingSeconds:
+      candidate.readingDayKey === new Date().toISOString().slice(0, 10) &&
+      Number.isFinite(Number(candidate.todayReadingSeconds))
+        ? Math.min(
+            86400,
+            Math.max(0, Math.floor(Number(candidate.todayReadingSeconds))),
+          )
+        : 0,
+    lastBackupAt: Number.isFinite(Number(candidate.lastBackupAt))
+      ? Math.max(0, Number(candidate.lastBackupAt))
+      : 0,
   };
 }
 

@@ -229,6 +229,26 @@ describe("importer metadata and grouping", () => {
     expect(events.at(-1)?.state).toBe("saved");
   });
 
+  it("marks unprocessed sources cancelled when the queue is cancelled", async () => {
+    const source = await loadFixture("ok.cbz");
+    const controller = new AbortController();
+    controller.abort();
+    const events: Array<{ state: string; index: number }> = [];
+
+    await importArchiveSources(
+      [source, { ...source, name: "second.cbz" }],
+      (event) => events.push(event),
+      undefined,
+      { signal: controller.signal },
+    );
+
+    expect(events).toMatchObject([
+      { state: "cancelled", index: 1 },
+      { state: "cancelled", index: 2 },
+    ]);
+    expect(await listAllChapters()).toEqual([]);
+  });
+
   it("appends a new archive to the selected series and preserves its title", async () => {
     await importArchiveSources([await loadFixture("series-name-c001.cbz")]);
     const [series] = await listSeries();

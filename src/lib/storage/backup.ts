@@ -98,6 +98,12 @@ function isSeries(value: unknown): value is Series {
     (value.tags === undefined ||
       (Array.isArray(value.tags) &&
         value.tags.every((tag) => typeof tag === "string"))) &&
+    (value.collections === undefined ||
+      (Array.isArray(value.collections) &&
+        value.collections.every(
+          (collection) => typeof collection === "string",
+        ))) &&
+    (value.queueOrder === undefined || hasFiniteNumber(value, "queueOrder")) &&
     (value.summary === undefined || typeof value.summary === "string") &&
     (value.preferredMode === undefined || isReaderMode(value.preferredMode)) &&
     (value.preferredDirection === undefined ||
@@ -144,7 +150,12 @@ function isProgress(value: unknown): value is Progress {
     hasFiniteNumber(value, "scrollRatio") &&
     (value.scrollRatio as number) >= 0 &&
     (value.scrollRatio as number) <= 1 &&
-    hasFiniteNumber(value, "updatedAt")
+    hasFiniteNumber(value, "updatedAt") &&
+    (value.completedAt === undefined ||
+      hasFiniteNumber(value, "completedAt")) &&
+    (value.timeSpentSeconds === undefined ||
+      (hasFiniteNumber(value, "timeSpentSeconds") &&
+        (value.timeSpentSeconds as number) >= 0))
   );
 }
 
@@ -154,6 +165,8 @@ function isBookmark(value: unknown): value is BookmarkInput {
     hasString(value, "chapterId") &&
     (value.id === undefined || hasString(value, "id")) &&
     (value.note === undefined || typeof value.note === "string") &&
+    (value.highlightText === undefined ||
+      typeof value.highlightText === "string") &&
     Number.isInteger(value.schemaVersion) &&
     Number.isInteger(value.pageIndex) &&
     (value.pageIndex as number) >= 0 &&

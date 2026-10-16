@@ -22,6 +22,7 @@ import { packageLooseImageSources } from "./looseImages";
 import { naturalSort } from "./naturalSort";
 import type {
   ArchiveSource,
+  ImportControl,
   ImportProgressEvent,
   ImportRunResult,
   ImportedChapterSummary,
@@ -252,6 +253,7 @@ export async function importArchiveSources(
   sources: ArchiveSource[],
   onProgress?: (event: ImportProgressEvent) => void,
   targetSeriesId?: string,
+  control?: ImportControl,
 ): Promise<ImportRunResult> {
   const imported: ImportedChapterSummary[] = [];
   const errors: string[] = [];
@@ -261,11 +263,27 @@ export async function importArchiveSources(
   }
 
   for (const [index, source] of normalizedSources.entries()) {
+    await control?.waitUntilResumed?.();
     const progressBase = {
       fileName: source.name,
       index: index + 1,
       total: normalizedSources.length,
     };
+
+    if (control?.signal?.aborted) {
+      for (const [cancelledIndex, cancelledSource] of normalizedSources
+        .slice(index)
+        .entries()) {
+        onProgress?.({
+          fileName: cancelledSource.name,
+          index: index + cancelledIndex + 1,
+          total: normalizedSources.length,
+          state: "cancelled",
+          message: "Cancelled before processing.",
+        });
+      }
+      break;
+    }
 
     if (!isSupportedArchiveName(source.name)) {
       const message = `Unsupported file "${source.name}". Supported formats include CBZ, CBR/RAR, ZIP, 7z, TAR, EPUB, and common image files.`;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeReaderHtml } from "./html";
+import { highlightReaderText, sanitizeReaderHtml } from "./html";
 
 describe("sanitizeReaderHtml", () => {
   it("preserves book formatting while removing executable markup", () => {
@@ -10,5 +10,19 @@ describe("sanitizeReaderHtml", () => {
     expect(safeHtml).toContain("<h1>Chapter</h1>");
     expect(safeHtml).toContain("<em>Text</em>");
     expect(safeHtml).not.toMatch(/script|onclick|javascript:|onerror/i);
+  });
+
+  it("highlights selected phrases without reintroducing unsafe markup", () => {
+    expect(
+      highlightReaderText(
+        '<p>The silver moon rose.</p><script>alert("bad")</script>',
+        ["SILVER moon"],
+      ),
+    ).toContain('<mark class="readerTextMatch">silver moon</mark>');
+    expect(
+      highlightReaderText('<p>Safe text</p><img src=x onerror="bad()">', [
+        "Safe",
+      ]),
+    ).not.toContain("onerror");
   });
 });

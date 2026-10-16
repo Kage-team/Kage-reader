@@ -13,9 +13,14 @@ export type ImportProgressEvent = {
   fileName: string;
   index: number;
   total: number;
-  state: "working" | "saved" | "error";
+  state: "working" | "saved" | "error" | "cancelled";
   message?: string;
   pageCount?: number;
+};
+
+export type ImportControl = {
+  signal?: AbortSignal;
+  waitUntilResumed?: () => Promise<void>;
 };
 
 export type ImportedChapterSummary = {

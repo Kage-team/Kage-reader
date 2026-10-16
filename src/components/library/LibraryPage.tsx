@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowDownWideNarrow,
+  ArrowDown,
   ArrowRight,
+  ArrowUp,
   BookOpen,
   Heart,
   Plus,
@@ -29,9 +31,10 @@ import {
   listAllChapters,
   listProgress,
   listSeries,
+  deleteSeriesWithContents,
   putSeries,
 } from "../../lib/storage/db";
-import type { SeriesType } from "../../lib/storage/types";
+import type { Series, SeriesType } from "../../lib/storage/types";
 import { hasAdultAccess } from "../../lib/security/adultPin";
 
 const SERIES_TYPES: SeriesType[] = ["manga", "manhua", "oel", "novel"];
@@ -53,12 +56,29 @@ const SERIES_TYPE_LABELS: Record<SeriesType, string> = {
 export function LibraryPage() {
   const [searchParams] = useSearchParams();
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
+  const [recentChapters, setRecentChapters] = useState<
+    Array<{
+      id: string;
+      seriesId: string;
+      title: string;
+      seriesTitle: string;
+      pageIndex: number;
+      pageCount: number;
+      updatedAt: number;
+    }>
+  >([]);
   const [coverUrls, setCoverUrls] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [selectedType, setSelectedType] = useState<SeriesType | "all">("all");
   const [selectedTag, setSelectedTag] = useState("");
+  const [selectedCollection, setSelectedCollection] = useState("");
   const [sortBy, setSortBy] = useState("recent");
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedSeriesIds, setSelectedSeriesIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [bulkMessage, setBulkMessage] = useState("");
   const [favoriteError, setFavoriteError] = useState("");
   const [adultAccessUnlocked, setAdultAccessUnlocked] = useState(() =>
     hasAdultAccess(getPreferences().adultPinHash),
@@ -71,7 +91,10 @@ export function LibraryPage() {
   const view =
     requestedView === "favorites" ||
     requestedView === "continue" ||
-    requestedView === "adult"
+    requestedView === "adult" ||
+    requestedView === "queue" ||
+    requestedView === "history" ||
+    requestedView === "insights"
       ? requestedView
       : "all";
 
@@ -82,6 +105,32 @@ export function LibraryPage() {
       listProgress(),
     ]);
     setEntries(buildLibraryEntries(series, chapters, progress));
+    const chapterById = new Map(
+      chapters.map((chapter) => [chapter.id, chapter]),
+    );
+    const seriesById = new Map(series.map((entry) => [entry.id, entry]));
+    setRecentChapters(
+      progress
+        .flatMap((record) => {
+          const chapter = chapterById.get(record.chapterId);
+          const owner = chapter ? seriesById.get(chapter.seriesId) : undefined;
+          return chapter && owner
+            ? [
+                {
+                  id: chapter.id,
+                  seriesId: owner.id,
+                  title: chapter.title,
+                  seriesTitle: owner.title,
+                  pageIndex: record.pageIndex,
+                  pageCount: chapter.pageCount,
+                  updatedAt: record.updatedAt,
+                },
+              ]
+            : [];
+        })
+        .sort((left, right) => right.updatedAt - left.updatedAt)
+        .slice(0, 50),
+    );
     setIsLoading(false);
   }
 
@@ -138,6 +187,127 @@ export function LibraryPage() {
     }
   }
 
+  async function updateSelectedSeries(
+    update: (series: Series) => Series,
+  ): Promise<void> {
+    const selected = entries.filter((entry) => selectedSeriesIds.has(entry.id));
+    try {
+      await Promise.all(
+        selected.map(async (entry) => {
+          const series = await getSeries(entry.id);
+          if (series) await putSeries(update(series));
+        }),
+      );
+      setBulkMessage(`Updated ${selected.length} series.`);
+      await loadEntries();
+    } catch {
+      setBulkMessage("Could not update the selected series.");
+    }
+  }
+
+  async function bulkAddTag(): Promise<void> {
+    const tag = window.prompt("Tag to add to the selected series:")?.trim();
+    if (!tag) return;
+    await updateSelectedSeries((series) => ({
+      ...series,
+      tags: Array.from(new Set([...(series.tags ?? []), tag])),
+      updatedAt: Date.now(),
+    }));
+  }
+
+  async function bulkAddCollection(): Promise<void> {
+    const collection = window
+      .prompt("Shelf name for the selected series:")
+      ?.trim();
+    if (!collection) return;
+    await updateSelectedSeries((series) => ({
+      ...series,
+      collections: Array.from(
+        new Set([...(series.collections ?? []), collection]),
+      ),
+      updatedAt: Date.now(),
+    }));
+  }
+
+  async function bulkToggleFavorite(): Promise<void> {
+    const selected = entries.filter((entry) => selectedSeriesIds.has(entry.id));
+    const nextFavoriteValue = !selected.every((entry) => entry.isFavorite);
+    await updateSelectedSeries((series) => ({
+      ...series,
+      isFavorite: nextFavoriteValue,
+      updatedAt: Date.now(),
+    }));
+  }
+
+  async function bulkDelete(): Promise<void> {
+    const selected = [...selectedSeriesIds];
+    if (selected.length === 0) return;
+    if (
+      !window.confirm(
+        `Delete ${selected.length} selected series and all their chapters? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await Promise.all(selected.map((id) => deleteSeriesWithContents(id)));
+      setSelectedSeriesIds(new Set());
+      setBulkMessage(`Deleted ${selected.length} series.`);
+      await loadEntries();
+    } catch {
+      setBulkMessage("Could not delete all selected series.");
+    }
+  }
+
+  async function toggleQueue(entry: LibraryEntry): Promise<void> {
+    const series = await getSeries(entry.id);
+    if (!series) return;
+    const queueOrder =
+      series.queueOrder === undefined
+        ? Math.max(-1, ...entries.map((item) => item.queueOrder ?? -1)) + 1
+        : undefined;
+    await putSeries({ ...series, queueOrder, updatedAt: Date.now() });
+    await loadEntries();
+  }
+
+  async function moveQueueEntry(
+    entry: LibraryEntry,
+    offset: -1 | 1,
+  ): Promise<void> {
+    const queued = entries
+      .filter((item) => item.queueOrder !== undefined)
+      .sort((left, right) => (left.queueOrder ?? 0) - (right.queueOrder ?? 0));
+    const index = queued.findIndex((item) => item.id === entry.id);
+    const neighbor = queued[index + offset];
+    if (index < 0 || !neighbor) return;
+    const [currentSeries, neighborSeries] = await Promise.all([
+      getSeries(entry.id),
+      getSeries(neighbor.id),
+    ]);
+    if (!currentSeries || !neighborSeries) return;
+    await Promise.all([
+      putSeries({
+        ...currentSeries,
+        queueOrder: neighbor.queueOrder,
+        updatedAt: Date.now(),
+      }),
+      putSeries({
+        ...neighborSeries,
+        queueOrder: entry.queueOrder,
+        updatedAt: Date.now(),
+      }),
+    ]);
+    await loadEntries();
+  }
+
+  function updateDailyGoal(minutes: number): void {
+    const next = savePreferences({
+      ...preferences,
+      dailyReadingGoalMinutes: minutes,
+    });
+    setPreferences(next);
+  }
+
   function toggleSafeMode(): void {
     if (preferences.safeMode && !adultAccessUnlocked) {
       setDisableSafeModeAfterUnlock(true);
@@ -170,12 +340,27 @@ export function LibraryPage() {
     query,
     type: selectedType,
     tag: selectedTag,
+    collection: selectedCollection,
     favoriteOnly: view === "favorites",
     continueOnly: view === "continue",
+    queueOnly: view === "queue",
+    historyOnly: view === "history",
     safeOnly: view !== "adult" && preferences.safeMode,
     adultOnly: view === "adult",
   });
   const visibleEntries = [...filteredEntries].sort((left, right) => {
+    if (view === "queue") {
+      return (
+        (left.queueOrder ?? 0) - (right.queueOrder ?? 0) ||
+        left.title.localeCompare(right.title)
+      );
+    }
+    if (view === "history") {
+      return (
+        (right.lastReadAt ?? 0) - (left.lastReadAt ?? 0) ||
+        left.title.localeCompare(right.title)
+      );
+    }
     if (sortBy === "title") {
       return left.title.localeCompare(right.title);
     }
@@ -192,6 +377,12 @@ export function LibraryPage() {
   const availableTags = Array.from(
     new Set(accessibleEntries.flatMap((entry) => entry.tags)),
   ).sort((left, right) => left.localeCompare(right));
+  const availableCollections = Array.from(
+    new Set(accessibleEntries.flatMap((entry) => entry.collections)),
+  ).sort((left, right) => left.localeCompare(right));
+  const visibleRecentChapters = recentChapters.filter((item) =>
+    filteredEntries.some((entry) => entry.id === item.seriesId),
+  );
   const resumeEntries = [...entries]
     .filter(
       (entry) =>
@@ -213,7 +404,49 @@ export function LibraryPage() {
         ? "Favorites"
         : view === "continue"
           ? "Continue reading"
-          : "Your library";
+          : view === "queue"
+            ? "Reading queue"
+            : view === "history"
+              ? "Reading history"
+              : view === "insights"
+                ? "Reading insights"
+                : "Your library";
+  const hasActiveFilters =
+    Boolean(query.trim()) ||
+    selectedType !== "all" ||
+    Boolean(selectedTag) ||
+    Boolean(selectedCollection);
+  const libraryViews = [
+    { id: "all", label: "Library", to: "/", count: accessibleEntries.length },
+    {
+      id: "favorites",
+      label: "Favorites",
+      to: "/?view=favorites",
+      count: accessibleEntries.filter((entry) => entry.isFavorite).length,
+    },
+    {
+      id: "continue",
+      label: "Continue",
+      to: "/?view=continue",
+      count: accessibleEntries.filter((entry) => entry.resume).length,
+    },
+    {
+      id: "queue",
+      label: "Queue",
+      to: "/?view=queue",
+      count: accessibleEntries.filter((entry) => entry.queueOrder !== undefined)
+        .length,
+    },
+    { id: "history", label: "History", to: "/?view=history" },
+    { id: "insights", label: "Insights", to: "/?view=insights" },
+  ];
+
+  function clearFilters(): void {
+    setQuery("");
+    setSelectedType("all");
+    setSelectedTag("");
+    setSelectedCollection("");
+  }
 
   return (
     <main style={styles.page}>
@@ -287,6 +520,130 @@ export function LibraryPage() {
           </div>
         </div>
 
+        <nav className="libraryViewNav" aria-label="Library views">
+          {libraryViews.map((item) => (
+            <Link
+              key={item.id}
+              to={item.to}
+              className={`libraryViewLink${view === item.id ? " libraryViewLinkActive" : ""}`}
+              aria-current={view === item.id ? "page" : undefined}
+            >
+              <span>{item.label}</span>
+              {item.count !== undefined ? (
+                <span className="libraryViewCount">{item.count}</span>
+              ) : null}
+            </Link>
+          ))}
+        </nav>
+
+        {view === "insights" ? (
+          <section
+            style={styles.resumeSection}
+            aria-labelledby="insights-title"
+          >
+            <h2 id="insights-title" style={styles.sectionTitle}>
+              Your reading activity
+            </h2>
+            <div style={styles.statsRow}>
+              <div style={styles.statItem}>
+                <span style={styles.statValue}>
+                  {Math.round(
+                    accessibleEntries.reduce(
+                      (total, entry) => total + entry.timeSpentSeconds,
+                      0,
+                    ) / 3600,
+                  )}
+                </span>
+                <span style={styles.statLabel}>Hours read</span>
+              </div>
+              <div style={styles.statItem}>
+                <span style={styles.statValue}>
+                  {accessibleEntries.reduce(
+                    (total, entry) => total + entry.completedChapterCount,
+                    0,
+                  )}
+                </span>
+                <span style={styles.statLabel}>Completed chapters</span>
+              </div>
+              <div style={styles.statItem}>
+                <span style={styles.statValue}>
+                  {Math.floor(preferences.todayReadingSeconds / 60)}
+                </span>
+                <span style={styles.statLabel}>Minutes today</span>
+              </div>
+            </div>
+            <label style={styles.filterField}>
+              <span style={styles.filterLabel}>
+                Daily reading goal (minutes)
+              </span>
+              <input
+                type="number"
+                min="5"
+                max="300"
+                step="5"
+                value={preferences.dailyReadingGoalMinutes}
+                onChange={(event) =>
+                  updateDailyGoal(Number(event.currentTarget.value))
+                }
+                style={styles.filterInput}
+              />
+            </label>
+            <progress
+              max={preferences.dailyReadingGoalMinutes}
+              value={Math.min(
+                preferences.dailyReadingGoalMinutes,
+                Math.floor(preferences.todayReadingSeconds / 60),
+              )}
+              aria-label="Daily reading goal progress"
+              style={{ width: "100%" }}
+            />
+          </section>
+        ) : null}
+
+        {view === "history" ? (
+          <section
+            style={styles.resumeSection}
+            aria-labelledby="recent-chapters-title"
+          >
+            <header style={styles.shelfHeader}>
+              <div>
+                <h2 id="recent-chapters-title" style={styles.sectionTitle}>
+                  Recently opened chapters
+                </h2>
+                <p style={styles.sectionDescription}>
+                  Your latest 50 chapter reading positions.
+                </p>
+              </div>
+            </header>
+            {visibleRecentChapters.length > 0 ? (
+              <ul style={styles.list}>
+                {visibleRecentChapters.map((item) => (
+                  <li key={item.id} style={styles.listItem}>
+                    <Link
+                      to={`/read/${encodeURIComponent(item.id)}`}
+                      style={styles.historyLink}
+                    >
+                      <span>
+                        <strong>{item.seriesTitle}</strong>
+                        <span>{item.title}</span>
+                      </span>
+                      <span>
+                        Page {Math.min(item.pageIndex + 1, item.pageCount)} of{" "}
+                        {item.pageCount}
+                        <time dateTime={new Date(item.updatedAt).toISOString()}>
+                          {new Date(item.updatedAt).toLocaleDateString()}
+                        </time>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p style={styles.emptyText}>No recently read chapters.</p>
+            )}
+          </section>
+        ) : null}
+
         {view === "all" && resumeEntries.length > 0 ? (
           <section style={styles.resumeSection}>
             <header style={styles.shelfHeader}>
@@ -357,7 +714,11 @@ export function LibraryPage() {
           </p>
         ) : null}
 
-        <section style={styles.shelfSection} aria-label="Browse series">
+        <section
+          style={styles.shelfSection}
+          aria-label="Browse series"
+          hidden={view === "insights"}
+        >
           <header style={styles.shelfHeader}>
             <div>
               <h2 style={styles.sectionTitle}>
@@ -429,7 +790,104 @@ export function LibraryPage() {
                 </select>
               </span>
             </label>
+            <label style={styles.filterField}>
+              <span style={styles.filterLabel}>Shelf</span>
+              <select
+                value={selectedCollection}
+                onChange={(event) =>
+                  setSelectedCollection(event.currentTarget.value)
+                }
+                style={styles.filterInput}
+              >
+                <option value="">All shelves</option>
+                {availableCollections.map((collection) => (
+                  <option key={collection} value={collection}>
+                    {collection}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
+
+          <div className="librarySelectionToolbar">
+            <button
+              type="button"
+              style={styles.secondaryButton}
+              aria-pressed={selectionMode}
+              onClick={() => {
+                setSelectionMode((current) => !current);
+                setSelectedSeriesIds(new Set());
+                setBulkMessage("");
+              }}
+            >
+              {selectionMode ? "Done selecting" : "Select series"}
+            </button>
+            {selectionMode ? (
+              <>
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  onClick={() =>
+                    setSelectedSeriesIds(
+                      new Set(visibleEntries.map((entry) => entry.id)),
+                    )
+                  }
+                >
+                  Select visible
+                </button>
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  onClick={() => setSelectedSeriesIds(new Set())}
+                  disabled={selectedSeriesIds.size === 0}
+                >
+                  Clear selection
+                </button>
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  disabled={selectedSeriesIds.size === 0}
+                  onClick={() => void bulkToggleFavorite()}
+                >
+                  Toggle favorites ({selectedSeriesIds.size})
+                </button>
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  disabled={selectedSeriesIds.size === 0}
+                  onClick={() => void bulkAddTag()}
+                >
+                  Add tag
+                </button>
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  disabled={selectedSeriesIds.size === 0}
+                  onClick={() => void bulkAddCollection()}
+                >
+                  Add to shelf
+                </button>
+                <button
+                  type="button"
+                  style={styles.dangerButton}
+                  disabled={selectedSeriesIds.size === 0}
+                  onClick={() => void bulkDelete()}
+                >
+                  Delete selected
+                </button>
+              </>
+            ) : null}
+            {hasActiveFilters ? (
+              <button
+                type="button"
+                className="libraryClearFilters"
+                onClick={clearFilters}
+              >
+                Clear filters
+              </button>
+            ) : null}
+          </div>
+          {bulkMessage ? <p role="status">{bulkMessage}</p> : null}
 
           <div style={styles.categoryChips} aria-label="Quick content filters">
             <button
@@ -512,6 +970,32 @@ export function LibraryPage() {
             <div style={styles.grid}>
               {visibleEntries.map((entry) => (
                 <article key={entry.id} style={styles.cardShell}>
+                  {selectionMode ? (
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 7,
+                        padding: "8px 12px 0",
+                        color: "var(--app-muted)",
+                        fontSize: 12,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedSeriesIds.has(entry.id)}
+                        onChange={(event) =>
+                          setSelectedSeriesIds((current) => {
+                            const next = new Set(current);
+                            if (event.currentTarget.checked) next.add(entry.id);
+                            else next.delete(entry.id);
+                            return next;
+                          })
+                        }
+                      />
+                      Select
+                    </label>
+                  ) : null}
                   <Link
                     to={
                       view === "continue" && entry.resume
@@ -561,8 +1045,68 @@ export function LibraryPage() {
                           ))}
                         </ul>
                       ) : null}
+                      {entry.collections.length > 0 ? (
+                        <ul style={styles.tagList} aria-label="Shelves">
+                          {entry.collections.map((collection) => (
+                            <li key={collection} style={styles.tag}>
+                              {collection}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                      {entry.completedChapterCount > 0 ? (
+                        <span style={styles.cardResume}>
+                          {entry.completedChapterCount} / {entry.chapterCount}{" "}
+                          chapters completed
+                        </span>
+                      ) : null}
+                      {view === "history" && entry.lastReadAt ? (
+                        <span style={styles.cardResume}>
+                          Last read{" "}
+                          {new Date(entry.lastReadAt).toLocaleDateString()}
+                        </span>
+                      ) : null}
                     </div>
                   </Link>
+                  <button
+                    type="button"
+                    aria-label={
+                      entry.queueOrder === undefined
+                        ? `Add ${entry.title} to reading queue`
+                        : `Remove ${entry.title} from reading queue`
+                    }
+                    aria-pressed={entry.queueOrder !== undefined}
+                    onClick={() => void toggleQueue(entry)}
+                    style={styles.queueButton}
+                  >
+                    {entry.queueOrder === undefined ? "Queue" : "Queued"}
+                  </button>
+                  {view === "queue" ? (
+                    <span
+                      style={{
+                        display: "flex",
+                        gap: 6,
+                        padding: "0 12px 12px",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        aria-label={`Move ${entry.title} up in queue`}
+                        onClick={() => void moveQueueEntry(entry, -1)}
+                        style={styles.queueButton}
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Move ${entry.title} down in queue`}
+                        onClick={() => void moveQueueEntry(entry, 1)}
+                        style={styles.queueButton}
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                    </span>
+                  ) : null}
                   <button
                     type="button"
                     aria-label={
@@ -992,6 +1536,30 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
   },
   cardShell: { position: "relative", minWidth: 0 },
+  queueButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    minHeight: 30,
+    padding: "0 9px",
+    border: "1px solid var(--app-border)",
+    borderRadius: 5,
+    background: "var(--app-panel)",
+    color: "var(--app-text)",
+    font: "inherit",
+    fontSize: 11,
+    cursor: "pointer",
+  },
+  historyLink: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 16,
+    width: "100%",
+    color: "var(--app-text)",
+    textDecoration: "none",
+  },
   favoriteButton: {
     position: "absolute",
     zIndex: 2,
