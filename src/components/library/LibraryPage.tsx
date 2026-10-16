@@ -4,17 +4,15 @@ import {
   Activity,
   ArrowDownWideNarrow,
   ArrowDown,
-  ArrowRight,
   ArrowUp,
   BookOpen,
   Heart,
+  ListChecks,
   MoreHorizontal,
   Plus,
   Search,
   ShieldAlert,
   ShieldCheck,
-  SlidersHorizontal,
-  Upload,
 } from "lucide-react";
 import { AdultAccessPrompt } from "../security/AdultAccessPrompt";
 import {
@@ -389,20 +387,6 @@ export function LibraryPage() {
   const visibleRecentChapters = recentChapters.filter((item) =>
     filteredEntries.some((entry) => entry.id === item.seriesId),
   );
-  const resumeEntries = [...entries]
-    .filter(
-      (entry) =>
-        entry.resume &&
-        (adultAccessUnlocked ||
-          !/(18\+?|adult|mature|r-?18|nc-?17)/i.test(entry.ageRating ?? "")) &&
-        (!preferences.safeMode ||
-          !/(18\+?|adult|mature|r-?18|nc-?17)/i.test(entry.ageRating ?? "")),
-    )
-    .sort(
-      (left, right) =>
-        (right.resume?.updatedAt ?? 0) - (left.resume?.updatedAt ?? 0),
-    )
-    .slice(0, 5);
   const pageTitle =
     view === "adult"
       ? "18+ Vault"
@@ -441,70 +425,53 @@ export function LibraryPage() {
             </p>
           </div>
           <div className="libraryHeaderActions" style={styles.headerActions}>
-            <button
-              type="button"
-              aria-pressed={preferences.safeMode}
-              onClick={toggleSafeMode}
-              style={styles.safeModeButton}
-              title="Hide series rated 18+"
+            <div
+              className="librarySafeModeToggle"
+              role="group"
+              aria-label="Content safety"
             >
-              {preferences.safeMode ? (
-                <ShieldCheck size={16} />
-              ) : (
-                <ShieldAlert size={16} />
-              )}
-              {preferences.safeMode ? "Safe" : "18+"}
-            </button>
-            <Link to="/?view=adult" className="libraryImportLink">
+              <button
+                type="button"
+                aria-pressed={preferences.safeMode}
+                onClick={() => {
+                  if (!preferences.safeMode) toggleSafeMode();
+                }}
+                title="Hide series rated 18+"
+              >
+                <ShieldCheck size={14} /> Safe
+              </button>
+              <button
+                type="button"
+                aria-pressed={!preferences.safeMode}
+                onClick={() => {
+                  if (preferences.safeMode) toggleSafeMode();
+                }}
+                title="Show mature titles in the library"
+              >
+                18+
+              </button>
+            </div>
+            <Link
+              to="/?view=adult"
+              className="libraryIconAction"
+              aria-label="18+ Vault"
+              title="18+ Vault"
+            >
               <ShieldAlert size={16} />
-              <span>18+ Vault</span>
             </Link>
-            <Link to="/import" className="libraryImportLink">
-              <Upload size={16} />
-              <span>Import books</span>
-            </Link>
-            <Link to="/?view=insights" className="libraryImportLink">
+            <Link
+              to="/?view=insights"
+              className="libraryIconAction"
+              aria-label="Insights"
+              title="Insights"
+            >
               <Activity size={16} />
-              <span>Insights</span>
             </Link>
           </div>
         </header>
 
         {isAdultPromptOpen || (view === "adult" && !adultAccessUnlocked) ? (
           <AdultAccessPrompt onUnlocked={finishAdultUnlock} />
-        ) : null}
-
-        {view !== "history" ? (
-          <div className="statsRow" style={styles.statsRow}>
-            <div style={styles.statItem}>
-              <span style={styles.statValue}>{accessibleEntries.length}</span>
-              <span style={styles.statLabel}>Series</span>
-            </div>
-            <div style={styles.statItem}>
-              <span style={styles.statValue}>
-                {accessibleEntries.reduce(
-                  (total, entry) => total + entry.chapterCount,
-                  0,
-                )}
-              </span>
-              <span style={styles.statLabel}>Chapters</span>
-            </div>
-            <div style={styles.statItem}>
-              <span style={styles.statValue}>
-                {accessibleEntries.reduce(
-                  (total, entry) => total + entry.pageCount,
-                  0,
-                )}
-              </span>
-              <span style={styles.statLabel}>Pages</span>
-            </div>
-            <div style={styles.statItem}>
-              <span style={styles.statValue}>
-                {accessibleEntries.filter((entry) => entry.isFavorite).length}
-              </span>
-              <span style={styles.statLabel}>Favorites</span>
-            </div>
-          </div>
         ) : null}
 
         {view === "insights" ? (
@@ -622,70 +589,6 @@ export function LibraryPage() {
           </section>
         ) : null}
 
-        {view === "all" && resumeEntries.length > 0 ? (
-          <section style={styles.resumeSection}>
-            <header style={styles.shelfHeader}>
-              <div>
-                <h2 style={styles.sectionTitle}>Pick up where you left off</h2>
-                <p style={styles.sectionDescription}>
-                  Your recent reading, right where you paused.
-                </p>
-              </div>
-              <Link to="/?view=continue" style={styles.textLink}>
-                View all <ArrowRight size={15} />
-              </Link>
-            </header>
-            <div style={styles.resumeGrid}>
-              {resumeEntries.map((entry) => {
-                const resume = entry.resume;
-                if (!resume) return null;
-                const progressPercent = Math.min(
-                  100,
-                  ((resume.pageIndex + 1) / Math.max(resume.pageCount, 1)) *
-                    100,
-                );
-                return (
-                  <Link
-                    key={entry.id}
-                    to={`/read/${encodeURIComponent(resume.chapterId)}`}
-                    style={styles.resumeCard}
-                  >
-                    {coverUrls[entry.id] ? (
-                      <img
-                        src={coverUrls[entry.id]}
-                        alt=""
-                        style={styles.resumeCover}
-                      />
-                    ) : (
-                      <span style={styles.resumeCoverFallback}>
-                        <BookOpen size={19} />
-                      </span>
-                    )}
-                    <span style={styles.resumeDetails}>
-                      <strong style={styles.resumeTitle}>{entry.title}</strong>
-                      <span style={styles.resumeLabel}>
-                        {resume.chapterTitle}
-                      </span>
-                      <span style={styles.resumeLabel}>
-                        Page {resume.pageIndex + 1} of {resume.pageCount}
-                      </span>
-                      <span style={styles.progressTrack} aria-hidden="true">
-                        <span
-                          style={{
-                            ...styles.progressFill,
-                            width: `${progressPercent}%`,
-                          }}
-                        />
-                      </span>
-                    </span>
-                    <ArrowRight size={16} style={styles.resumeArrow} />
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
-
         {favoriteError ? (
           <p role="alert" style={styles.errorText}>
             {favoriteError}
@@ -707,22 +610,41 @@ export function LibraryPage() {
                     ? "Reading in progress"
                     : view === "adult"
                       ? "Vault titles"
-                      : "All series"}
+                      : view === "queue"
+                        ? "Reading queue"
+                        : "Series Library"}
               </h2>
-              <p style={styles.sectionDescription}>
-                {visibleEntries.length}{" "}
-                {visibleEntries.length === 1 ? "title" : "titles"}
-                {query ? ` matching “${query}”` : " in this view"}
-              </p>
+              {hasActiveFilters ? (
+                <p style={styles.sectionDescription}>
+                  {visibleEntries.length} matching titles
+                </p>
+              ) : null}
             </div>
-            <span style={styles.viewCount}>
-              <SlidersHorizontal size={14} />
-              {visibleEntries.length} / {accessibleEntries.length}
-            </span>
+            <div className="libraryShelfTools">
+              <span className="librarySeriesCount">
+                {visibleEntries.length} series
+              </span>
+              <button
+                type="button"
+                className="librarySelectToggle"
+                aria-label={
+                  selectionMode ? "Done selecting series" : "Select series"
+                }
+                aria-pressed={selectionMode}
+                title={selectionMode ? "Done selecting" : "Select series"}
+                onClick={() => {
+                  setSelectionMode((current) => !current);
+                  setSelectedSeriesIds(new Set());
+                  setBulkMessage("");
+                }}
+              >
+                <ListChecks size={16} />
+              </button>
+            </div>
           </header>
 
           <div
-            className="libraryFilters"
+            className="librarySearchSortRow"
             style={styles.filters}
             aria-label="Filter library"
           >
@@ -739,22 +661,7 @@ export function LibraryPage() {
                 />
               </span>
             </label>
-            <label style={styles.filterField}>
-              <span style={styles.filterLabel}>Topic</span>
-              <select
-                value={selectedTag}
-                onChange={(event) => setSelectedTag(event.currentTarget.value)}
-                style={styles.filterInput}
-              >
-                <option value="">All tags</option>
-                {availableTags.map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label style={styles.filterField}>
+            <label className="librarySortFilter" style={styles.filterField}>
               <span style={styles.filterLabel}>Sort by</span>
               <span style={styles.sortField}>
                 <ArrowDownWideNarrow size={15} />
@@ -769,38 +676,9 @@ export function LibraryPage() {
                 </select>
               </span>
             </label>
-            <label style={styles.filterField}>
-              <span style={styles.filterLabel}>Shelf</span>
-              <select
-                value={selectedCollection}
-                onChange={(event) =>
-                  setSelectedCollection(event.currentTarget.value)
-                }
-                style={styles.filterInput}
-              >
-                <option value="">All shelves</option>
-                {availableCollections.map((collection) => (
-                  <option key={collection} value={collection}>
-                    {collection}
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
 
           <div className="librarySelectionToolbar">
-            <button
-              type="button"
-              style={styles.secondaryButton}
-              aria-pressed={selectionMode}
-              onClick={() => {
-                setSelectionMode((current) => !current);
-                setSelectedSeriesIds(new Set());
-                setBulkMessage("");
-              }}
-            >
-              {selectionMode ? "Done selecting" : "Select series"}
-            </button>
             {selectionMode ? (
               <>
                 <button
@@ -868,46 +746,86 @@ export function LibraryPage() {
           </div>
           {bulkMessage ? <p role="status">{bulkMessage}</p> : null}
 
-          <div style={styles.categoryChips} aria-label="Quick content filters">
-            <button
-              type="button"
-              aria-pressed={selectedType === "all"}
-              onClick={() => setSelectedType("all")}
-              style={{
-                ...styles.categoryChip,
-                ...(selectedType === "all" ? styles.categoryChipActive : {}),
-              }}
+          <div className="libraryFilterRail" aria-label="Library filters">
+            <div
+              className="libraryTypeFilters"
+              role="group"
+              aria-label="Content type"
             >
-              All types <span>{accessibleEntries.length}</span>
-            </button>
-            {SERIES_TYPES.map((type) => {
-              const count = accessibleEntries.filter((entry) =>
-                type === "manga"
-                  ? entry.type === "manga" || entry.type === "manhwa"
-                  : entry.type === type,
-              ).length;
-              return (
-                <button
-                  key={type}
-                  type="button"
-                  aria-pressed={selectedType === type}
-                  onClick={() => setSelectedType(type)}
-                  style={{
-                    ...styles.categoryChip,
-                    ...(selectedType === type ? styles.categoryChipActive : {}),
-                  }}
-                >
-                  <span
+              <button
+                type="button"
+                aria-pressed={selectedType === "all"}
+                onClick={() => setSelectedType("all")}
+                style={{
+                  ...styles.categoryChip,
+                  ...(selectedType === "all" ? styles.categoryChipActive : {}),
+                }}
+              >
+                All types <span>{accessibleEntries.length}</span>
+              </button>
+              {SERIES_TYPES.map((type) => {
+                const count = accessibleEntries.filter((entry) =>
+                  type === "manga"
+                    ? entry.type === "manga" || entry.type === "manhwa"
+                    : entry.type === type,
+                ).length;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    aria-pressed={selectedType === type}
+                    onClick={() => setSelectedType(type)}
                     style={{
-                      ...styles.categoryDot,
-                      background: SERIES_TYPE_COLORS[type],
+                      ...styles.categoryChip,
+                      ...(selectedType === type
+                        ? styles.categoryChipActive
+                        : {}),
                     }}
-                  />
-                  {SERIES_TYPE_LABELS[type]}
-                  <span>{count}</span>
-                </button>
-              );
-            })}
+                  >
+                    <span
+                      style={{
+                        ...styles.categoryDot,
+                        background: SERIES_TYPE_COLORS[type],
+                      }}
+                    />
+                    {SERIES_TYPE_LABELS[type]}
+                    <span>{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <label className="libraryFilterSelect">
+              <span>Topic</span>
+              <select
+                aria-label="Filter by topic"
+                value={selectedTag}
+                onChange={(event) => setSelectedTag(event.currentTarget.value)}
+              >
+                <option value="">All tags</option>
+                {availableTags.map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="libraryFilterSelect">
+              <span>Shelf</span>
+              <select
+                aria-label="Filter by shelf"
+                value={selectedCollection}
+                onChange={(event) =>
+                  setSelectedCollection(event.currentTarget.value)
+                }
+              >
+                <option value="">All shelves</option>
+                {availableCollections.map((collection) => (
+                  <option key={collection} value={collection}>
+                    {collection}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           {isLoading ? (
@@ -1015,52 +933,25 @@ export function LibraryPage() {
                       <span style={styles.typePill}>
                         {entry.type === "manhwa" ? "Manga" : entry.type}
                       </span>
+                      <span className="coverChapterBadge">
+                        {entry.chapterCount} Chs
+                      </span>
+                      <div className="coverProgressOverlay">
+                        <span>
+                          {entry.completedChapterCount}/{entry.chapterCount}{" "}
+                          Read
+                        </span>
+                        <span className="coverProgressTrack" aria-hidden="true">
+                          <span
+                            style={{
+                              width: `${entry.chapterCount > 0 ? Math.min(100, (entry.completedChapterCount / entry.chapterCount) * 100) : 0}%`,
+                            }}
+                          />
+                        </span>
+                      </div>
                     </div>
                     <div style={styles.cardBody}>
                       <h2 style={styles.seriesTitle}>{entry.title}</h2>
-                      <div className="seriesCardMetadata">
-                        <p style={styles.metaText}>
-                          {entry.chapterCount} chapters{" "}
-                          <span aria-hidden="true">·</span> {entry.pageCount}{" "}
-                          pages
-                        </p>
-                        {entry.resume ? (
-                          <span style={styles.cardResume}>
-                            {view === "continue" ? "Resume" : "Last read"} ·{" "}
-                            {entry.resume.chapterTitle}
-                          </span>
-                        ) : null}
-                        {entry.tags.length > 0 ? (
-                          <ul style={styles.tagList}>
-                            {entry.tags.slice(0, 3).map((tag) => (
-                              <li key={tag} style={styles.tag}>
-                                {tag}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : null}
-                        {entry.collections.length > 0 ? (
-                          <ul style={styles.tagList} aria-label="Shelves">
-                            {entry.collections.map((collection) => (
-                              <li key={collection} style={styles.tag}>
-                                {collection}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : null}
-                        {entry.completedChapterCount > 0 ? (
-                          <span style={styles.cardResume}>
-                            {entry.completedChapterCount} / {entry.chapterCount}{" "}
-                            chapters completed
-                          </span>
-                        ) : null}
-                        {view === "history" && entry.lastReadAt ? (
-                          <span style={styles.cardResume}>
-                            Last read{" "}
-                            {new Date(entry.lastReadAt).toLocaleDateString()}
-                          </span>
-                        ) : null}
-                      </div>
                     </div>
                   </Link>
                   <button
@@ -1092,6 +983,22 @@ export function LibraryPage() {
                         }
                       }}
                     >
+                      <button
+                        type="button"
+                        aria-pressed={entry.isFavorite}
+                        onClick={() => {
+                          void toggleFavorite(entry);
+                          setOpenCardMenuId(null);
+                        }}
+                      >
+                        <Heart
+                          size={14}
+                          fill={entry.isFavorite ? "currentColor" : "none"}
+                        />
+                        {entry.isFavorite
+                          ? "Remove from favorites"
+                          : "Add to favorites"}
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
@@ -1129,25 +1036,6 @@ export function LibraryPage() {
                       ) : null}
                     </div>
                   ) : null}
-                  <button
-                    type="button"
-                    aria-label={
-                      entry.isFavorite
-                        ? `Remove ${entry.title} from favorites`
-                        : `Add ${entry.title} to favorites`
-                    }
-                    aria-pressed={entry.isFavorite}
-                    onClick={() => void toggleFavorite(entry)}
-                    style={{
-                      ...styles.favoriteButton,
-                      ...(entry.isFavorite ? styles.favoriteActive : {}),
-                    }}
-                  >
-                    <Heart
-                      size={17}
-                      fill={entry.isFavorite ? "currentColor" : "none"}
-                    />
-                  </button>
                 </article>
               ))}
             </div>
@@ -1184,9 +1072,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     transition: "border-color 140ms ease, background 140ms ease",
   },
-  filters: {
-    gap: 10,
-  },
+  filters: { gap: 8 },
   filterField: { display: "grid", gap: 6 },
   filterLabel: { color: "var(--app-muted)", fontSize: 11, fontWeight: 700 },
   filterInput: {
@@ -1225,9 +1111,9 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: 8,
     paddingLeft: 11,
-    border: "1px solid var(--app-border)",
-    borderRadius: 7,
-    background: "var(--app-panel)",
+    border: 0,
+    borderRadius: 6,
+    background: "var(--app-panel-raised)",
     color: "var(--app-muted)",
   },
   sortSelect: {
@@ -1238,14 +1124,12 @@ const styles: Record<string, React.CSSProperties> = {
     background: "transparent",
     color: "var(--app-text)",
     font: "inherit",
+    fontSize: 11,
   },
   categoryChips: {
     display: "flex",
     alignItems: "center",
     gap: 7,
-    overflowX: "auto",
-    paddingBottom: 2,
-    scrollbarWidth: "thin",
   },
   categoryChip: {
     display: "inline-flex",
@@ -1301,7 +1185,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     flexWrap: "wrap",
-    gap: 10,
+    gap: 6,
   },
   kicker: {
     margin: 0,
@@ -1611,8 +1495,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   typePill: {
     position: "absolute",
-    right: 9,
-    bottom: 9,
+    top: 9,
+    left: 9,
     padding: "4px 7px",
     border: "1px solid #ffffff26",
     borderRadius: 4,

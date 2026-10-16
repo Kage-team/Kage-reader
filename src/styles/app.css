@@ -593,6 +593,163 @@ button:disabled {
   border-color: var(--app-lime);
 }
 
+.libraryHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.librarySafeModeToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  background: var(--app-panel);
+}
+
+.librarySafeModeToggle button {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-muted);
+  font-size: 10px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.librarySafeModeToggle button[aria-pressed="true"] {
+  background: var(--app-panel-raised);
+  color: var(--app-text);
+}
+
+.libraryIconAction {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--app-muted);
+  text-decoration: none;
+}
+
+.libraryIconAction:hover {
+  background: var(--app-hover);
+  color: var(--app-text);
+}
+
+.libraryShelfTools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.librarySeriesCount {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--app-panel-raised);
+  color: var(--app-muted);
+  font-size: 11px;
+}
+
+.librarySelectToggle {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-muted);
+  cursor: pointer;
+}
+
+.librarySelectToggle:hover,
+.librarySelectToggle[aria-pressed="true"] {
+  background: var(--app-hover);
+  color: var(--app-text);
+}
+
+.librarySearchSortRow {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.librarySearchFilter {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.librarySortFilter {
+  flex: 0 0 180px;
+  min-width: 0;
+}
+
+.librarySortFilter .sortField {
+  width: 100%;
+  min-width: 0;
+  gap: 5px;
+  padding-left: 8px;
+}
+
+.librarySortFilter select {
+  min-width: 0;
+  font-size: 11px;
+}
+
+.libraryFilterRail {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.libraryFilterRail::-webkit-scrollbar {
+  display: none;
+}
+
+.libraryTypeFilters {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+}
+
+.libraryFilterSelect {
+  display: inline-flex;
+  min-height: 31px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: var(--app-panel-raised);
+  color: var(--app-muted);
+  font-size: 10px;
+}
+
+.libraryFilterSelect select {
+  max-width: 116px;
+  border: 0;
+  background: transparent;
+  color: var(--app-text);
+  font: inherit;
+  cursor: pointer;
+}
+
 .libraryViewNav {
   display: flex;
   gap: 4px;
@@ -635,24 +792,6 @@ button:disabled {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-}
-
-.seriesCardMetadata {
-  display: grid;
-  gap: 5px;
-  overflow: hidden;
-  max-height: 0;
-  opacity: 0;
-  transition:
-    max-height 180ms ease,
-    opacity 140ms ease;
-}
-
-.seriesCard:hover .seriesCardMetadata,
-.seriesCard:focus-visible .seriesCardMetadata,
-.cardShell[data-revealed="true"] .seriesCardMetadata {
-  max-height: 220px;
-  opacity: 1;
 }
 
 .seriesCardMenuTrigger {
@@ -708,6 +847,49 @@ button:disabled {
 
 .seriesCardMenu button:hover {
   background: var(--app-hover);
+}
+
+.coverChapterBadge {
+  position: absolute;
+  z-index: 2;
+  top: 9px;
+  right: 9px;
+  padding: 4px 7px;
+  border: 1px solid #ffffff26;
+  border-radius: 4px;
+  background: #101311dc;
+  color: var(--app-text);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.coverProgressOverlay {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  gap: 5px;
+  padding: 28px 9px 8px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.82));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.coverProgressTrack {
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.coverProgressTrack > span {
+  display: block;
+  height: 100%;
+  background: var(--app-lime);
 }
 
 .seriesEditorBackdrop {
@@ -834,12 +1016,6 @@ button:disabled {
 
 .readerSearchSnippet {
   line-height: 1.55;
-}
-
-.libraryFilters {
-  display: grid;
-  grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(145px, 1fr));
-  align-items: end;
 }
 
 .importPage {
@@ -1366,26 +1542,17 @@ button:disabled {
   }
 
   .libraryHeaderActions {
-    justify-content: start;
-    width: 100%;
-    gap: 8px;
+    justify-content: flex-start;
+    width: auto;
   }
 
-  .libraryFilters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 11px;
+  .librarySearchSortRow {
+    align-items: end;
+    gap: 7px;
   }
 
-  .librarySearchFilter {
-    grid-column: 1 / -1;
-  }
-
-  .libraryFilters > label:last-child {
-    grid-column: 1 / -1;
-  }
-
-  .libraryFilters select {
-    min-width: 0;
+  .librarySortFilter {
+    flex-basis: 44%;
   }
 
   .statsRow {
