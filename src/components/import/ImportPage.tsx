@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -288,65 +289,103 @@ export function ImportPage() {
         </Link>
       </header>
 
-      {isImporting ? (
-        <div className="importProgressBackdrop" role="presentation">
-          <section
-            className="importProgressModal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="import-progress-title"
-            aria-describedby="import-progress-status"
-          >
-            <header className="importProgressModalHeader">
-              <div>
-                <p className="importKicker">LOCAL IMPORT</p>
-                <h2 id="import-progress-title">
-                  {isPaused ? "Import paused" : "Adding to your library"}
-                </h2>
-              </div>
-              <strong>{importProgressPercent}%</strong>
-            </header>
-            <div
-              className="importProgressTrack"
-              role="progressbar"
-              aria-label="Overall import progress"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={importProgressPercent}
-            >
-              <span style={{ width: `${importProgressPercent}%` }} />
-            </div>
-            <p className="importProgressFilename">
-              {currentImportItem?.fileName ?? "Preparing files…"}
-            </p>
-            <p id="import-progress-status" className="importProgressMessage">
-              {currentImportItem?.message ?? "Preparing the import queue…"}
-            </p>
-            <div className="importProgressMeta">
-              <span>
-                {processedFileCount} of {importFileCount} files processed
-              </span>
-              <span>{remainingImportLabel}</span>
-            </div>
-            <footer className="importProgressActions">
-              <button
-                type="button"
-                className="importSecondaryButton"
-                onClick={toggleImportPause}
+      {isImporting
+        ? createPortal(
+            <div className="importProgressBackdrop" role="presentation">
+              <section
+                className="importProgressModal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="import-progress-title"
+                aria-describedby="import-progress-status"
               >
-                {isPaused ? "Resume" : "Pause after current file"}
-              </button>
-              <button
-                type="button"
-                className="importSecondaryButton"
-                onClick={cancelImport}
-              >
-                Cancel remaining files
-              </button>
-            </footer>
-          </section>
-        </div>
-      ) : null}
+                <header className="importProgressModalHeader">
+                  <div>
+                    <p className="importKicker">LOCAL IMPORT</p>
+                    <h2 id="import-progress-title">
+                      {isPaused ? "Import paused" : "Adding to your library"}
+                    </h2>
+                  </div>
+                  <strong>{importProgressPercent}%</strong>
+                </header>
+                <div
+                  className="importProgressTrack"
+                  role="progressbar"
+                  aria-label="Overall import progress"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={importProgressPercent}
+                >
+                  <span style={{ width: `${importProgressPercent}%` }} />
+                </div>
+                <p className="importProgressFilename">
+                  {currentImportItem?.fileName ?? "Preparing files…"}
+                </p>
+                <p
+                  id="import-progress-status"
+                  className="importProgressMessage"
+                >
+                  {currentImportItem?.message ?? "Preparing the import queue…"}
+                </p>
+                <div className="importProgressMeta">
+                  <span>
+                    {processedFileCount} of {importFileCount} files processed
+                  </span>
+                  <span>{remainingImportLabel}</span>
+                </div>
+                <div
+                  className="importProgressItems"
+                  role="list"
+                  aria-label="Files in this import"
+                >
+                  {statusItems.length > 0 ? (
+                    statusItems.map((item) => (
+                      <div
+                        key={item.key}
+                        className="importProgressItem"
+                        role="listitem"
+                      >
+                        <span
+                          className="importProgressItemName"
+                          title={item.fileName}
+                        >
+                          {item.fileName}
+                        </span>
+                        <span
+                          className="importProgressItemState"
+                          data-state={item.state}
+                        >
+                          {item.state}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="importProgressMessage">
+                      Preparing the file list…
+                    </p>
+                  )}
+                </div>
+                <footer className="importProgressActions">
+                  <button
+                    type="button"
+                    className="importSecondaryButton"
+                    onClick={toggleImportPause}
+                  >
+                    {isPaused ? "Resume" : "Pause after current file"}
+                  </button>
+                  <button
+                    type="button"
+                    className="importSecondaryButton"
+                    onClick={cancelImport}
+                  >
+                    Cancel remaining files
+                  </button>
+                </footer>
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
 
       <input
         ref={fileInputRef}

@@ -1029,6 +1029,8 @@ button:disabled {
   display: grid;
   gap: 16px;
   width: min(520px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
   padding: 22px;
   border: 1px solid var(--app-border-strong);
   border-radius: 8px;
@@ -1097,6 +1099,47 @@ button:disabled {
 .importProgressMeta {
   color: var(--app-muted);
   font-size: 11px;
+}
+
+.importProgressItems {
+  display: grid;
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+}
+
+.importProgressItem {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--app-border);
+  font-size: 11px;
+}
+
+.importProgressItemName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.importProgressItemState {
+  flex: 0 0 auto;
+  color: var(--app-muted);
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.importProgressItemState[data-state="error"] {
+  color: var(--app-danger);
+}
+
+.importProgressItemState[data-state="saved"] {
+  color: var(--app-lime);
 }
 
 .importProgressActions {
