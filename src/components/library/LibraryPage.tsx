@@ -63,6 +63,7 @@ export function LibraryPage() {
       id: string;
       seriesId: string;
       title: string;
+      number?: number;
       seriesTitle: string;
       pageIndex: number;
       pageCount: number;
@@ -124,6 +125,7 @@ export function LibraryPage() {
                   id: chapter.id,
                   seriesId: owner.id,
                   title: chapter.title,
+                  number: chapter.number,
                   seriesTitle: owner.title,
                   pageIndex: record.pageIndex,
                   pageCount: chapter.pageCount,
@@ -472,36 +474,38 @@ export function LibraryPage() {
           <AdultAccessPrompt onUnlocked={finishAdultUnlock} />
         ) : null}
 
-        <div className="statsRow" style={styles.statsRow}>
-          <div style={styles.statItem}>
-            <span style={styles.statValue}>{accessibleEntries.length}</span>
-            <span style={styles.statLabel}>Series</span>
+        {view !== "history" ? (
+          <div className="statsRow" style={styles.statsRow}>
+            <div style={styles.statItem}>
+              <span style={styles.statValue}>{accessibleEntries.length}</span>
+              <span style={styles.statLabel}>Series</span>
+            </div>
+            <div style={styles.statItem}>
+              <span style={styles.statValue}>
+                {accessibleEntries.reduce(
+                  (total, entry) => total + entry.chapterCount,
+                  0,
+                )}
+              </span>
+              <span style={styles.statLabel}>Chapters</span>
+            </div>
+            <div style={styles.statItem}>
+              <span style={styles.statValue}>
+                {accessibleEntries.reduce(
+                  (total, entry) => total + entry.pageCount,
+                  0,
+                )}
+              </span>
+              <span style={styles.statLabel}>Pages</span>
+            </div>
+            <div style={styles.statItem}>
+              <span style={styles.statValue}>
+                {accessibleEntries.filter((entry) => entry.isFavorite).length}
+              </span>
+              <span style={styles.statLabel}>Favorites</span>
+            </div>
           </div>
-          <div style={styles.statItem}>
-            <span style={styles.statValue}>
-              {accessibleEntries.reduce(
-                (total, entry) => total + entry.chapterCount,
-                0,
-              )}
-            </span>
-            <span style={styles.statLabel}>Chapters</span>
-          </div>
-          <div style={styles.statItem}>
-            <span style={styles.statValue}>
-              {accessibleEntries.reduce(
-                (total, entry) => total + entry.pageCount,
-                0,
-              )}
-            </span>
-            <span style={styles.statLabel}>Pages</span>
-          </div>
-          <div style={styles.statItem}>
-            <span style={styles.statValue}>
-              {accessibleEntries.filter((entry) => entry.isFavorite).length}
-            </span>
-            <span style={styles.statLabel}>Favorites</span>
-          </div>
-        </div>
+        ) : null}
 
         {view === "insights" ? (
           <section
@@ -591,10 +595,14 @@ export function LibraryPage() {
                       style={styles.historyLink}
                     >
                       <span className="historyCopy">
-                        <strong>{item.seriesTitle}</strong>
+                        <strong>
+                          {item.seriesTitle} —{" "}
+                          {item.number !== undefined
+                            ? `Chapter ${item.number}`
+                            : item.title}
+                        </strong>
                         <span className="historyMeta">
-                          {item.title} · Page{" "}
-                          {Math.min(item.pageIndex + 1, item.pageCount)} of{" "}
+                          Page {Math.min(item.pageIndex + 1, item.pageCount)} of{" "}
                           {item.pageCount}
                         </span>
                       </span>
@@ -602,7 +610,7 @@ export function LibraryPage() {
                         className="historyDate"
                         dateTime={new Date(item.updatedAt).toISOString()}
                       >
-                        {new Date(item.updatedAt).toLocaleDateString()}
+                        {new Date(item.updatedAt).toLocaleString()}
                       </time>
                     </Link>
                   </li>
@@ -685,9 +693,10 @@ export function LibraryPage() {
         ) : null}
 
         <section
+          className="libraryShelfSection"
           style={styles.shelfSection}
           aria-label="Browse series"
-          hidden={view === "insights"}
+          hidden={view === "insights" || view === "history"}
         >
           <header style={styles.shelfHeader}>
             <div>
@@ -1561,11 +1570,12 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
   historyLink: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 16,
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr)",
+    alignItems: "start",
+    gap: 4,
     width: "100%",
+    padding: "14px 2px",
     color: "var(--app-text)",
     textDecoration: "none",
   },
