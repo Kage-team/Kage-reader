@@ -21,6 +21,7 @@ export type NovelReadingTheme =
 export type NovelTextAlignment = "left" | "justify";
 export type NovelColumnWidth = "narrow" | "standard" | "wide" | "full";
 export type ReaderTapBehavior = "controls" | "toggle-controls" | "page-turn";
+export type ReaderAutoScrollMode = "off" | "creep" | "jump";
 export type ReaderProgressIndicatorPosition =
   | "top-left"
   | "top-center"
@@ -123,6 +124,9 @@ export type Preferences = {
   readerZoom: number;
   disableZoomOut: boolean;
   readerTapBehavior: ReaderTapBehavior;
+  readerAutoScrollMode: ReaderAutoScrollMode;
+  readerAutoScrollCreepSpeed: number;
+  readerAutoScrollJumpDelay: number;
   dailyReadingGoalMinutes: number;
   readingDayKey: string;
   todayReadingSeconds: number;
@@ -174,6 +178,9 @@ export const DEFAULT_PREFERENCES: Preferences = {
   readerZoom: 100,
   disableZoomOut: false,
   readerTapBehavior: "controls",
+  readerAutoScrollMode: "off",
+  readerAutoScrollCreepSpeed: 24,
+  readerAutoScrollJumpDelay: 4,
   dailyReadingGoalMinutes: 30,
   readingDayKey: new Date().toISOString().slice(0, 10),
   todayReadingSeconds: 0,
@@ -409,6 +416,28 @@ function normalizePreferences(value: unknown): Preferences {
       candidate.readerTapBehavior === "page-turn"
         ? candidate.readerTapBehavior
         : DEFAULT_PREFERENCES.readerTapBehavior,
+    readerAutoScrollMode:
+      candidate.readerAutoScrollMode === "off" ||
+      candidate.readerAutoScrollMode === "creep" ||
+      candidate.readerAutoScrollMode === "jump"
+        ? candidate.readerAutoScrollMode
+        : DEFAULT_PREFERENCES.readerAutoScrollMode,
+    readerAutoScrollCreepSpeed: Number.isFinite(
+      Number(candidate.readerAutoScrollCreepSpeed),
+    )
+      ? Math.min(
+          100,
+          Math.max(0, Math.round(Number(candidate.readerAutoScrollCreepSpeed))),
+        )
+      : DEFAULT_PREFERENCES.readerAutoScrollCreepSpeed,
+    readerAutoScrollJumpDelay: Number.isFinite(
+      Number(candidate.readerAutoScrollJumpDelay),
+    )
+      ? Math.min(
+          10,
+          Math.max(1, Math.round(Number(candidate.readerAutoScrollJumpDelay))),
+        )
+      : DEFAULT_PREFERENCES.readerAutoScrollJumpDelay,
     dailyReadingGoalMinutes: Number.isFinite(
       Number(candidate.dailyReadingGoalMinutes),
     )

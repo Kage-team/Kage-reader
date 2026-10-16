@@ -2119,6 +2119,29 @@ button:disabled {
   flex-basis: 34px;
 }
 
+.readerNovelBottomActions {
+  position: fixed;
+  z-index: 23;
+  bottom: calc(env(safe-area-inset-bottom) + 98px);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 7px;
+  transform: translateX(-50%);
+  border: 1px solid #ffffff18;
+  border-radius: 9px;
+  background: rgb(0 0 0 / 72%);
+  box-shadow: 0 6px 24px #0005;
+  backdrop-filter: blur(8px);
+}
+
+.readerNovelBottomActions .readerHudIconButton {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
 .readerBottomMode {
   width: 40px;
   height: 36px;
@@ -2282,6 +2305,38 @@ button:disabled {
 .readerSettingsRotation button[aria-pressed="true"] {
   border-color: var(--app-lime);
   background: color-mix(in srgb, var(--app-lime) 14%, var(--app-panel));
+}
+
+.readerAutoScrollModes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.readerAutoScrollModes button {
+  min-height: 42px;
+  border: 1px solid var(--app-border);
+  border-radius: 7px;
+  background: var(--app-panel-raised);
+  color: var(--app-muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.readerAutoScrollModes button[aria-pressed="true"] {
+  border-color: var(--app-lime);
+  background: color-mix(in srgb, var(--app-lime) 14%, var(--app-panel));
+  color: var(--app-text);
+}
+
+.readerSettingsSliderRow input[type="range"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.novelChapterBlock {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1200px;
 }
 
 .readerChromeHidden {
@@ -2678,6 +2733,18 @@ button:disabled {
   }
 
   .readerBottomHud .readerHudIconButton {
+    width: 32px;
+    height: 34px;
+    flex-basis: 32px;
+  }
+
+  .readerNovelBottomActions {
+    bottom: calc(env(safe-area-inset-bottom) + 94px);
+    gap: 3px;
+    padding: 4px;
+  }
+
+  .readerNovelBottomActions .readerHudIconButton {
     width: 32px;
     height: 34px;
     flex-basis: 32px;

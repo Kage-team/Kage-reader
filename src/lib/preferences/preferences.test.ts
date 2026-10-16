@@ -80,6 +80,9 @@ describe("preferences", () => {
         readerZoom: 140,
         disableZoomOut: true,
         readerTapBehavior: "page-turn",
+        readerAutoScrollMode: "jump",
+        readerAutoScrollCreepSpeed: 42,
+        readerAutoScrollJumpDelay: 8,
       },
       storage,
     );
@@ -130,6 +133,9 @@ describe("preferences", () => {
       readerZoom: 140,
       disableZoomOut: true,
       readerTapBehavior: "page-turn",
+      readerAutoScrollMode: "jump",
+      readerAutoScrollCreepSpeed: 42,
+      readerAutoScrollJumpDelay: 8,
     });
     expect(getPreferences(storage)).toEqual(updated);
   });
@@ -152,6 +158,9 @@ describe("preferences", () => {
         readerZoom: 327,
         disableZoomOut: "invalid",
         readerTapBehavior: "invalid",
+        readerAutoScrollMode: "invalid",
+        readerAutoScrollCreepSpeed: 120,
+        readerAutoScrollJumpDelay: 0,
         readerProgressIndicatorPosition: "invalid",
         readerProgressShowPage: "invalid",
         readerProgressShowChapter: "invalid",
@@ -165,6 +174,9 @@ describe("preferences", () => {
       readerZoom: 300,
       disableZoomOut: false,
       readerTapBehavior: "controls",
+      readerAutoScrollMode: "off",
+      readerAutoScrollCreepSpeed: 100,
+      readerAutoScrollJumpDelay: 1,
       readerProgressIndicatorPosition: "bottom-center",
       readerProgressShowPage: true,
       readerProgressShowChapter: true,

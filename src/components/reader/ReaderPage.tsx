@@ -37,7 +37,6 @@ import {
   Play,
   RotateCcw,
   Search,
-  Share2,
   SlidersHorizontal,
   Settings2,
   Trash2,
@@ -536,6 +535,7 @@ export function ReaderPage() {
   useEffect(() => {
     if (
       !isAutoScrollActive ||
+      readerPreferences.readerAutoScrollMode === "off" ||
       (!isNovel &&
         (readerMode !== "webtoon" || !readerPreferences.comicInfiniteScroll))
     ) {
@@ -544,6 +544,28 @@ export function ReaderPage() {
 
     const frame = viewerFrameRef.current;
     if (!frame) return;
+
+    if (readerPreferences.readerAutoScrollMode === "jump") {
+      const jump = () => {
+        const maximumScroll = frame.scrollHeight - frame.clientHeight;
+        if (frame.scrollTop >= maximumScroll) {
+          setIsAutoScrollActive(false);
+          return;
+        }
+        frame.scrollBy({
+          top: Math.max(240, frame.clientHeight * 0.82),
+          behavior: "smooth",
+        });
+      };
+      const interval = window.setInterval(
+        jump,
+        readerPreferences.readerAutoScrollJumpDelay * 1000,
+      );
+      return () => window.clearInterval(interval);
+    }
+
+    const pixelsPerSecond = readerPreferences.readerAutoScrollCreepSpeed * 1.5;
+    if (pixelsPerSecond <= 0) return;
 
     let animationFrame = 0;
     let previousTime = 0;
@@ -556,7 +578,7 @@ export function ReaderPage() {
         }
         frame.scrollTop = Math.min(
           maximumScroll,
-          frame.scrollTop + (time - previousTime) * 0.025,
+          frame.scrollTop + ((time - previousTime) * pixelsPerSecond) / 1000,
         );
       }
       previousTime = time;
@@ -571,6 +593,9 @@ export function ReaderPage() {
     isNovel,
     readerMode,
     readerPreferences.comicInfiniteScroll,
+    readerPreferences.readerAutoScrollMode,
+    readerPreferences.readerAutoScrollCreepSpeed,
+    readerPreferences.readerAutoScrollJumpDelay,
   ]);
 
   useEffect(() => {
@@ -740,6 +765,7 @@ export function ReaderPage() {
 
     let isCancelled = false;
     const objectUrls: string[] = [];
+    setNovelFlowContent([]);
 
     void (async () => {
       const chapters: Array<{
@@ -782,19 +808,19 @@ export function ReaderPage() {
         );
         chapters.push(...batch);
 
-        if (isCancelled) {
-          objectUrls.forEach((url) => URL.revokeObjectURL(url));
-          return;
-        }
+        if (isCancelled) return;
 
-        setNovelFlowContent(
-          chapters.filter((entry) => entry.content.trim().length > 0),
-        );
         if (batchStart + 2 < seriesChapters.length) {
           await new Promise<void>((resolve) =>
             requestAnimationFrame(() => resolve()),
           );
         }
+      }
+
+      if (!isCancelled) {
+        setNovelFlowContent(
+          chapters.filter((entry) => entry.content.trim().length > 0),
+        );
       }
     })();
 
@@ -1734,7 +1760,7 @@ export function ReaderPage() {
 
   function handleViewerScroll(event: React.UIEvent<HTMLDivElement>): void {
     const now = performance.now();
-    if (now - lastReaderScrollHandledAtRef.current < 32) return;
+    if (now - lastReaderScrollHandledAtRef.current < 80) return;
     lastReaderScrollHandledAtRef.current = now;
 
     if (readerMode === "novel") {
@@ -1742,32 +1768,31 @@ export function ReaderPage() {
       const progress =
         frame.scrollTop / Math.max(1, frame.scrollHeight - frame.clientHeight);
       updateNovelProgressDisplay(progress);
-      const chapterElements = Array.from(
-        frame.querySelectorAll<HTMLElement>("[data-novel-chapter-id]"),
-      );
-      if (chapterElements.length === 0) return;
+      const frameRect = frame.getBoundingClientRect();
+      const readingLine =
+        frameRect.top + Math.min(120, frame.clientHeight * 0.2);
+      const activeElement = document
+        .elementFromPoint(frameRect.left + frame.clientWidth / 2, readingLine)
+        ?.closest<HTMLElement>("[data-novel-chapter-id]");
+      const activeChapterElement =
+        activeElement ??
+        frame.querySelector<HTMLElement>("[data-novel-chapter-id]");
 
-      const frameTop = frame.getBoundingClientRect().top;
-      let activeElement = chapterElements[0];
-      for (const element of chapterElements) {
-        if (element.getBoundingClientRect().top <= frameTop + 120) {
-          activeElement = element;
-        } else {
-          break;
-        }
-      }
-
-      const activeId = activeElement?.dataset.novelChapterId;
+      const activeId = activeChapterElement?.dataset.novelChapterId;
       if (!activeId) return;
-      setActiveNovelChapterId(activeId);
+      if (activeNovelChapterId !== activeId) {
+        setActiveNovelChapterId(activeId);
+      }
       const chapterTop =
-        activeElement.getBoundingClientRect().top - frameTop + frame.scrollTop;
+        activeChapterElement.getBoundingClientRect().top -
+        frameRect.top +
+        frame.scrollTop;
       const scrollRatio = Math.min(
         1,
         Math.max(
           0,
           (frame.scrollTop - chapterTop) /
-            Math.max(1, activeElement.scrollHeight),
+            Math.max(1, activeChapterElement.scrollHeight),
         ),
       );
       novelScrollRatioRef.current = scrollRatio;
@@ -1900,21 +1925,6 @@ export function ReaderPage() {
     setIsContentsOpen(false);
     setContentsQuery("");
     navigate(`/read/${encodeURIComponent(selectedChapter.id)}`);
-  }
-
-  async function shareCurrentChapter(): Promise<void> {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: chapter?.title ?? "Kage Reader", url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        setBookmarkError("Chapter link copied.");
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      setBookmarkError("Could not share this chapter.");
-    }
   }
 
   if (!chapter) {
@@ -2193,14 +2203,11 @@ export function ReaderPage() {
           >
             <ArrowLeft size={18} />
           </Link>
-          <button
-            type="button"
+          <Link
+            to={`/series/${encodeURIComponent(chapter.seriesId)}`}
             className="readerHudTitle"
-            aria-label="Choose chapter"
-            onClick={() => {
-              setChapterPickerQuery("");
-              setIsChapterPickerOpen(true);
-            }}
+            aria-label={`Open ${chapter.seriesId} series page`}
+            title="Open series page"
           >
             <span>
               {isNovel
@@ -2209,8 +2216,7 @@ export function ReaderPage() {
                   ? activeComicChapter.title
                   : chapter.title}
             </span>
-            <ChevronDown size={14} />
-          </button>
+          </Link>
           <div className="readerHudHeaderActions">
             <button
               type="button"
@@ -2245,122 +2251,127 @@ export function ReaderPage() {
           </div>
         </header>
 
-        <aside
-          className={`readerHudRail readerHudRailLeft readerChrome${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
-          aria-label="Page and series actions"
-        >
-          <button
-            type="button"
-            className="readerHudIconButton"
-            aria-label="Search this book"
-            title="Search this book"
-            onClick={() => setIsSearchOpen(true)}
+        {!isNovel ? (
+          <aside
+            className={`readerHudRail readerHudRailLeft readerChrome${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
+            aria-label="Page and series actions"
           >
-            <Search size={17} />
-          </button>
-          <button
-            type="button"
-            className="readerHudIconButton"
-            aria-label="Comments and notes"
-            title="Comments and notes"
-            onClick={() => void openBookmarkDrawer()}
-          >
-            <MessageCircle size={17} />
-          </button>
-          <button
-            type="button"
-            className="readerHudIconButton"
-            aria-label="Capture image"
-            title="Capture image"
-            disabled={!currentPageMime.startsWith("image/")}
-            onClick={() =>
-              void downloadPanelImage(
-                isComicContinuous ? activeComicChapter.id : chapter.id,
-                currentIndex,
-              )
-            }
-          >
-            <Camera size={17} />
-          </button>
-          <button
-            type="button"
-            className="readerHudIconButton"
-            aria-label="Share chapter"
-            title="Share chapter"
-            onClick={() => void shareCurrentChapter()}
-          >
-            <Share2 size={17} />
-          </button>
-        </aside>
+            <button
+              type="button"
+              className="readerHudIconButton"
+              aria-label="Comments and notes"
+              title="Comments and notes"
+              onClick={() => void openBookmarkDrawer()}
+            >
+              <MessageCircle size={17} />
+            </button>
+            <button
+              type="button"
+              className="readerHudIconButton"
+              aria-label="Capture image"
+              title="Capture image"
+              disabled={!currentPageMime.startsWith("image/")}
+              onClick={() =>
+                void downloadPanelImage(
+                  isComicContinuous ? activeComicChapter.id : chapter.id,
+                  currentIndex,
+                )
+              }
+            >
+              <Camera size={17} />
+            </button>
+          </aside>
+        ) : null}
 
         <aside
           className={`readerHudRail readerHudRailRight readerChrome${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
           aria-label="Reading tools"
         >
-          <button
-            type="button"
-            className={`readerHudIconButton${isCurrentPageBookmarked ? " readerHudIconButtonActive" : ""}`}
-            aria-label={
-              isCurrentPageBookmarked ? "Remove page bookmark" : "Bookmark page"
-            }
-            aria-pressed={isCurrentPageBookmarked}
-            title={
-              isCurrentPageBookmarked ? "Remove bookmark" : "Bookmark page"
-            }
-            onClick={() => void toggleBookmark()}
-          >
-            <Bookmark
-              size={17}
-              fill={isCurrentPageBookmarked ? "currentColor" : "none"}
-            />
-          </button>
-          <button
-            type="button"
-            className={`readerHudIconButton${isSpeaking ? " readerHudIconButtonActive" : ""}`}
-            aria-label={isSpeaking ? "Stop reading aloud" : "Read aloud"}
-            title={isSpeaking ? "Stop reading aloud" : "Read aloud"}
-            disabled={!isNovel}
-            onClick={toggleSpeech}
-          >
-            {isSpeaking ? <Pause size={17} /> : <AudioLines size={17} />}
-          </button>
-          {!isNovel ? (
+          {isNovel ? (
             <button
               type="button"
-              className={`readerHudIconButton${readerMode === "webtoon" ? " readerHudIconButtonActive" : ""}`}
-              aria-label={`Switch to ${readerMode === "webtoon" ? "paginated" : "webtoon"} mode`}
-              aria-pressed={readerMode === "webtoon"}
-              title={
-                readerMode === "webtoon" ? "Paginated mode" : "Webtoon mode"
-              }
-              onClick={() =>
-                void persistReaderMode(
-                  readerMode === "webtoon" ? "flip" : "webtoon",
-                )
-              }
+              className={`readerHudIconButton${isSpeaking ? " readerHudIconButtonActive" : ""}`}
+              aria-label={isSpeaking ? "Stop reading aloud" : "Read aloud"}
+              title={isSpeaking ? "Stop reading aloud" : "Read aloud"}
+              onClick={toggleSpeech}
             >
-              <PanelsTopLeft size={17} />
+              {isSpeaking ? <Pause size={17} /> : <AudioLines size={17} />}
             </button>
-          ) : null}
+          ) : (
+            <>
+              <button
+                type="button"
+                className={`readerHudIconButton${isCurrentPageBookmarked ? " readerHudIconButtonActive" : ""}`}
+                aria-label={
+                  isCurrentPageBookmarked
+                    ? "Remove page bookmark"
+                    : "Bookmark page"
+                }
+                aria-pressed={isCurrentPageBookmarked}
+                title={
+                  isCurrentPageBookmarked ? "Remove bookmark" : "Bookmark page"
+                }
+                onClick={() => void toggleBookmark()}
+              >
+                <Bookmark
+                  size={17}
+                  fill={isCurrentPageBookmarked ? "currentColor" : "none"}
+                />
+              </button>
+              <button
+                type="button"
+                className={`readerHudIconButton${readerMode === "webtoon" ? " readerHudIconButtonActive" : ""}`}
+                aria-label={`Switch to ${readerMode === "webtoon" ? "paginated" : "webtoon"} mode`}
+                aria-pressed={readerMode === "webtoon"}
+                title={
+                  readerMode === "webtoon" ? "Paginated mode" : "Webtoon mode"
+                }
+                onClick={() =>
+                  void persistReaderMode(
+                    readerMode === "webtoon" ? "flip" : "webtoon",
+                  )
+                }
+              >
+                <PanelsTopLeft size={17} />
+              </button>
+              <button
+                type="button"
+                className="readerHudIconButton"
+                aria-label="Zoom in"
+                title="Zoom in"
+                disabled={zoomLevel >= 4}
+                onClick={() => changeZoom(zoomLevel + 0.25)}
+              >
+                <Plus size={17} />
+              </button>
+              <button
+                type="button"
+                className="readerHudIconButton"
+                aria-label="Zoom out"
+                title="Zoom out"
+                disabled={zoomLevel <= 1}
+                onClick={() => changeZoom(zoomLevel - 0.25)}
+              >
+                <Minus size={17} />
+              </button>
+            </>
+          )}
           <button
             type="button"
             className="readerHudIconButton"
-            aria-label="Zoom in"
-            title="Zoom in"
-            disabled={zoomLevel >= 4}
-            onClick={() => changeZoom(zoomLevel + 0.25)}
+            aria-label={isNovel ? "Table of contents" : "Chapters"}
+            title={isNovel ? "Table of contents" : "Chapters"}
+            onClick={() => {
+              if (isNovel) {
+                setContentsQuery("");
+                setIsContentsOpen(true);
+              } else {
+                setChapterPickerQuery("");
+                setIsChapterPickerOpen(true);
+              }
+            }}
           >
-            <Plus size={17} />
-          </button>
-          <button
-            type="button"
-            className="readerHudIconButton"
-            aria-label="Zoom out"
-            title="Zoom out"
-            disabled={zoomLevel <= 1}
-            onClick={() => changeZoom(zoomLevel - 0.25)}
-          >
-            <Minus size={17} />
+            <List size={17} />
           </button>
           <button
             type="button"
@@ -2371,7 +2382,14 @@ export function ReaderPage() {
             aria-pressed={isAutoScrollActive}
             title={isAutoScrollActive ? "Stop auto-scroll" : "Auto-scroll"}
             disabled={!isNovel && !isComicContinuous}
-            onClick={() => setIsAutoScrollActive((active) => !active)}
+            onClick={() => {
+              if (readerPreferences.readerAutoScrollMode === "off") {
+                updateReaderPreferences({ readerAutoScrollMode: "creep" });
+                setIsAutoScrollActive(true);
+              } else {
+                setIsAutoScrollActive((active) => !active);
+              }
+            }}
           >
             {isAutoScrollActive ? <Pause size={17} /> : <Play size={17} />}
           </button>
@@ -2385,6 +2403,72 @@ export function ReaderPage() {
             {isNovel ? <Type size={17} /> : <Settings2 size={17} />}
           </button>
         </aside>
+
+        {isNovel ? (
+          <div
+            className={`readerNovelBottomActions readerChrome${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
+            role="group"
+            aria-label="Novel reading tools"
+          >
+            <button
+              type="button"
+              className={`readerHudIconButton${isCurrentPageBookmarked ? " readerHudIconButtonActive" : ""}`}
+              aria-label={
+                isCurrentPageBookmarked
+                  ? "Remove page bookmark"
+                  : "Bookmark page"
+              }
+              aria-pressed={isCurrentPageBookmarked}
+              title={
+                isCurrentPageBookmarked ? "Remove bookmark" : "Bookmark page"
+              }
+              onClick={() => void toggleBookmark()}
+            >
+              <Bookmark
+                size={17}
+                fill={isCurrentPageBookmarked ? "currentColor" : "none"}
+              />
+            </button>
+            <button
+              type="button"
+              className="readerHudIconButton"
+              aria-label="Comments and notes"
+              title="Comments and notes"
+              onClick={() => void openBookmarkDrawer()}
+            >
+              <MessageCircle size={17} />
+            </button>
+            <button
+              type="button"
+              className="readerHudIconButton"
+              aria-label="Search this book"
+              title="Search this book"
+              onClick={() => setIsSearchOpen(true)}
+            >
+              <Search size={17} />
+            </button>
+            <button
+              type="button"
+              className="readerHudIconButton"
+              aria-label="Zoom in"
+              title="Zoom in"
+              disabled={zoomLevel >= 4}
+              onClick={() => changeZoom(zoomLevel + 0.25)}
+            >
+              <Plus size={17} />
+            </button>
+            <button
+              type="button"
+              className="readerHudIconButton"
+              aria-label="Zoom out"
+              title="Zoom out"
+              disabled={zoomLevel <= 1}
+              onClick={() => changeZoom(zoomLevel - 0.25)}
+            >
+              <Minus size={17} />
+            </button>
+          </div>
+        ) : null}
 
         <header
           className="legacyReaderHeader"
@@ -3719,6 +3803,82 @@ export function ReaderPage() {
                       </button>
                     ))}
                   </div>
+
+                  <h3 className="readerSettingsGroupTitle">Auto Scroll</h3>
+                  <div
+                    className="readerAutoScrollModes"
+                    role="group"
+                    aria-label="Auto scroll mode"
+                  >
+                    {[
+                      { value: "off", label: "Off" },
+                      { value: "creep", label: "Creep" },
+                      { value: "jump", label: "Jump" },
+                    ].map((mode) => (
+                      <button
+                        key={mode.value}
+                        type="button"
+                        aria-pressed={
+                          readerPreferences.readerAutoScrollMode === mode.value
+                        }
+                        onClick={() => {
+                          updateReaderPreferences({
+                            readerAutoScrollMode:
+                              mode.value as Preferences["readerAutoScrollMode"],
+                          });
+                          setIsAutoScrollActive(mode.value !== "off");
+                        }}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+                  {readerPreferences.readerAutoScrollMode === "creep" ? (
+                    <div className="readerSettingsSliderRow">
+                      <label htmlFor="reader-creep-speed">Creep speed</label>
+                      <output htmlFor="reader-creep-speed">
+                        {readerPreferences.readerAutoScrollCreepSpeed}
+                      </output>
+                      <input
+                        id="reader-creep-speed"
+                        aria-label="Creep speed"
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={readerPreferences.readerAutoScrollCreepSpeed}
+                        onChange={(event) =>
+                          updateReaderPreferences({
+                            readerAutoScrollCreepSpeed: Number(
+                              event.currentTarget.value,
+                            ),
+                          })
+                        }
+                      />
+                    </div>
+                  ) : null}
+                  {readerPreferences.readerAutoScrollMode === "jump" ? (
+                    <div className="readerSettingsSliderRow">
+                      <label htmlFor="reader-jump-delay">Jump delay</label>
+                      <output htmlFor="reader-jump-delay">
+                        {readerPreferences.readerAutoScrollJumpDelay}s
+                      </output>
+                      <input
+                        id="reader-jump-delay"
+                        aria-label="Jump delay"
+                        type="range"
+                        min={1}
+                        max={10}
+                        value={readerPreferences.readerAutoScrollJumpDelay}
+                        onChange={(event) =>
+                          updateReaderPreferences({
+                            readerAutoScrollJumpDelay: Number(
+                              event.currentTarget.value,
+                            ),
+                          })
+                        }
+                      />
+                    </div>
+                  ) : null}
 
                   <h3 className="readerSettingsGroupTitle">Rotation</h3>
                   <div className="readerSettingsRotation">
