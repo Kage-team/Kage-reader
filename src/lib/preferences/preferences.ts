@@ -25,6 +25,9 @@ export type ReaderProgressIndicatorPosition =
   | "top-left"
   | "top-center"
   | "top-right"
+  | "middle-left"
+  | "middle-center"
+  | "middle-right"
   | "bottom-left"
   | "bottom-center"
   | "bottom-right";
@@ -98,9 +101,17 @@ export type Preferences = {
   comicPageGap: number;
   comicInfiniteScroll: boolean;
   comicBrightness: number;
+  comicDim: number;
+  comicWarmth: number;
+  comicSaturation: number;
   comicContrast: number;
   comicInvert: number;
   comicSepia: number;
+  comicGrayscale: boolean;
+  comicInverted: boolean;
+  comicCustomColorFilter: boolean;
+  comicCropBorders: boolean;
+  comicSplitWidePages: boolean;
   novelInfiniteScroll: boolean;
   immersiveMode: boolean;
   readerAutoHide: boolean;
@@ -141,9 +152,17 @@ export const DEFAULT_PREFERENCES: Preferences = {
   comicPageGap: 0,
   comicInfiniteScroll: true,
   comicBrightness: 100,
+  comicDim: 0,
+  comicWarmth: 0,
+  comicSaturation: 100,
   comicContrast: 100,
   comicInvert: 0,
   comicSepia: 0,
+  comicGrayscale: false,
+  comicInverted: false,
+  comicCustomColorFilter: false,
+  comicCropBorders: false,
+  comicSplitWidePages: false,
   novelInfiniteScroll: true,
   immersiveMode: false,
   readerAutoHide: true,
@@ -291,6 +310,15 @@ function normalizePreferences(value: unknown): Preferences {
     comicBrightness: Number.isFinite(Number(candidate.comicBrightness))
       ? Math.min(150, Math.max(50, Number(candidate.comicBrightness)))
       : DEFAULT_PREFERENCES.comicBrightness,
+    comicDim: Number.isFinite(Number(candidate.comicDim))
+      ? Math.min(100, Math.max(0, Number(candidate.comicDim)))
+      : DEFAULT_PREFERENCES.comicDim,
+    comicWarmth: Number.isFinite(Number(candidate.comicWarmth))
+      ? Math.min(100, Math.max(0, Number(candidate.comicWarmth)))
+      : DEFAULT_PREFERENCES.comicWarmth,
+    comicSaturation: Number.isFinite(Number(candidate.comicSaturation))
+      ? Math.min(200, Math.max(0, Number(candidate.comicSaturation)))
+      : DEFAULT_PREFERENCES.comicSaturation,
     comicContrast: Number.isFinite(Number(candidate.comicContrast))
       ? Math.min(150, Math.max(50, Number(candidate.comicContrast)))
       : DEFAULT_PREFERENCES.comicContrast,
@@ -300,6 +328,26 @@ function normalizePreferences(value: unknown): Preferences {
     comicSepia: Number.isFinite(Number(candidate.comicSepia))
       ? Math.min(100, Math.max(0, Number(candidate.comicSepia)))
       : DEFAULT_PREFERENCES.comicSepia,
+    comicGrayscale:
+      typeof candidate.comicGrayscale === "boolean"
+        ? candidate.comicGrayscale
+        : DEFAULT_PREFERENCES.comicGrayscale,
+    comicInverted:
+      typeof candidate.comicInverted === "boolean"
+        ? candidate.comicInverted
+        : DEFAULT_PREFERENCES.comicInverted,
+    comicCustomColorFilter:
+      typeof candidate.comicCustomColorFilter === "boolean"
+        ? candidate.comicCustomColorFilter
+        : DEFAULT_PREFERENCES.comicCustomColorFilter,
+    comicCropBorders:
+      typeof candidate.comicCropBorders === "boolean"
+        ? candidate.comicCropBorders
+        : DEFAULT_PREFERENCES.comicCropBorders,
+    comicSplitWidePages:
+      typeof candidate.comicSplitWidePages === "boolean"
+        ? candidate.comicSplitWidePages
+        : DEFAULT_PREFERENCES.comicSplitWidePages,
     novelInfiniteScroll:
       typeof candidate.novelInfiniteScroll === "boolean"
         ? candidate.novelInfiniteScroll
@@ -325,6 +373,9 @@ function normalizePreferences(value: unknown): Preferences {
       candidate.readerProgressIndicatorPosition === "top-left" ||
       candidate.readerProgressIndicatorPosition === "top-center" ||
       candidate.readerProgressIndicatorPosition === "top-right" ||
+      candidate.readerProgressIndicatorPosition === "middle-left" ||
+      candidate.readerProgressIndicatorPosition === "middle-center" ||
+      candidate.readerProgressIndicatorPosition === "middle-right" ||
       candidate.readerProgressIndicatorPosition === "bottom-left" ||
       candidate.readerProgressIndicatorPosition === "bottom-center" ||
       candidate.readerProgressIndicatorPosition === "bottom-right"

@@ -11,6 +11,7 @@ import {
   MoreVertical,
   Play,
   Plus,
+  Settings2,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -370,6 +371,8 @@ export function SeriesPage() {
           <div style={styles.headerActions}>
             <button
               type="button"
+              className="seriesEditButton"
+              aria-label={isEditing ? "Close editor" : "Edit series details"}
               style={styles.secondaryButton}
               onClick={() => {
                 resetDrafts(series);
@@ -377,6 +380,7 @@ export function SeriesPage() {
                 setIsEditing((current) => !current);
               }}
             >
+              <Settings2 size={14} />
               {isEditing ? "Close editor" : "Edit details"}
             </button>
             <div className="seriesActionsMenu">
@@ -796,11 +800,13 @@ export function SeriesPage() {
               <button
                 type="button"
                 className="seriesAddChapters"
+                aria-label={isAppending ? "Adding chapters" : "Add chapters"}
+                title={isAppending ? "Adding chapters" : "Add chapters"}
+                aria-busy={isAppending}
                 disabled={isAppending}
                 onClick={() => archiveInputRef.current?.click()}
               >
-                <Plus size={14} />
-                {isAppending ? "Adding..." : "Add Chapters"}
+                <Plus size={16} />
               </button>
             </div>
           </header>
@@ -818,43 +824,71 @@ export function SeriesPage() {
                     const titleLabel =
                       chapterTitle ||
                       `Chapter ${chapter.number ?? chapterIndex + 1}`;
+                    const progressPercent = progress
+                      ? progress.completedAt
+                        ? 100
+                        : Math.min(
+                            100,
+                            ((progress.pageIndex + 1) /
+                              Math.max(1, chapter.pageCount)) *
+                              100,
+                          )
+                      : 0;
                     return (
-                      <div className="seriesChapterRow">
-                        <Link
-                          to={`/read/${encodeURIComponent(chapter.id)}`}
-                          style={{ ...styles.chapterLink, flex: 1 }}
-                        >
-                          <span className="chapterTitleLine">
-                            <strong>
-                              {titleLabel}
-                              {chapter.volume !== undefined
-                                ? ` · Vol. ${chapter.volume}`
-                                : ""}
-                              {chapter.number !== undefined
-                                ? ` · #${chapter.number}`
-                                : ""}
-                            </strong>
-                          </span>
-                          <span className="chapterPageCount">
-                            {chapter.pageCount} pages
-                          </span>
-                        </Link>
-                        <button
-                          type="button"
-                          className="chapterStatusToggle"
-                          aria-label={`${progress?.completedAt ? "Mark unread" : "Mark read"}: ${titleLabel}`}
-                          aria-pressed={Boolean(progress?.completedAt)}
-                          title={
-                            progress?.completedAt ? "Mark unread" : "Mark read"
-                          }
-                          onClick={() => void toggleChapterCompletion(chapter)}
-                        >
-                          {progress?.completedAt ? (
-                            <Check size={14} />
-                          ) : (
-                            <Circle size={14} />
-                          )}
-                        </button>
+                      <div className="seriesChapterItem">
+                        <div className="seriesChapterRow">
+                          <Link
+                            to={`/read/${encodeURIComponent(chapter.id)}`}
+                            style={{ ...styles.chapterLink, flex: 1 }}
+                          >
+                            <span className="chapterTitleLine">
+                              <strong>
+                                {titleLabel}
+                                {chapter.volume !== undefined
+                                  ? ` · Vol. ${chapter.volume}`
+                                  : ""}
+                                {chapter.number !== undefined
+                                  ? ` · #${chapter.number}`
+                                  : ""}
+                              </strong>
+                            </span>
+                            <span className="chapterPageCount">
+                              {chapter.pageCount} pages
+                            </span>
+                          </Link>
+                          <button
+                            type="button"
+                            className="chapterStatusToggle"
+                            aria-label={`${progress?.completedAt ? "Mark unread" : "Mark read"}: ${titleLabel}`}
+                            aria-pressed={Boolean(progress?.completedAt)}
+                            title={
+                              progress?.completedAt
+                                ? "Mark unread"
+                                : "Mark read"
+                            }
+                            onClick={() =>
+                              void toggleChapterCompletion(chapter)
+                            }
+                          >
+                            {progress?.completedAt ? (
+                              <Check size={14} />
+                            ) : (
+                              <Circle size={14} />
+                            )}
+                          </button>
+                        </div>
+                        {progress ? (
+                          <div
+                            className="seriesChapterProgress"
+                            role="progressbar"
+                            aria-label={`${titleLabel} reading progress`}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={Math.round(progressPercent)}
+                          >
+                            <span style={{ width: `${progressPercent}%` }} />
+                          </div>
+                        ) : null}
                       </div>
                     );
                   })()}

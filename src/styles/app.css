@@ -1806,6 +1806,27 @@ button:disabled {
   bottom: calc(env(safe-area-inset-bottom) + 8px);
 }
 
+.readerProgressIndicator-middle-left,
+.readerProgressIndicator-middle-center,
+.readerProgressIndicator-middle-right {
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+
+.readerProgressIndicator-middle-left {
+  left: max(12px, env(safe-area-inset-left));
+}
+
+.readerProgressIndicator-middle-center {
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.readerProgressIndicator-middle-right {
+  right: max(12px, env(safe-area-inset-right));
+}
+
 .readerProgressSettings {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1877,6 +1898,7 @@ button:disabled {
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, 42px);
   gap: 7px;
 }
 
@@ -1942,6 +1964,324 @@ button:disabled {
     opacity 180ms ease,
     transform 180ms ease,
     visibility 180ms ease;
+}
+
+.legacyReaderHeader,
+.legacyReaderToolbar {
+  display: none !important;
+}
+
+.readerHudHeader {
+  position: fixed;
+  z-index: 26;
+  top: max(5px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  left: max(8px, env(safe-area-inset-left));
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 4px 7px;
+  border: 1px solid #ffffff14;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 72%);
+  backdrop-filter: blur(8px);
+}
+
+.readerHudBack,
+.readerHudIconButton {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: rgb(0 0 0 / 68%);
+  color: #f2f3f1;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.readerHudBack:hover,
+.readerHudIconButton:hover:not(:disabled) {
+  border-color: #ffffff28;
+  background: #ffffff15;
+}
+
+.readerHudIconButton[aria-pressed="true"],
+.readerHudIconButtonActive {
+  color: #60a5fa;
+}
+
+.readerHudIconButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.readerHudTitle {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  overflow: hidden;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: #f2f3f1;
+  cursor: pointer;
+}
+
+.readerHudTitle span {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.readerHudTitle svg {
+  flex: 0 0 auto;
+  color: #aeb4b4;
+}
+
+.readerHudHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.readerHudHeader .readerHudIconButton {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
+.readerHudRail {
+  position: fixed;
+  z-index: 22;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transform: translateY(-50%);
+}
+
+.readerHudRailLeft {
+  left: max(8px, env(safe-area-inset-left));
+}
+
+.readerHudRailRight {
+  right: max(8px, env(safe-area-inset-right));
+}
+
+.readerBottomHud {
+  position: fixed;
+  z-index: 23;
+  right: max(8px, env(safe-area-inset-right));
+  bottom: calc(env(safe-area-inset-bottom) + 48px);
+  left: max(8px, env(safe-area-inset-left));
+  display: grid;
+  grid-template-columns: minmax(48px, 1fr) auto auto auto auto;
+  align-items: center;
+  gap: 5px;
+  width: min(1000px, calc(100vw - 16px));
+  margin: 0 auto;
+  padding: 5px 7px;
+  border: 1px solid #ffffff18;
+  border-radius: 9px;
+  background: rgb(0 0 0 / 72%);
+  box-shadow: 0 6px 24px #0005;
+  backdrop-filter: blur(8px);
+}
+
+.readerBottomSlider {
+  width: 100%;
+  min-width: 48px;
+  margin: 0;
+  accent-color: #60a5fa;
+}
+
+.readerBottomCount {
+  min-width: 55px;
+  color: #f2f3f1;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.readerBottomHud .readerHudIconButton {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
+.readerBottomMode {
+  width: 40px;
+  height: 36px;
+}
+
+.readerProgress {
+  z-index: 28;
+  background: rgb(255 255 255 / 28%);
+}
+
+.readerProgressIndicator {
+  z-index: 27;
+  padding: 5px 8px;
+  background: rgb(0 0 0 / 76%);
+  font-size: 10px;
+}
+
+.readerSettingsPanel .readerSettingsSection {
+  padding: 8px 18px 16px !important;
+}
+
+.readerSettingsPanel .novelSettingsAccordion {
+  padding-right: 8px;
+  padding-left: 8px;
+}
+
+.readerSettingsPanel .novelSettingsAccordion > section,
+.readerSettingsPanel .novelSettingsAccordion > div {
+  padding-right: 4px;
+  padding-left: 4px;
+}
+
+.seriesEditButton {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 9px !important;
+  font-size: 11px;
+  font-weight: 600 !important;
+}
+
+.readerSettingsPanel .readerSettingsSheetHeader {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 4px 9px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.readerSettingsSheetTitle {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+
+.readerSettingsSheetTitle h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.readerSettingsBack,
+.readerSettingsClose {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 1px solid var(--app-border);
+  border-radius: 50%;
+  background: var(--app-panel-raised);
+  color: var(--app-text);
+  cursor: pointer;
+}
+
+.readerSettingsMenu {
+  display: grid;
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
+}
+
+.readerSettingsMenu > button,
+.readerSettingsMenuItem {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: 13px;
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 1px solid var(--app-border);
+  background: transparent;
+  color: var(--app-text);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.readerSettingsMenu > button > span,
+.readerSettingsMenuItem > span {
+  flex: 1 1 auto;
+}
+
+.readerSettingsMenu > button > svg:first-child,
+.readerSettingsMenuItem > svg:first-child {
+  color: var(--app-muted);
+}
+
+.readerSettingsMenu > button:hover,
+.readerSettingsMenuItem:hover {
+  background: var(--app-hover);
+}
+
+.readerSettingsSliderRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 6px 4px;
+}
+
+.readerSettingsSliderRow label {
+  color: var(--app-text);
+  font-size: 14px;
+}
+
+.readerSettingsSliderRow output {
+  color: var(--app-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.readerSettingsSliderRow input[type="range"] {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 24px;
+  margin: 0;
+  accent-color: var(--app-lime);
+}
+
+.readerSettingsRotation {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.readerSettingsRotation button {
+  min-height: 38px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: var(--app-panel-raised);
+  color: var(--app-text);
+  cursor: pointer;
+}
+
+.readerSettingsRotation button[aria-pressed="true"] {
+  border-color: var(--app-lime);
+  background: color-mix(in srgb, var(--app-lime) 14%, var(--app-panel));
 }
 
 .readerChromeHidden {
@@ -2280,8 +2620,8 @@ button:disabled {
   .readerSettingsPanel {
     inset: auto 0 0 !important;
     width: auto !important;
-    height: min(88dvh, 780px) !important;
-    max-height: calc(100dvh - env(safe-area-inset-top)) !important;
+    height: min(60dvh, 600px) !important;
+    max-height: 60dvh !important;
     padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
     border-radius: 16px 16px 0 0;
     border-bottom: 0;
@@ -2289,6 +2629,67 @@ button:disabled {
 
   .readerSettingsPanel .readerSettingsSection {
     min-height: 0;
+  }
+
+  .readerHudHeader {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 4px;
+    min-height: 40px;
+    padding: 3px 5px;
+  }
+
+  .readerHudBack,
+  .readerHudIconButton {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+
+  .readerHudTitle span {
+    font-size: 11px;
+  }
+
+  .readerHudRail {
+    gap: 5px;
+  }
+
+  .readerHudRailLeft {
+    left: max(5px, env(safe-area-inset-left));
+  }
+
+  .readerHudRailRight {
+    right: max(5px, env(safe-area-inset-right));
+  }
+
+  .readerHudRail .readerHudIconButton {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+
+  .readerBottomHud {
+    right: 5px;
+    bottom: calc(env(safe-area-inset-bottom) + 48px);
+    left: 5px;
+    grid-template-columns: minmax(40px, 1fr) auto auto auto auto;
+    gap: 3px;
+    width: auto;
+    padding: 4px;
+  }
+
+  .readerBottomHud .readerHudIconButton {
+    width: 32px;
+    height: 34px;
+    flex-basis: 32px;
+  }
+
+  .readerBottomCount {
+    min-width: 48px;
+    font-size: 10px;
+  }
+
+  .readerBottomSlider {
+    min-width: 40px;
   }
 
   .readerSettingsPanel .settingsTitle {
@@ -2302,11 +2703,65 @@ button:disabled {
     padding-top: 5px;
     background: var(--app-panel);
   }
+
+  .readerProgressIndicatorPlacement button:nth-child(4),
+  .readerProgressIndicatorPlacement button:nth-child(5),
+  .readerProgressIndicatorPlacement button:nth-child(6) {
+    grid-row: 2;
+  }
+
+  .readerProgressIndicatorPlacement button:nth-child(7),
+  .readerProgressIndicatorPlacement button:nth-child(8),
+  .readerProgressIndicatorPlacement button:nth-child(9) {
+    grid-row: 3;
+  }
+
+  .readerProgressIndicatorPlacement button:nth-child(1),
+  .readerProgressIndicatorPlacement button:nth-child(4),
+  .readerProgressIndicatorPlacement button:nth-child(7) {
+    grid-column: 1;
+  }
+
+  .readerProgressIndicatorPlacement button:nth-child(2),
+  .readerProgressIndicatorPlacement button:nth-child(5),
+  .readerProgressIndicatorPlacement button:nth-child(8) {
+    grid-column: 2;
+  }
+
+  .readerProgressIndicatorPlacement button:nth-child(3),
+  .readerProgressIndicatorPlacement button:nth-child(6),
+  .readerProgressIndicatorPlacement button:nth-child(9) {
+    grid-column: 3;
+  }
 }
 
 .appView:has(.filterSheetOverlay, .readerSheetOverlay, .readerSettingsOverlay) {
   position: relative;
   z-index: 60;
+}
+
+.readerSplitWideHalf {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.readerSplitWideHalf img {
+  display: block;
+  width: 200%;
+  max-width: none;
+  height: 100%;
+  object-fit: cover;
+}
+
+.readerSplitWideHalf-left img {
+  object-position: left center;
+}
+
+.readerSplitWideHalf-right img {
+  transform: translateX(-50%);
+  object-position: right center;
 }
 
 .libraryHeader[data-view="history"] .libraryHeaderCopy {
@@ -2725,15 +3180,18 @@ button:disabled {
 
 .seriesAddChapters {
   display: inline-flex;
-  min-height: 30px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
   align-items: center;
+  justify-content: center;
   gap: 7px;
-  padding: 0 8px;
+  padding: 0;
   border: 1px solid var(--app-border-strong);
-  border-radius: 5px;
+  border-radius: 50%;
   background: transparent;
   color: var(--app-text);
-  font-size: 11px;
+  font-size: 0;
   font-weight: 600;
   cursor: pointer;
 }
@@ -2805,6 +3263,27 @@ button:disabled {
 .chapterStatusToggle:hover {
   background: var(--app-hover);
   color: var(--app-text);
+}
+
+.seriesChapterItem {
+  display: grid;
+  gap: 2px;
+}
+
+.seriesChapterProgress {
+  height: 2px;
+  overflow: hidden;
+  margin: 0 42px 4px 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-text) 16%, transparent);
+}
+
+.seriesChapterProgress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--app-lime);
+  transition: width 180ms ease;
 }
 
 .readerHeader .readerChapterTitleTrigger {

@@ -5,12 +5,14 @@ import {
   AlignLeft,
   AudioLines,
   ArrowLeft,
+  ArrowRight,
   ArrowDownLeft,
   ArrowDownRight,
   ArrowDown,
   ArrowUpLeft,
   ArrowUpRight,
   ArrowUp,
+  Circle,
   Bookmark,
   BookOpen,
   ChevronLeft,
@@ -19,6 +21,7 @@ import {
   Expand,
   Grid2X2,
   Highlighter,
+  MessageCircle,
   Eye,
   EyeOff,
   List,
@@ -28,9 +31,14 @@ import {
   Minimize2,
   Minus,
   PanelsTopLeft,
+  Palette,
+  Pause,
   Plus,
+  Play,
   RotateCcw,
   Search,
+  Share2,
+  SlidersHorizontal,
   Settings2,
   Trash2,
   Type,
@@ -121,6 +129,13 @@ const NOVEL_COLUMN_WIDTHS = {
   full: 1800,
 } as const;
 
+type ReaderSettingsSection =
+  | "menu"
+  | "reader"
+  | "graphics"
+  | "interface"
+  | "chapters";
+
 function isTextMime(mime: string): boolean {
   return (
     mime.startsWith("text/") || mime.includes("html") || mime.includes("xml")
@@ -177,6 +192,10 @@ export function ReaderPage() {
   const [loadedChapterId, setLoadedChapterId] = useState<string | null>(null);
   const [pages, setPages] = useState<Page[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
+  const [pageRotation, setPageRotation] = useState(0);
+  const [widePageAspects, setWidePageAspects] = useState<
+    Record<string, number>
+  >({});
   const [readingDirection, setReadingDirection] = useState<ReadingDirection>(
     () => getPreferences().defaultReadingDirection,
   );
@@ -202,6 +221,7 @@ export function ReaderPage() {
   const [searchResults, setSearchResults] = useState<TextSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isAutoScrollActive, setIsAutoScrollActive] = useState(false);
   const [zoomTransform, setZoomTransform] = useState<ZoomTransform>({
     scale: 1,
     translateX: 0,
@@ -223,6 +243,8 @@ export function ReaderPage() {
   const [isContentsOpen, setIsContentsOpen] = useState(false);
   const [contentsQuery, setContentsQuery] = useState("");
   const [isReaderSettingsOpen, setIsReaderSettingsOpen] = useState(false);
+  const [readerSettingsSection, setReaderSettingsSection] =
+    useState<ReaderSettingsSection>("menu");
   const [isChapterPickerOpen, setIsChapterPickerOpen] = useState(false);
   const [chapterPickerQuery, setChapterPickerQuery] = useState("");
   const [isImmersive, setIsImmersive] = useState(false);
@@ -460,9 +482,8 @@ export function ReaderPage() {
   }, [currentPage, chapterId]);
 
   useEffect(() => {
-    const shouldAutoHide = readerPreferences.readerAutoHide || isImmersive;
     const keepChromeVisible =
-      !shouldAutoHide ||
+      !isImmersive ||
       isReaderSettingsOpen ||
       isPageGridOpen ||
       isBookmarkDrawerOpen ||
@@ -477,17 +498,7 @@ export function ReaderPage() {
       return;
     }
 
-    if (isImmersive) {
-      setIsUiVisible(false);
-      return;
-    }
-
-    setIsUiVisible(true);
-    chromeHideTimerRef.current = window.setTimeout(
-      () => setIsUiVisible(false),
-      readerPreferences.readerAutoHideDelay,
-    );
-
+    setIsUiVisible(false);
     return () => {
       if (chromeHideTimerRef.current !== undefined) {
         window.clearTimeout(chromeHideTimerRef.current);
@@ -502,9 +513,6 @@ export function ReaderPage() {
     isSearchOpen,
     isReaderSettingsOpen,
     isImmersive,
-    pages.length,
-    readerPreferences.readerAutoHide,
-    readerPreferences.readerAutoHideDelay,
   ]);
 
   useEffect(
@@ -524,6 +532,46 @@ export function ReaderPage() {
     setIsSpeaking(false);
     return () => window.speechSynthesis?.cancel();
   }, [chapterId]);
+
+  useEffect(() => {
+    if (
+      !isAutoScrollActive ||
+      (!isNovel &&
+        (readerMode !== "webtoon" || !readerPreferences.comicInfiniteScroll))
+    ) {
+      return;
+    }
+
+    const frame = viewerFrameRef.current;
+    if (!frame) return;
+
+    let animationFrame = 0;
+    let previousTime = 0;
+    const scroll = (time: number) => {
+      if (previousTime > 0) {
+        const maximumScroll = frame.scrollHeight - frame.clientHeight;
+        if (frame.scrollTop >= maximumScroll) {
+          setIsAutoScrollActive(false);
+          return;
+        }
+        frame.scrollTop = Math.min(
+          maximumScroll,
+          frame.scrollTop + (time - previousTime) * 0.025,
+        );
+      }
+      previousTime = time;
+      animationFrame = window.requestAnimationFrame(scroll);
+    };
+
+    animationFrame = window.requestAnimationFrame(scroll);
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [
+    chapterId,
+    isAutoScrollActive,
+    isNovel,
+    readerMode,
+    readerPreferences.comicInfiniteScroll,
+  ]);
 
   useEffect(() => {
     if (
@@ -1652,6 +1700,11 @@ export function ReaderPage() {
     updateReaderPreferences({ immersiveMode: enabled });
   }
 
+  function openReaderSettings(): void {
+    setReaderSettingsSection("menu");
+    setIsReaderSettingsOpen(true);
+  }
+
   function toggleImmersiveMode(): void {
     setImmersiveMode(!isImmersive);
   }
@@ -1849,6 +1902,21 @@ export function ReaderPage() {
     navigate(`/read/${encodeURIComponent(selectedChapter.id)}`);
   }
 
+  async function shareCurrentChapter(): Promise<void> {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: chapter?.title ?? "Kage Reader", url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setBookmarkError("Chapter link copied.");
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setBookmarkError("Could not share this chapter.");
+    }
+  }
+
   if (!chapter) {
     return (
       <main style={styles.page}>
@@ -1912,8 +1980,7 @@ export function ReaderPage() {
     readerPreferences.novelInfiniteScroll &&
     textPages.length > 0;
   const isContinuousReader = isComicContinuous || isNovelContinuous;
-  const shouldAutoHideReaderChrome =
-    readerPreferences.readerAutoHide || isImmersive;
+  const shouldAutoHideReaderChrome = isImmersive;
   const modeOptions: Array<{ value: ReaderMode; label: string }> = isNovel
     ? [
         { value: "novel", label: "Text" },
@@ -1986,25 +2053,42 @@ export function ReaderPage() {
   ): React.CSSProperties => {
     const fitWidth = Math.min(normalizedReaderWidth, viewportWidth);
     const baseStyle = isContinuous ? styles.webtoonImage : styles.image;
-    const filter = `brightness(${readerPreferences.comicBrightness}%) contrast(${readerPreferences.comicContrast}%) invert(${readerPreferences.comicInvert}%) sepia(${readerPreferences.comicSepia}%)`;
+    const brightness = Math.round(
+      readerPreferences.comicBrightness *
+        (1 - readerPreferences.comicDim / 100),
+    );
+    const invert = readerPreferences.comicInverted
+      ? 100
+      : readerPreferences.comicInvert;
+    const warmth = readerPreferences.comicCustomColorFilter
+      ? readerPreferences.comicWarmth
+      : readerPreferences.comicSepia;
+    const filter = `brightness(${brightness}%) contrast(${readerPreferences.comicContrast}%) saturate(${readerPreferences.comicSaturation}%) invert(${invert}%) sepia(${warmth}%) grayscale(${readerPreferences.comicGrayscale ? 100 : 0}%)`;
     const transformStyle: React.CSSProperties = {
-      transform: `translate3d(${zoomTransform.translateX}px, ${zoomTransform.translateY}px, 0) scale(${zoomTransform.scale})`,
-      transformOrigin: "0 0",
+      transform: `translate3d(${zoomTransform.translateX}px, ${zoomTransform.translateY}px, 0) scale(${zoomTransform.scale}) rotate(${pageRotation}deg)`,
+      transformOrigin: "center",
     };
+    const cropStyle = readerPreferences.comicCropBorders
+      ? { clipPath: "inset(2%)" }
+      : {};
     if (isContinuous) {
       return {
         ...baseStyle,
         filter,
+        ...cropStyle,
         width: `${fitWidth}px`,
         height: "auto",
         maxWidth: "none",
         maxHeight: "none",
+        ...(pageRotation ? { transform: `rotate(${pageRotation}deg)` } : {}),
+        transformOrigin: "center",
       };
     }
 
     return {
       ...baseStyle,
       filter,
+      ...cropStyle,
       width: "auto",
       height: "auto",
       maxWidth: `${fitWidth}px`,
@@ -2012,6 +2096,79 @@ export function ReaderPage() {
       ...(isCurrentPage ? transformStyle : {}),
     };
   };
+  function rememberComicPageAspect(
+    pageId: string,
+    event: React.SyntheticEvent<HTMLImageElement>,
+  ): void {
+    const image = event.currentTarget;
+    if (image.naturalWidth <= 0 || image.naturalHeight <= 0) return;
+    const aspect = image.naturalWidth / image.naturalHeight;
+    if (aspect <= 1.25) return;
+    setWidePageAspects((current) =>
+      current[pageId] === aspect ? current : { ...current, [pageId]: aspect },
+    );
+  }
+
+  function renderComicPage(
+    page: Page,
+    url: string,
+    isCurrentPage: boolean,
+    isContinuous: boolean,
+  ): React.ReactNode {
+    const aspect = widePageAspects[page.id];
+    if (readerPreferences.comicSplitWidePages && aspect) {
+      const imageStyle = comicPageImageStyle(isCurrentPage, isContinuous);
+      return (
+        <div
+          key={page.id}
+          className="readerSplitWideSpread"
+          data-reader-page-index={page.index}
+          data-reader-zoom-target={isCurrentPage ? "" : undefined}
+          style={{
+            ...imageStyle,
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            width: `${Math.min(normalizedReaderWidth, viewportWidth)}px`,
+            height: "auto",
+            aspectRatio: String(aspect),
+            overflow: "visible",
+          }}
+        >
+          {(["left", "right"] as const).map((side) => (
+            <div
+              key={side}
+              className={`readerSplitWideHalf readerSplitWideHalf-${side}`}
+            >
+              <img
+                src={url}
+                alt={
+                  side === "left"
+                    ? `${chapter?.title} page ${page.index + 1}`
+                    : ""
+                }
+                aria-hidden={side === "right" ? true : undefined}
+                data-reader-page-index={page.index}
+                onLoad={(event) => rememberComicPageAspect(page.id, event)}
+              />
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <img
+        key={page.id}
+        src={url}
+        alt={`${chapter?.title} page ${page.index + 1}`}
+        data-reader-page-index={page.index}
+        data-reader-zoom-target={isCurrentPage ? "" : undefined}
+        decoding="async"
+        onLoad={(event) => rememberComicPageAspect(page.id, event)}
+        style={comicPageImageStyle(isCurrentPage, isContinuous)}
+      />
+    );
+  }
   return (
     <main
       ref={readerRootRef}
@@ -2026,7 +2183,211 @@ export function ReaderPage() {
     >
       <section style={styles.panel}>
         <header
-          className={`readerChrome readerHeader${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
+          className={`readerChrome readerHudHeader${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
+        >
+          <Link
+            to={`/series/${encodeURIComponent(chapter.seriesId)}`}
+            className="readerHudBack"
+            aria-label="Back to series"
+            title="Back to series"
+          >
+            <ArrowLeft size={18} />
+          </Link>
+          <button
+            type="button"
+            className="readerHudTitle"
+            aria-label="Choose chapter"
+            onClick={() => {
+              setChapterPickerQuery("");
+              setIsChapterPickerOpen(true);
+            }}
+          >
+            <span>
+              {isNovel
+                ? activeNovelChapter?.title
+                : isComicContinuous
+                  ? activeComicChapter.title
+                  : chapter.title}
+            </span>
+            <ChevronDown size={14} />
+          </button>
+          <div className="readerHudHeaderActions">
+            <button
+              type="button"
+              className="readerHudIconButton"
+              aria-label="Page grid and thumbnails"
+              title="Page grid and thumbnails"
+              onClick={() => setIsPageGridOpen(true)}
+            >
+              <Grid2X2 size={17} />
+            </button>
+            <button
+              type="button"
+              className="readerHudIconButton"
+              aria-label={
+                isImmersive ? "Exit immersive mode" : "Immersive mode"
+              }
+              aria-pressed={isImmersive}
+              title={isImmersive ? "Exit immersive mode" : "Immersive mode"}
+              onClick={toggleImmersiveMode}
+            >
+              {isImmersive ? <Eye size={17} /> : <EyeOff size={17} />}
+            </button>
+            <button
+              type="button"
+              className="readerHudIconButton"
+              aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              onClick={() => void toggleFullscreen()}
+            >
+              {isFullscreen ? <Minimize2 size={17} /> : <Expand size={17} />}
+            </button>
+          </div>
+        </header>
+
+        <aside
+          className={`readerHudRail readerHudRailLeft readerChrome${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
+          aria-label="Page and series actions"
+        >
+          <button
+            type="button"
+            className="readerHudIconButton"
+            aria-label="Search this book"
+            title="Search this book"
+            onClick={() => setIsSearchOpen(true)}
+          >
+            <Search size={17} />
+          </button>
+          <button
+            type="button"
+            className="readerHudIconButton"
+            aria-label="Comments and notes"
+            title="Comments and notes"
+            onClick={() => void openBookmarkDrawer()}
+          >
+            <MessageCircle size={17} />
+          </button>
+          <button
+            type="button"
+            className="readerHudIconButton"
+            aria-label="Capture image"
+            title="Capture image"
+            disabled={!currentPageMime.startsWith("image/")}
+            onClick={() =>
+              void downloadPanelImage(
+                isComicContinuous ? activeComicChapter.id : chapter.id,
+                currentIndex,
+              )
+            }
+          >
+            <Camera size={17} />
+          </button>
+          <button
+            type="button"
+            className="readerHudIconButton"
+            aria-label="Share chapter"
+            title="Share chapter"
+            onClick={() => void shareCurrentChapter()}
+          >
+            <Share2 size={17} />
+          </button>
+        </aside>
+
+        <aside
+          className={`readerHudRail readerHudRailRight readerChrome${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
+          aria-label="Reading tools"
+        >
+          <button
+            type="button"
+            className={`readerHudIconButton${isCurrentPageBookmarked ? " readerHudIconButtonActive" : ""}`}
+            aria-label={
+              isCurrentPageBookmarked ? "Remove page bookmark" : "Bookmark page"
+            }
+            aria-pressed={isCurrentPageBookmarked}
+            title={
+              isCurrentPageBookmarked ? "Remove bookmark" : "Bookmark page"
+            }
+            onClick={() => void toggleBookmark()}
+          >
+            <Bookmark
+              size={17}
+              fill={isCurrentPageBookmarked ? "currentColor" : "none"}
+            />
+          </button>
+          <button
+            type="button"
+            className={`readerHudIconButton${isSpeaking ? " readerHudIconButtonActive" : ""}`}
+            aria-label={isSpeaking ? "Stop reading aloud" : "Read aloud"}
+            title={isSpeaking ? "Stop reading aloud" : "Read aloud"}
+            disabled={!isNovel}
+            onClick={toggleSpeech}
+          >
+            {isSpeaking ? <Pause size={17} /> : <AudioLines size={17} />}
+          </button>
+          {!isNovel ? (
+            <button
+              type="button"
+              className={`readerHudIconButton${readerMode === "webtoon" ? " readerHudIconButtonActive" : ""}`}
+              aria-label={`Switch to ${readerMode === "webtoon" ? "paginated" : "webtoon"} mode`}
+              aria-pressed={readerMode === "webtoon"}
+              title={
+                readerMode === "webtoon" ? "Paginated mode" : "Webtoon mode"
+              }
+              onClick={() =>
+                void persistReaderMode(
+                  readerMode === "webtoon" ? "flip" : "webtoon",
+                )
+              }
+            >
+              <PanelsTopLeft size={17} />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="readerHudIconButton"
+            aria-label="Zoom in"
+            title="Zoom in"
+            disabled={zoomLevel >= 4}
+            onClick={() => changeZoom(zoomLevel + 0.25)}
+          >
+            <Plus size={17} />
+          </button>
+          <button
+            type="button"
+            className="readerHudIconButton"
+            aria-label="Zoom out"
+            title="Zoom out"
+            disabled={zoomLevel <= 1}
+            onClick={() => changeZoom(zoomLevel - 0.25)}
+          >
+            <Minus size={17} />
+          </button>
+          <button
+            type="button"
+            className={`readerHudIconButton${isAutoScrollActive ? " readerHudIconButtonActive" : ""}`}
+            aria-label={
+              isAutoScrollActive ? "Stop auto-scroll" : "Start auto-scroll"
+            }
+            aria-pressed={isAutoScrollActive}
+            title={isAutoScrollActive ? "Stop auto-scroll" : "Auto-scroll"}
+            disabled={!isNovel && !isComicContinuous}
+            onClick={() => setIsAutoScrollActive((active) => !active)}
+          >
+            {isAutoScrollActive ? <Pause size={17} /> : <Play size={17} />}
+          </button>
+          <button
+            type="button"
+            className="readerHudIconButton"
+            aria-label={isNovel ? "Reader formatting" : "Reader settings"}
+            title={isNovel ? "Reader formatting" : "Reader settings"}
+            onClick={openReaderSettings}
+          >
+            {isNovel ? <Type size={17} /> : <Settings2 size={17} />}
+          </button>
+        </aside>
+
+        <header
+          className="legacyReaderHeader"
           style={{
             ...styles.headerRow,
             ...(isImmersive ? styles.headerRowImmersive : {}),
@@ -2186,7 +2547,7 @@ export function ReaderPage() {
                 aria-label={isNovel ? "Reader formatting" : "Reader settings"}
                 aria-pressed={isReaderSettingsOpen}
                 title={isNovel ? "Reader formatting" : "Reader settings"}
-                onClick={() => setIsReaderSettingsOpen(true)}
+                onClick={openReaderSettings}
                 style={styles.iconButton}
               >
                 {isNovel ? <Type size={16} /> : <Settings2 size={16} />}
@@ -2262,8 +2623,107 @@ export function ReaderPage() {
         ) : null}
 
         <div
-          className={`readerChrome readerToolbar${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
+          className={`readerChrome readerBottomHud${shouldAutoHideReaderChrome && !isUiVisible ? " readerChromeHidden" : ""}`}
+          aria-label="Reading navigation"
         >
+          <input
+            ref={isNovel ? novelProgressInputRef : undefined}
+            className="readerBottomSlider"
+            type="range"
+            min={0}
+            max={isNovel ? 1000 : Math.max(totalPages - 1, 0)}
+            value={
+              isNovel
+                ? Math.round(novelScrollProgressRef.current * 1000)
+                : Math.max(currentIndex, 0)
+            }
+            disabled={!isNovel && totalPages <= 1}
+            aria-label={isNovel ? "Novel reading progress" : "Page position"}
+            onChange={(event) => {
+              if (isNovel) {
+                const progress = Number(event.currentTarget.value) / 1000;
+                const frame = viewerFrameRef.current;
+                if (!frame) return;
+                updateNovelProgressDisplay(progress);
+                frame.scrollTop =
+                  progress * (frame.scrollHeight - frame.clientHeight);
+              } else {
+                selectReaderPage(Number(event.currentTarget.value));
+              }
+            }}
+          />
+          <span className="readerBottomCount">
+            {isNovel
+              ? `Progress ${Math.round(novelScrollProgressRef.current * 100)}%`
+              : `Page ${currentIndex + 1}/${totalPages || 1}`}
+          </span>
+          {!isNovel ? (
+            <button
+              type="button"
+              className={`readerHudIconButton readerBottomMode${readerMode === "webtoon" ? " readerHudIconButtonActive" : ""}`}
+              aria-label={`Switch to ${readerMode === "webtoon" ? "paginated" : "web"} mode`}
+              aria-pressed={readerMode === "webtoon"}
+              title={readerMode === "webtoon" ? "Webtoon" : "Paginated"}
+              onClick={() =>
+                void persistReaderMode(
+                  readerMode === "webtoon" ? "flip" : "webtoon",
+                )
+              }
+            >
+              {readerMode === "webtoon" ? (
+                <PanelsTopLeft size={16} />
+              ) : (
+                <BookOpen size={16} />
+              )}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="readerHudIconButton"
+            aria-label="Previous page"
+            title="Previous page"
+            disabled={!isNovel && currentIndex <= 0}
+            onClick={() => {
+              if (isNovel) {
+                viewerFrameRef.current?.scrollBy({
+                  top: -Math.max(
+                    240,
+                    (viewerFrameRef.current?.clientHeight ?? 0) * 0.8,
+                  ),
+                  behavior: "smooth",
+                });
+              } else {
+                selectReaderPage(currentIndex - 1);
+              }
+            }}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            className="readerHudIconButton"
+            aria-label="Next page"
+            title="Next page"
+            disabled={!isNovel && currentIndex >= totalPages - 1}
+            onClick={() => {
+              if (isNovel) {
+                viewerFrameRef.current?.scrollBy({
+                  top: Math.max(
+                    240,
+                    (viewerFrameRef.current?.clientHeight ?? 0) * 0.8,
+                  ),
+                  behavior: "smooth",
+                });
+              } else {
+                selectReaderPage(currentIndex + 1);
+              }
+            }}
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+
+        <div className="legacyReaderToolbar">
           <div className="readerToolbarMain">
             {isNovel ? (
               <input
@@ -2588,30 +3048,357 @@ export function ReaderPage() {
               aria-modal="true"
               aria-labelledby="reader-settings-title"
             >
-              <header style={styles.settingsHeader}>
-                <div style={styles.settingsTitleWrap}>
-                  <span style={styles.settingsIcon}>
-                    {isNovel ? <Type size={17} /> : <Settings2 size={17} />}
-                  </span>
-                  <div>
-                    <h2 id="reader-settings-title" style={styles.settingsTitle}>
-                      {isNovel
-                        ? "Reading Atmosphere & Typography"
-                        : "Reader Settings"}
-                    </h2>
-                  </div>
+              <header className="readerSettingsSheetHeader">
+                <div className="readerSettingsSheetTitle">
+                  {readerSettingsSection !== "menu" ? (
+                    <button
+                      type="button"
+                      className="readerSettingsBack"
+                      aria-label="Back to settings"
+                      onClick={() => setReaderSettingsSection("menu")}
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                  ) : null}
+                  <h2 id="reader-settings-title">
+                    {readerSettingsSection === "menu"
+                      ? "Settings"
+                      : readerSettingsSection === "reader"
+                        ? "Reader"
+                        : readerSettingsSection === "graphics"
+                          ? "Graphics"
+                          : readerSettingsSection === "interface"
+                            ? "Interface"
+                            : "Chapters"}
+                  </h2>
                 </div>
                 <button
                   type="button"
+                  className="readerSettingsClose"
                   aria-label="Close settings"
                   onClick={() => setIsReaderSettingsOpen(false)}
-                  style={styles.settingsCloseButton}
                 >
                   <X size={17} />
                 </button>
               </header>
 
-              {isNovel ? (
+              {readerSettingsSection === "menu" ? (
+                <nav
+                  className="readerSettingsMenu"
+                  aria-label="Reader settings sections"
+                >
+                  {[
+                    { value: "reader", label: "Reader", Icon: BookOpen },
+                    { value: "graphics", label: "Graphics", Icon: Palette },
+                    {
+                      value: "interface",
+                      label: "Interface",
+                      Icon: SlidersHorizontal,
+                    },
+                    { value: "chapters", label: "Chapters", Icon: List },
+                  ].map(({ value, label, Icon }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() =>
+                        setReaderSettingsSection(value as ReaderSettingsSection)
+                      }
+                    >
+                      <Icon size={19} />
+                      <span>{label}</span>
+                      <ChevronRight size={17} />
+                    </button>
+                  ))}
+                </nav>
+              ) : readerSettingsSection === "interface" ? (
+                <div
+                  className="readerSettingsSection"
+                  style={styles.settingsSection}
+                >
+                  <label className="readerProgressToggle">
+                    <span>Immersive mode</span>
+                    <input
+                      type="checkbox"
+                      aria-label="Immersive mode"
+                      checked={isImmersive}
+                      onChange={(event) =>
+                        setImmersiveMode(event.currentTarget.checked)
+                      }
+                    />
+                  </label>
+                  <h3 className="readerSettingsGroupTitle">
+                    Progress Indicator
+                  </h3>
+                  <div className="readerProgressSettings">
+                    <label className="readerProgressToggle">
+                      <span>Page</span>
+                      <input
+                        type="checkbox"
+                        aria-label="Page progress indicator"
+                        checked={readerPreferences.readerProgressShowPage}
+                        onChange={(event) =>
+                          updateReaderPreferences({
+                            readerProgressShowPage: event.currentTarget.checked,
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="readerProgressToggle">
+                      <span>Chapter</span>
+                      <input
+                        type="checkbox"
+                        aria-label="Chapter progress indicator"
+                        checked={readerPreferences.readerProgressShowChapter}
+                        onChange={(event) =>
+                          updateReaderPreferences({
+                            readerProgressShowChapter:
+                              event.currentTarget.checked,
+                          })
+                        }
+                      />
+                    </label>
+                    <div
+                      className="readerProgressIndicatorPlacement"
+                      role="group"
+                      aria-label="Progress indicator alignment"
+                    >
+                      {[
+                        {
+                          value: "top-left",
+                          label: "Top left",
+                          Icon: ArrowUpLeft,
+                        },
+                        {
+                          value: "top-center",
+                          label: "Top center",
+                          Icon: ArrowUp,
+                        },
+                        {
+                          value: "top-right",
+                          label: "Top right",
+                          Icon: ArrowUpRight,
+                        },
+                        {
+                          value: "middle-left",
+                          label: "Middle left",
+                          Icon: ArrowLeft,
+                        },
+                        {
+                          value: "middle-center",
+                          label: "Middle center",
+                          Icon: Circle,
+                        },
+                        {
+                          value: "middle-right",
+                          label: "Middle right",
+                          Icon: ArrowRight,
+                        },
+                        {
+                          value: "bottom-left",
+                          label: "Bottom left",
+                          Icon: ArrowDownLeft,
+                        },
+                        {
+                          value: "bottom-center",
+                          label: "Bottom center",
+                          Icon: ArrowDown,
+                        },
+                        {
+                          value: "bottom-right",
+                          label: "Bottom right",
+                          Icon: ArrowDownRight,
+                        },
+                      ].map(({ value, label, Icon }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-label={`${label} progress indicator`}
+                          aria-pressed={
+                            readerPreferences.readerProgressIndicatorPosition ===
+                            value
+                          }
+                          title={label}
+                          onClick={() =>
+                            updateReaderPreferences({
+                              readerProgressIndicatorPosition:
+                                value as Preferences["readerProgressIndicatorPosition"],
+                            })
+                          }
+                        >
+                          <Icon size={17} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <h3 className="readerSettingsGroupTitle">Progress Bar</h3>
+                  <label className="readerProgressToggle">
+                    <span>Show progress bar</span>
+                    <input
+                      type="checkbox"
+                      aria-label="Show progress bar"
+                      checked={readerPreferences.readerProgressBarEnabled}
+                      onChange={(event) =>
+                        updateReaderPreferences({
+                          readerProgressBarEnabled: event.currentTarget.checked,
+                        })
+                      }
+                    />
+                  </label>
+                </div>
+              ) : readerSettingsSection === "graphics" ? (
+                <div
+                  className="readerSettingsSection"
+                  style={styles.settingsSection}
+                >
+                  {[
+                    {
+                      id: "comic-brightness",
+                      label: "Brightness",
+                      value: readerPreferences.comicBrightness,
+                      min: 50,
+                      max: 150,
+                      step: 5,
+                      key: "comicBrightness" as const,
+                    },
+                    {
+                      id: "comic-dim",
+                      label: "Dim",
+                      value: readerPreferences.comicDim,
+                      min: 0,
+                      max: 100,
+                      step: 5,
+                      key: "comicDim" as const,
+                    },
+                    {
+                      id: "comic-warmth",
+                      label: "Warmth",
+                      value: readerPreferences.comicWarmth,
+                      min: 0,
+                      max: 100,
+                      step: 5,
+                      key: "comicWarmth" as const,
+                    },
+                    {
+                      id: "comic-saturation",
+                      label: "Saturation",
+                      value: readerPreferences.comicSaturation,
+                      min: 0,
+                      max: 200,
+                      step: 5,
+                      key: "comicSaturation" as const,
+                    },
+                    {
+                      id: "comic-contrast",
+                      label: "Contrast",
+                      value: readerPreferences.comicContrast,
+                      min: 50,
+                      max: 150,
+                      step: 5,
+                      key: "comicContrast" as const,
+                    },
+                  ].map((control) => (
+                    <div key={control.id} className="readerSettingsSliderRow">
+                      <label htmlFor={control.id}>{control.label}</label>
+                      <output htmlFor={control.id}>{control.value}%</output>
+                      <input
+                        id={control.id}
+                        type="range"
+                        min={control.min}
+                        max={control.max}
+                        step={control.step}
+                        value={control.value}
+                        disabled={
+                          control.key === "comicWarmth" &&
+                          !readerPreferences.comicCustomColorFilter
+                        }
+                        onChange={(event) =>
+                          updateReaderPreferences({
+                            [control.key]: Number(event.currentTarget.value),
+                          })
+                        }
+                      />
+                    </div>
+                  ))}
+                  <label className="readerProgressToggle">
+                    <span>Grayscale</span>
+                    <input
+                      type="checkbox"
+                      checked={readerPreferences.comicGrayscale}
+                      onChange={(event) =>
+                        updateReaderPreferences({
+                          comicGrayscale: event.currentTarget.checked,
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="readerProgressToggle">
+                    <span>Inverted</span>
+                    <input
+                      type="checkbox"
+                      checked={readerPreferences.comicInverted}
+                      onChange={(event) =>
+                        updateReaderPreferences({
+                          comicInverted: event.currentTarget.checked,
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="readerProgressToggle">
+                    <span>Custom color filter</span>
+                    <input
+                      type="checkbox"
+                      checked={readerPreferences.comicCustomColorFilter}
+                      onChange={(event) =>
+                        updateReaderPreferences({
+                          comicCustomColorFilter: event.currentTarget.checked,
+                        })
+                      }
+                    />
+                  </label>
+                </div>
+              ) : readerSettingsSection === "chapters" ? (
+                <div
+                  className="readerSettingsSection"
+                  style={styles.settingsSection}
+                >
+                  <button
+                    type="button"
+                    className="readerSettingsMenuItem"
+                    onClick={() => {
+                      setIsReaderSettingsOpen(false);
+                      setIsChapterPickerOpen(true);
+                    }}
+                  >
+                    <List size={18} />
+                    <span>Open chapter list</span>
+                    <ChevronRight size={16} />
+                  </button>
+                  <label className="readerProgressToggle">
+                    <span>Continuous chapter flow</span>
+                    <input
+                      type="checkbox"
+                      checked={
+                        isNovel
+                          ? readerPreferences.novelInfiniteScroll
+                          : readerPreferences.comicInfiniteScroll
+                      }
+                      onChange={(event) =>
+                        updateReaderPreferences(
+                          isNovel
+                            ? {
+                                novelInfiniteScroll:
+                                  event.currentTarget.checked,
+                              }
+                            : {
+                                comicInfiniteScroll:
+                                  event.currentTarget.checked,
+                              },
+                        )
+                      }
+                    />
+                  </label>
+                </div>
+              ) : isNovel ? (
                 <div
                   className="readerSettingsSection"
                   style={styles.settingsSection}
@@ -2933,184 +3720,24 @@ export function ReaderPage() {
                     ))}
                   </div>
 
-                  <h3 className="readerSettingsGroupTitle">Controls</h3>
-                  <label style={styles.settingsToggleRow}>
-                    <div>
-                      <div style={styles.settingsToggleHeading}>Focus mode</div>
-                      <p style={styles.settingsToggleBody}>
-                        Hide the reader controls for an unobstructed page. Tap
-                        once to reveal them temporarily.
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      aria-label="Focus mode"
-                      checked={readerPreferences.immersiveMode}
-                      onChange={(event) =>
-                        setImmersiveMode(event.currentTarget.checked)
-                      }
-                      style={styles.settingsToggleInput}
-                    />
-                  </label>
-                  <h3 className="readerSettingsGroupTitle">
-                    Progress indicator
-                  </h3>
-                  <div className="readerProgressSettings">
-                    <label className="readerProgressToggle">
-                      <span>{isNovel ? "Reading progress" : "Page"}</span>
-                      <input
-                        type="checkbox"
-                        aria-label={
-                          isNovel
-                            ? "Reading progress indicator"
-                            : "Page progress indicator"
-                        }
-                        checked={readerPreferences.readerProgressShowPage}
-                        onChange={(event) =>
-                          updateReaderPreferences({
-                            readerProgressShowPage: event.currentTarget.checked,
-                          })
-                        }
-                      />
-                    </label>
-                    <label className="readerProgressToggle">
-                      <span>Chapter</span>
-                      <input
-                        type="checkbox"
-                        aria-label="Chapter progress indicator"
-                        checked={readerPreferences.readerProgressShowChapter}
-                        onChange={(event) =>
-                          updateReaderPreferences({
-                            readerProgressShowChapter:
-                              event.currentTarget.checked,
-                          })
-                        }
-                      />
-                    </label>
-                    <div
-                      className="readerProgressIndicatorPlacement"
-                      role="group"
-                      aria-label="Progress indicator position"
-                    >
-                      {[
-                        {
-                          value: "top-left",
-                          label: "Top left",
-                          Icon: ArrowUpLeft,
-                        },
-                        {
-                          value: "top-center",
-                          label: "Top center",
-                          Icon: ArrowUp,
-                        },
-                        {
-                          value: "top-right",
-                          label: "Top right",
-                          Icon: ArrowUpRight,
-                        },
-                        {
-                          value: "bottom-left",
-                          label: "Bottom left",
-                          Icon: ArrowDownLeft,
-                        },
-                        {
-                          value: "bottom-center",
-                          label: "Bottom center",
-                          Icon: ArrowDown,
-                        },
-                        {
-                          value: "bottom-right",
-                          label: "Bottom right",
-                          Icon: ArrowDownRight,
-                        },
-                      ].map(({ value, label, Icon }) => (
-                        <button
-                          key={value}
-                          type="button"
-                          aria-label={`${label} progress indicator`}
-                          aria-pressed={
-                            readerPreferences.readerProgressIndicatorPosition ===
-                            value
-                          }
-                          title={label}
-                          onClick={() =>
-                            updateReaderPreferences({
-                              readerProgressIndicatorPosition:
-                                value as Preferences["readerProgressIndicatorPosition"],
-                            })
-                          }
-                        >
-                          <Icon size={17} />
-                        </button>
-                      ))}
-                    </div>
+                  <h3 className="readerSettingsGroupTitle">Rotation</h3>
+                  <div className="readerSettingsRotation">
+                    {[0, 90, 180, 270].map((rotation) => (
+                      <button
+                        key={rotation}
+                        type="button"
+                        aria-pressed={pageRotation === rotation}
+                        onClick={() => setPageRotation(rotation)}
+                      >
+                        {rotation}°
+                      </button>
+                    ))}
                   </div>
-                  <h3 className="readerSettingsGroupTitle">Progress bar</h3>
-                  <div className="readerProgressSettings">
-                    <label className="readerProgressToggle">
-                      <span>Show progress bar</span>
-                      <input
-                        type="checkbox"
-                        aria-label="Show progress bar"
-                        checked={readerPreferences.readerProgressBarEnabled}
-                        onChange={(event) =>
-                          updateReaderPreferences({
-                            readerProgressBarEnabled:
-                              event.currentTarget.checked,
-                          })
-                        }
-                      />
-                    </label>
-                  </div>
-                  <label style={styles.settingsToggleRow}>
-                    <div>
-                      <div style={styles.settingsToggleHeading}>
-                        Hide controls while reading
-                      </div>
-                      <p style={styles.settingsToggleBody}>
-                        Scrolling keeps the dock hidden. Tapping reveals it,
-                        then it fades after a pause.
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={readerPreferences.readerAutoHide}
-                      onChange={(event) =>
-                        updateReaderPreferences({
-                          readerAutoHide: event.currentTarget.checked,
-                        })
-                      }
-                      style={styles.settingsToggleInput}
-                    />
-                  </label>
 
                   <label style={styles.settingsDirectionRow}>
-                    <span style={styles.settingsSliderLabel}>
-                      Hide controls after
-                    </span>
+                    <span style={styles.settingsSliderLabel}>Tap zones</span>
                     <select
-                      aria-label="Reader controls hide delay"
-                      value={readerPreferences.readerAutoHideDelay}
-                      onChange={(event) =>
-                        updateReaderPreferences({
-                          readerAutoHideDelay: Number(
-                            event.currentTarget.value,
-                          ),
-                        })
-                      }
-                      style={styles.settingsSelect}
-                    >
-                      <option value={1500}>1.5 seconds</option>
-                      <option value={2500}>2.5 seconds</option>
-                      <option value={4000}>4 seconds</option>
-                      <option value={6000}>6 seconds</option>
-                    </select>
-                  </label>
-
-                  <label style={styles.settingsDirectionRow}>
-                    <span style={styles.settingsSliderLabel}>Tap behavior</span>
-                    <select
-                      aria-label="Reader tap behavior"
+                      aria-label="Tap zones"
                       value={readerPreferences.readerTapBehavior}
                       onChange={(event) =>
                         updateReaderPreferences({
@@ -3120,15 +3747,50 @@ export function ReaderPage() {
                       }
                       style={styles.settingsSelect}
                     >
-                      <option value="controls">Tap to reveal controls</option>
-                      <option value="toggle-controls">
-                        Tap to toggle controls
-                      </option>
-                      <option value="page-turn">Tap page edges to turn</option>
+                      <option value="controls">Reveal controls</option>
+                      <option value="toggle-controls">Toggle controls</option>
+                      <option value="page-turn">Page edges turn pages</option>
                     </select>
                   </label>
 
                   <h3 className="readerSettingsGroupTitle">Page display</h3>
+                  <label className="readerProgressToggle">
+                    <span>Continuous scroll</span>
+                    <input
+                      type="checkbox"
+                      checked={readerPreferences.comicInfiniteScroll}
+                      onChange={(event) =>
+                        updateReaderPreferences({
+                          comicInfiniteScroll: event.currentTarget.checked,
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="readerProgressToggle">
+                    <span>Crop borders</span>
+                    <input
+                      type="checkbox"
+                      checked={readerPreferences.comicCropBorders}
+                      onChange={(event) =>
+                        updateReaderPreferences({
+                          comicCropBorders: event.currentTarget.checked,
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="readerProgressToggle">
+                    <span>Split wide pages</span>
+                    <input
+                      type="checkbox"
+                      checked={readerPreferences.comicSplitWidePages}
+                      onChange={(event) =>
+                        updateReaderPreferences({
+                          comicSplitWidePages: event.currentTarget.checked,
+                        })
+                      }
+                    />
+                  </label>
+
                   <label style={styles.settingsToggleRow}>
                     <div>
                       <div style={styles.settingsToggleHeading}>
@@ -3210,80 +3872,6 @@ export function ReaderPage() {
                     </span>
                   </div>
 
-                  <details className="readerImageAdjustments">
-                    <summary>Image adjustments</summary>
-                    {[
-                      {
-                        id: "comic-brightness",
-                        label: "Brightness",
-                        value: readerPreferences.comicBrightness,
-                        min: 50,
-                        max: 150,
-                        step: 5,
-                        key: "comicBrightness",
-                      },
-                      {
-                        id: "comic-contrast",
-                        label: "Contrast",
-                        value: readerPreferences.comicContrast,
-                        min: 50,
-                        max: 150,
-                        step: 5,
-                        key: "comicContrast",
-                      },
-                      {
-                        id: "comic-invert",
-                        label: "Invert",
-                        value: readerPreferences.comicInvert,
-                        min: 0,
-                        max: 100,
-                        step: 5,
-                        key: "comicInvert",
-                      },
-                      {
-                        id: "comic-sepia",
-                        label: "Sepia",
-                        value: readerPreferences.comicSepia,
-                        min: 0,
-                        max: 100,
-                        step: 5,
-                        key: "comicSepia",
-                      },
-                    ].map((adjustment) => (
-                      <div key={adjustment.id} style={styles.settingsSliderRow}>
-                        <label
-                          htmlFor={adjustment.id}
-                          style={styles.settingsSliderLabel}
-                        >
-                          {adjustment.label}
-                        </label>
-                        <output
-                          htmlFor={adjustment.id}
-                          style={styles.settingsSliderValue}
-                        >
-                          {adjustment.value}%
-                        </output>
-                        <input
-                          id={adjustment.id}
-                          aria-label={`Comic image ${adjustment.label.toLowerCase()}`}
-                          type="range"
-                          min={adjustment.min}
-                          max={adjustment.max}
-                          step={adjustment.step}
-                          value={adjustment.value}
-                          onChange={(event) =>
-                            updateReaderPreferences({
-                              [adjustment.key]: Number(
-                                event.currentTarget.value,
-                              ),
-                            })
-                          }
-                          style={styles.settingsRange}
-                        />
-                      </div>
-                    ))}
-                  </details>
-
                   <label style={styles.settingsDirectionRow}>
                     <span style={styles.settingsSliderLabel}>
                       Reading Direction
@@ -3303,57 +3891,6 @@ export function ReaderPage() {
                       <option value="rtl">Right to Left</option>
                     </select>
                   </label>
-
-                  <label style={styles.settingsToggleRow}>
-                    <div>
-                      <div style={styles.settingsToggleHeading}>
-                        Continuous Scroll
-                        <span style={styles.settingsPill}>DEFAULT</span>
-                      </div>
-                      <p style={styles.settingsToggleBody}>
-                        Keep the reading strip flowing vertically with a smooth,
-                        uninterrupted comic experience.
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={readerPreferences.comicInfiniteScroll}
-                      onChange={(event) =>
-                        updateReaderPreferences({
-                          comicInfiniteScroll: event.currentTarget.checked,
-                        })
-                      }
-                      style={styles.settingsToggleInput}
-                    />
-                  </label>
-
-                  <label style={styles.settingsToggleRow}>
-                    <div>
-                      <div style={styles.settingsToggleHeading}>
-                        Text Flow
-                        <span style={styles.settingsPill}>OPTIONAL</span>
-                      </div>
-                      <p style={styles.settingsToggleBody}>
-                        Use a continuous text layout for longer reading sessions
-                        and uninterrupted page flow.
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={readerPreferences.novelInfiniteScroll}
-                      onChange={(event) =>
-                        updateReaderPreferences({
-                          novelInfiniteScroll: event.currentTarget.checked,
-                        })
-                      }
-                      style={styles.settingsToggleInput}
-                    />
-                  </label>
-
-                  <div style={styles.settingsInfoBar}>
-                    Current mode: <strong>{readerMode}</strong> — reading layout
-                    stays tuned to the active chapter and viewport.
-                  </div>
                 </div>
               )}
             </div>
@@ -3595,20 +4132,15 @@ export function ReaderPage() {
                     style={styles.comicChapterBlock}
                   >
                     {flowChapter.pages.map(({ page, url }) =>
-                      url ? (
-                        <img
-                          key={page.id}
-                          data-reader-page-index={page.index}
-                          src={url}
-                          alt={`${flowChapter.chapter.title} page ${page.index + 1}`}
-                          decoding="async"
-                          style={comicPageImageStyle(
+                      url
+                        ? renderComicPage(
+                            page,
+                            url,
                             flowChapter.chapter.id === activeComicChapter.id &&
                               page.index === currentIndex,
                             true,
-                          )}
-                        />
-                      ) : null,
+                          )
+                        : null,
                     )}
                     {chapterIndex < comicFlowContent.length - 1 ? (
                       <div style={styles.novelChapterDivider}>
@@ -3621,14 +4153,13 @@ export function ReaderPage() {
             ) : (
               <div style={styles.emptyViewer}>Loading pages...</div>
             )
-          ) : pageUrls[currentIndex] ? (
-            <img
-              src={pageUrls[currentIndex]}
-              alt={`${chapter.title} page ${currentIndex + 1}`}
-              data-reader-page-index={currentIndex}
-              data-reader-zoom-target
-              style={comicPageImageStyle(true, false)}
-            />
+          ) : pageUrls[currentIndex] && pages[currentIndex] ? (
+            renderComicPage(
+              pages[currentIndex],
+              pageUrls[currentIndex],
+              true,
+              false,
+            )
           ) : (
             <div style={styles.emptyViewer}>Loading page...</div>
           )}
