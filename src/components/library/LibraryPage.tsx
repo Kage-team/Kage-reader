@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
+  Activity,
   ArrowDownWideNarrow,
   ArrowDown,
   ArrowRight,
   ArrowUp,
   BookOpen,
   Heart,
+  MoreHorizontal,
   Plus,
   Search,
   ShieldAlert,
@@ -75,6 +77,8 @@ export function LibraryPage() {
   const [selectedCollection, setSelectedCollection] = useState("");
   const [sortBy, setSortBy] = useState("recent");
   const [selectionMode, setSelectionMode] = useState(false);
+  const [revealedCardId, setRevealedCardId] = useState<string | null>(null);
+  const [openCardMenuId, setOpenCardMenuId] = useState<string | null>(null);
   const [selectedSeriesIds, setSelectedSeriesIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -416,31 +420,6 @@ export function LibraryPage() {
     selectedType !== "all" ||
     Boolean(selectedTag) ||
     Boolean(selectedCollection);
-  const libraryViews = [
-    { id: "all", label: "Library", to: "/", count: accessibleEntries.length },
-    {
-      id: "favorites",
-      label: "Favorites",
-      to: "/?view=favorites",
-      count: accessibleEntries.filter((entry) => entry.isFavorite).length,
-    },
-    {
-      id: "continue",
-      label: "Continue",
-      to: "/?view=continue",
-      count: accessibleEntries.filter((entry) => entry.resume).length,
-    },
-    {
-      id: "queue",
-      label: "Queue",
-      to: "/?view=queue",
-      count: accessibleEntries.filter((entry) => entry.queueOrder !== undefined)
-        .length,
-    },
-    { id: "history", label: "History", to: "/?view=history" },
-    { id: "insights", label: "Insights", to: "/?view=insights" },
-  ];
-
   function clearFilters(): void {
     setQuery("");
     setSelectedType("all");
@@ -482,6 +461,10 @@ export function LibraryPage() {
               <Upload size={16} />
               <span>Import books</span>
             </Link>
+            <Link to="/?view=insights" className="libraryImportLink">
+              <Activity size={16} />
+              <span>Insights</span>
+            </Link>
           </div>
         </header>
 
@@ -519,22 +502,6 @@ export function LibraryPage() {
             <span style={styles.statLabel}>Favorites</span>
           </div>
         </div>
-
-        <nav className="libraryViewNav" aria-label="Library views">
-          {libraryViews.map((item) => (
-            <Link
-              key={item.id}
-              to={item.to}
-              className={`libraryViewLink${view === item.id ? " libraryViewLinkActive" : ""}`}
-              aria-current={view === item.id ? "page" : undefined}
-            >
-              <span>{item.label}</span>
-              {item.count !== undefined ? (
-                <span className="libraryViewCount">{item.count}</span>
-              ) : null}
-            </Link>
-          ))}
-        </nav>
 
         {view === "insights" ? (
           <section
@@ -623,17 +590,20 @@ export function LibraryPage() {
                       to={`/read/${encodeURIComponent(item.id)}`}
                       style={styles.historyLink}
                     >
-                      <span>
+                      <span className="historyCopy">
                         <strong>{item.seriesTitle}</strong>
-                        <span>{item.title}</span>
+                        <span className="historyMeta">
+                          {item.title} · Page{" "}
+                          {Math.min(item.pageIndex + 1, item.pageCount)} of{" "}
+                          {item.pageCount}
+                        </span>
                       </span>
-                      <span>
-                        Page {Math.min(item.pageIndex + 1, item.pageCount)} of{" "}
-                        {item.pageCount}
-                        <time dateTime={new Date(item.updatedAt).toISOString()}>
-                          {new Date(item.updatedAt).toLocaleDateString()}
-                        </time>
-                      </span>
+                      <time
+                        className="historyDate"
+                        dateTime={new Date(item.updatedAt).toISOString()}
+                      >
+                        {new Date(item.updatedAt).toLocaleDateString()}
+                      </time>
                     </Link>
                   </li>
                 ))}
@@ -969,7 +939,21 @@ export function LibraryPage() {
           ) : (
             <div style={styles.grid}>
               {visibleEntries.map((entry) => (
-                <article key={entry.id} style={styles.cardShell}>
+                <article
+                  key={entry.id}
+                  style={styles.cardShell}
+                  data-revealed={
+                    revealedCardId === entry.id ? "true" : undefined
+                  }
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    setRevealedCardId(entry.id);
+                    setOpenCardMenuId(entry.id);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") setOpenCardMenuId(null);
+                  }}
+                >
                   {selectionMode ? (
                     <label
                       style={{
@@ -1025,87 +1009,116 @@ export function LibraryPage() {
                     </div>
                     <div style={styles.cardBody}>
                       <h2 style={styles.seriesTitle}>{entry.title}</h2>
-                      <p style={styles.metaText}>
-                        {entry.chapterCount} chapters{" "}
-                        <span aria-hidden="true">·</span> {entry.pageCount}{" "}
-                        pages
-                      </p>
-                      {entry.resume ? (
-                        <span style={styles.cardResume}>
-                          {view === "continue" ? "Resume" : "Last read"} ·{" "}
-                          {entry.resume.chapterTitle}
-                        </span>
-                      ) : null}
-                      {entry.tags.length > 0 ? (
-                        <ul style={styles.tagList}>
-                          {entry.tags.slice(0, 3).map((tag) => (
-                            <li key={tag} style={styles.tag}>
-                              {tag}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                      {entry.collections.length > 0 ? (
-                        <ul style={styles.tagList} aria-label="Shelves">
-                          {entry.collections.map((collection) => (
-                            <li key={collection} style={styles.tag}>
-                              {collection}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                      {entry.completedChapterCount > 0 ? (
-                        <span style={styles.cardResume}>
-                          {entry.completedChapterCount} / {entry.chapterCount}{" "}
-                          chapters completed
-                        </span>
-                      ) : null}
-                      {view === "history" && entry.lastReadAt ? (
-                        <span style={styles.cardResume}>
-                          Last read{" "}
-                          {new Date(entry.lastReadAt).toLocaleDateString()}
-                        </span>
-                      ) : null}
+                      <div className="seriesCardMetadata">
+                        <p style={styles.metaText}>
+                          {entry.chapterCount} chapters{" "}
+                          <span aria-hidden="true">·</span> {entry.pageCount}{" "}
+                          pages
+                        </p>
+                        {entry.resume ? (
+                          <span style={styles.cardResume}>
+                            {view === "continue" ? "Resume" : "Last read"} ·{" "}
+                            {entry.resume.chapterTitle}
+                          </span>
+                        ) : null}
+                        {entry.tags.length > 0 ? (
+                          <ul style={styles.tagList}>
+                            {entry.tags.slice(0, 3).map((tag) => (
+                              <li key={tag} style={styles.tag}>
+                                {tag}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        {entry.collections.length > 0 ? (
+                          <ul style={styles.tagList} aria-label="Shelves">
+                            {entry.collections.map((collection) => (
+                              <li key={collection} style={styles.tag}>
+                                {collection}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        {entry.completedChapterCount > 0 ? (
+                          <span style={styles.cardResume}>
+                            {entry.completedChapterCount} / {entry.chapterCount}{" "}
+                            chapters completed
+                          </span>
+                        ) : null}
+                        {view === "history" && entry.lastReadAt ? (
+                          <span style={styles.cardResume}>
+                            Last read{" "}
+                            {new Date(entry.lastReadAt).toLocaleDateString()}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </Link>
                   <button
                     type="button"
-                    aria-label={
-                      entry.queueOrder === undefined
-                        ? `Add ${entry.title} to reading queue`
-                        : `Remove ${entry.title} from reading queue`
-                    }
-                    aria-pressed={entry.queueOrder !== undefined}
-                    onClick={() => void toggleQueue(entry)}
-                    style={styles.queueButton}
+                    className="seriesCardMenuTrigger"
+                    aria-label={`More actions for ${entry.title}`}
+                    aria-expanded={openCardMenuId === entry.id}
+                    onClick={() => {
+                      setRevealedCardId(entry.id);
+                      setOpenCardMenuId((current) =>
+                        current === entry.id ? null : entry.id,
+                      );
+                    }}
                   >
-                    {entry.queueOrder === undefined ? "Queue" : "Queued"}
+                    <MoreHorizontal size={17} />
                   </button>
-                  {view === "queue" ? (
-                    <span
-                      style={{
-                        display: "flex",
-                        gap: 6,
-                        padding: "0 12px 12px",
+                  {openCardMenuId === entry.id ? (
+                    <div
+                      className="seriesCardMenu"
+                      role="group"
+                      aria-label={`${entry.title} actions`}
+                      onBlur={(event) => {
+                        if (
+                          !event.currentTarget.contains(
+                            event.relatedTarget as Node | null,
+                          )
+                        ) {
+                          setOpenCardMenuId(null);
+                        }
                       }}
                     >
                       <button
                         type="button"
-                        aria-label={`Move ${entry.title} up in queue`}
-                        onClick={() => void moveQueueEntry(entry, -1)}
-                        style={styles.queueButton}
+                        onClick={() => {
+                          void toggleQueue(entry);
+                          setOpenCardMenuId(null);
+                        }}
                       >
-                        <ArrowUp size={14} />
+                        {entry.queueOrder === undefined
+                          ? "Add to queue"
+                          : "Remove from queue"}
                       </button>
-                      <button
-                        type="button"
-                        aria-label={`Move ${entry.title} down in queue`}
-                        onClick={() => void moveQueueEntry(entry, 1)}
-                        style={styles.queueButton}
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                    </span>
+                      {view === "queue" ? (
+                        <>
+                          <button
+                            type="button"
+                            aria-label={`Move ${entry.title} up in queue`}
+                            onClick={() => {
+                              void moveQueueEntry(entry, -1);
+                              setOpenCardMenuId(null);
+                            }}
+                          >
+                            <ArrowUp size={14} /> Move up
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Move ${entry.title} down in queue`}
+                            onClick={() => {
+                              void moveQueueEntry(entry, 1);
+                              setOpenCardMenuId(null);
+                            }}
+                          >
+                            <ArrowDown size={14} /> Move down
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
                   ) : null}
                   <button
                     type="button"
@@ -1182,9 +1195,9 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: 9,
     paddingLeft: 11,
-    border: "1px solid var(--app-border)",
-    borderRadius: 7,
-    background: "var(--app-panel)",
+    border: 0,
+    borderRadius: 6,
+    background: "var(--app-panel-raised)",
     color: "var(--app-muted)",
   },
   searchFieldInput: { flex: 1, minWidth: 0 },
@@ -1266,14 +1279,10 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 0,
     margin: 0,
     display: "grid",
-    gap: 8,
+    gap: 0,
   },
   listItem: {
-    display: "grid",
-    gap: 4,
-    padding: 12,
-    borderRadius: 12,
-    background: "rgba(255, 255, 255, 0.05)",
+    borderBottom: "1px solid var(--app-border)",
   },
   headerRow: {
     justifyContent: "space-between",
@@ -1296,7 +1305,7 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     margin: "6px 0 0",
     fontFamily: "var(--font-display)",
-    fontSize: 38,
+    fontSize: 20,
     fontWeight: 600,
     lineHeight: 1.12,
   },
@@ -1332,24 +1341,26 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: "nowrap",
   },
   statsRow: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-    padding: "13px 0",
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "baseline",
+    gap: "8px 22px",
+    padding: "9px 0",
     borderTop: "1px solid var(--app-border)",
     borderBottom: "1px solid var(--app-border)",
   },
   statItem: {
     display: "grid",
-    gap: 2,
-    padding: "0 17px",
-    borderRight: "1px solid var(--app-border)",
+    alignItems: "baseline",
+    gridTemplateColumns: "auto auto",
+    gap: 6,
   },
   statValue: {
     fontFamily: "var(--font-display)",
-    fontSize: 21,
+    fontSize: 14,
     fontWeight: 600,
   },
-  statLabel: { color: "var(--app-muted)", fontSize: 11 },
+  statLabel: { color: "var(--app-muted)", fontSize: 12 },
   resumeSection: { display: "grid", gap: 14 },
   shelfSection: { display: "grid", gap: 17 },
   shelfHeader: {
@@ -1384,10 +1395,8 @@ const styles: Record<string, React.CSSProperties> = {
     minWidth: 0,
     alignItems: "center",
     gap: 12,
-    padding: 11,
-    border: "1px solid var(--app-border)",
-    borderRadius: 9,
-    background: "var(--app-panel)",
+    padding: "11px 0",
+    borderBottom: "1px solid var(--app-border)",
     color: "inherit",
     textDecoration: "none",
     transition: "border-color 140ms ease, background 140ms ease",
@@ -1630,16 +1639,15 @@ const styles: Record<string, React.CSSProperties> = {
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 172px), 1fr))",
-    gap: 12,
+    gap: 16,
   },
   seriesCard: {
     display: "grid",
     minWidth: 0,
-    gap: 0,
+    gap: 4,
     overflow: "hidden",
-    borderRadius: 9,
-    background: "var(--app-panel)",
-    border: "1px solid var(--app-border)",
+    background: "transparent",
+    border: 0,
     textDecoration: "none",
     color: "inherit",
     transition:
@@ -1658,7 +1666,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     minWidth: 0,
     gap: 5,
-    padding: "11px 11px 13px",
+    padding: "7px 2px 10px",
   },
   tagList: {
     display: "flex",

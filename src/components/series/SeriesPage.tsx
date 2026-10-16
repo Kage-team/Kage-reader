@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  MoreVertical,
   Play,
   Plus,
   Upload,
@@ -70,6 +71,9 @@ export function SeriesPage() {
   const [coverUrl, setCoverUrl] = useState("");
   const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [openChapterMenuId, setOpenChapterMenuId] = useState<string | null>(
+    null,
+  );
   const [isAppending, setIsAppending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
@@ -484,238 +488,261 @@ export function SeriesPage() {
         </section>
 
         {isEditing ? (
-          <form
-            style={styles.editor}
-            onSubmit={(event) => {
-              event.preventDefault();
-              void saveSeriesDetails();
+          <div
+            className="seriesEditorBackdrop"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setIsEditing(false);
             }}
           >
-            <section style={styles.detailsGrid}>
-              <div style={styles.coverEditor}>
-                {coverPreviewUrl || coverUrl ? (
-                  <img
-                    src={coverPreviewUrl || coverUrl}
-                    alt="Series cover preview"
-                    style={styles.editorCover}
-                  />
-                ) : (
-                  <div style={styles.editorCoverFallback}>
-                    <BookOpen size={28} />
-                  </div>
-                )}
-                <input
-                  ref={coverInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) =>
-                    setCoverFile(event.currentTarget.files?.[0] ?? null)
-                  }
-                  style={styles.hiddenInput}
-                />
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  onClick={() => coverInputRef.current?.click()}
-                >
-                  <Upload size={14} /> Upload custom cover
+            <form
+              className="seriesEditorDialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-series-title"
+              style={styles.editor}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setIsEditing(false);
+              }}
+              onSubmit={(event) => {
+                event.preventDefault();
+                void saveSeriesDetails();
+              }}
+            >
+              <header className="seriesEditorHeader">
+                <h2 id="edit-series-title">Edit series details</h2>
+                <button type="button" onClick={() => setIsEditing(false)}>
+                  Close
                 </button>
-              </div>
-              <div style={styles.metadataFields}>
-                <label style={styles.field}>
-                  <span style={styles.fieldLabel}>
-                    Display title / series name
-                  </span>
+              </header>
+              <section style={styles.detailsGrid}>
+                <div style={styles.coverEditor}>
+                  {coverPreviewUrl || coverUrl ? (
+                    <img
+                      src={coverPreviewUrl || coverUrl}
+                      alt="Series cover preview"
+                      style={styles.editorCover}
+                    />
+                  ) : (
+                    <div style={styles.editorCoverFallback}>
+                      <BookOpen size={28} />
+                    </div>
+                  )}
                   <input
-                    value={draftTitle}
+                    ref={coverInputRef}
+                    type="file"
+                    accept="image/*"
                     onChange={(event) =>
-                      setDraftTitle(event.currentTarget.value)
+                      setCoverFile(event.currentTarget.files?.[0] ?? null)
                     }
-                    style={styles.textInput}
-                    required
+                    style={styles.hiddenInput}
                   />
-                </label>
-                <div style={styles.overrideGrid}>
+                  <button
+                    type="button"
+                    style={styles.secondaryButton}
+                    onClick={() => coverInputRef.current?.click()}
+                  >
+                    <Upload size={14} /> Upload custom cover
+                  </button>
+                </div>
+                <div style={styles.metadataFields}>
                   <label style={styles.field}>
-                    <span style={styles.fieldLabel}>Author / creator</span>
+                    <span style={styles.fieldLabel}>
+                      Display title / series name
+                    </span>
                     <input
-                      value={draftWriter}
+                      value={draftTitle}
                       onChange={(event) =>
-                        setDraftWriter(event.currentTarget.value)
+                        setDraftTitle(event.currentTarget.value)
                       }
-                      placeholder="Author or creator"
                       style={styles.textInput}
+                      required
                     />
                   </label>
+                  <div style={styles.overrideGrid}>
+                    <label style={styles.field}>
+                      <span style={styles.fieldLabel}>Author / creator</span>
+                      <input
+                        value={draftWriter}
+                        onChange={(event) =>
+                          setDraftWriter(event.currentTarget.value)
+                        }
+                        placeholder="Author or creator"
+                        style={styles.textInput}
+                      />
+                    </label>
+                    <label style={styles.field}>
+                      <span style={styles.fieldLabel}>Category / format</span>
+                      <select
+                        value={draftType}
+                        onChange={(event) =>
+                          setDraftType(event.currentTarget.value as SeriesType)
+                        }
+                        style={styles.textInput}
+                      >
+                        {SERIES_TYPES.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                   <label style={styles.field}>
-                    <span style={styles.fieldLabel}>Category / format</span>
-                    <select
-                      value={draftType}
+                    <span style={styles.fieldLabel}>Synopsis / summary</span>
+                    <textarea
+                      value={draftSummary}
                       onChange={(event) =>
-                        setDraftType(event.currentTarget.value as SeriesType)
+                        setDraftSummary(event.currentTarget.value)
                       }
-                      style={styles.textInput}
-                    >
-                      {SERIES_TYPES.map((type) => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
-                      ))}
-                    </select>
+                      placeholder="Brief description or blurb"
+                      rows={3}
+                      style={styles.textarea}
+                    />
+                  </label>
+                  <label style={styles.adultToggle}>
+                    <span>
+                      <strong>18+ Adult Content</strong>
+                      <span style={styles.overrideDescription}>
+                        Hidden while Safe Mode is enabled.
+                      </span>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={isAdultRating(draftAgeRating)}
+                      onChange={(event) =>
+                        setDraftAgeRating(
+                          event.currentTarget.checked ? "18+" : "Everyone",
+                        )
+                      }
+                    />
                   </label>
                 </div>
-                <label style={styles.field}>
-                  <span style={styles.fieldLabel}>Synopsis / summary</span>
-                  <textarea
-                    value={draftSummary}
-                    onChange={(event) =>
-                      setDraftSummary(event.currentTarget.value)
-                    }
-                    placeholder="Brief description or blurb"
-                    rows={3}
-                    style={styles.textarea}
-                  />
-                </label>
-                <label style={styles.adultToggle}>
-                  <span>
-                    <strong>18+ Adult Content</strong>
-                    <span style={styles.overrideDescription}>
-                      Hidden while Safe Mode is enabled.
-                    </span>
-                  </span>
+              </section>
+              <section style={styles.tagEditor}>
+                <div>
+                  <strong>Tags &amp; organization</strong>
+                  <p style={styles.overrideDescription}>
+                    Add genres to organize and filter your library.
+                  </p>
+                </div>
+                <div style={styles.tagInputRow}>
                   <input
-                    type="checkbox"
-                    checked={isAdultRating(draftAgeRating)}
-                    onChange={(event) =>
-                      setDraftAgeRating(
-                        event.currentTarget.checked ? "18+" : "Everyone",
-                      )
-                    }
+                    value={tagInput}
+                    onChange={(event) => setTagInput(event.currentTarget.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addDraftTag(tagInput);
+                      }
+                    }}
+                    placeholder="Type a tag and press Enter"
+                    style={styles.textInput}
                   />
-                </label>
-              </div>
-            </section>
-            <section style={styles.tagEditor}>
-              <div>
-                <strong>Tags &amp; organization</strong>
-                <p style={styles.overrideDescription}>
-                  Add genres to organize and filter your library.
-                </p>
-              </div>
-              <div style={styles.tagInputRow}>
-                <input
-                  value={tagInput}
-                  onChange={(event) => setTagInput(event.currentTarget.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      addDraftTag(tagInput);
-                    }
-                  }}
-                  placeholder="Type a tag and press Enter"
-                  style={styles.textInput}
-                />
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  onClick={() => addDraftTag(tagInput)}
-                >
-                  <Plus size={14} /> Add
-                </button>
-              </div>
-              {draftTags.length > 0 ? (
-                <div style={styles.draftTagList}>
-                  {draftTags.map((tag) => (
+                  <button
+                    type="button"
+                    style={styles.secondaryButton}
+                    onClick={() => addDraftTag(tagInput)}
+                  >
+                    <Plus size={14} /> Add
+                  </button>
+                </div>
+                {draftTags.length > 0 ? (
+                  <div style={styles.draftTagList}>
+                    {draftTags.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        aria-label={`Remove ${tag} tag`}
+                        style={styles.draftTag}
+                        onClick={() =>
+                          setDraftTags((current) =>
+                            current.filter((entry) => entry !== tag),
+                          )
+                        }
+                      >
+                        {tag} <span aria-hidden="true">×</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                <div style={styles.popularTags}>
+                  <span style={styles.overrideDescription}>
+                    Popular genres:
+                  </span>
+                  {POPULAR_TAGS.map((tag) => (
                     <button
                       key={tag}
                       type="button"
-                      aria-label={`Remove ${tag} tag`}
-                      style={styles.draftTag}
-                      onClick={() =>
-                        setDraftTags((current) =>
-                          current.filter((entry) => entry !== tag),
-                        )
-                      }
+                      style={styles.popularTag}
+                      onClick={() => addDraftTag(tag)}
                     >
-                      {tag} <span aria-hidden="true">×</span>
+                      <Plus size={11} /> {tag}
                     </button>
                   ))}
                 </div>
-              ) : null}
-              <div style={styles.popularTags}>
-                <span style={styles.overrideDescription}>Popular genres:</span>
-                {POPULAR_TAGS.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    style={styles.popularTag}
-                    onClick={() => addDraftTag(tag)}
-                  >
-                    <Plus size={11} /> {tag}
-                  </button>
-                ))}
+              </section>
+              <section style={styles.overrideSection}>
+                <div>
+                  <strong>Custom Reading Overrides</strong>
+                  <p style={styles.overrideDescription}>
+                    Choose how this series opens without changing global
+                    settings.
+                  </p>
+                </div>
+                <div style={styles.overrideGrid}>
+                  <label style={styles.field}>
+                    <span style={styles.fieldLabel}>Reading mode</span>
+                    <select
+                      value={draftPreferredMode}
+                      onChange={(event) =>
+                        setDraftPreferredMode(
+                          event.currentTarget.value as ReaderMode | "",
+                        )
+                      }
+                      style={styles.textInput}
+                    >
+                      <option value="">Use Global Settings</option>
+                      <option value="flip">Paginated</option>
+                      <option value="webtoon">Continuous Scroll</option>
+                      <option value="novel">Novel</option>
+                    </select>
+                  </label>
+                  <label style={styles.field}>
+                    <span style={styles.fieldLabel}>Reading direction</span>
+                    <select
+                      value={draftPreferredDirection}
+                      onChange={(event) =>
+                        setDraftPreferredDirection(
+                          event.currentTarget.value as ReadingDirection | "",
+                        )
+                      }
+                      style={styles.textInput}
+                    >
+                      <option value="">Use Global Settings</option>
+                      <option value="ltr">Left to Right</option>
+                      <option value="rtl">Right to Left</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+              <div style={styles.editorActions}>
+                <button type="submit" style={styles.linkButton}>
+                  Save details
+                </button>
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  onClick={() => {
+                    resetDrafts(series);
+                    setIsEditing(false);
+                    setActionError("");
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
-            </section>
-            <section style={styles.overrideSection}>
-              <div>
-                <strong>Custom Reading Overrides</strong>
-                <p style={styles.overrideDescription}>
-                  Choose how this series opens without changing global settings.
-                </p>
-              </div>
-              <div style={styles.overrideGrid}>
-                <label style={styles.field}>
-                  <span style={styles.fieldLabel}>Reading mode</span>
-                  <select
-                    value={draftPreferredMode}
-                    onChange={(event) =>
-                      setDraftPreferredMode(
-                        event.currentTarget.value as ReaderMode | "",
-                      )
-                    }
-                    style={styles.textInput}
-                  >
-                    <option value="">Use Global Settings</option>
-                    <option value="flip">Paginated</option>
-                    <option value="webtoon">Continuous Scroll</option>
-                    <option value="novel">Novel</option>
-                  </select>
-                </label>
-                <label style={styles.field}>
-                  <span style={styles.fieldLabel}>Reading direction</span>
-                  <select
-                    value={draftPreferredDirection}
-                    onChange={(event) =>
-                      setDraftPreferredDirection(
-                        event.currentTarget.value as ReadingDirection | "",
-                      )
-                    }
-                    style={styles.textInput}
-                  >
-                    <option value="">Use Global Settings</option>
-                    <option value="ltr">Left to Right</option>
-                    <option value="rtl">Right to Left</option>
-                  </select>
-                </label>
-              </div>
-            </section>
-            <div style={styles.editorActions}>
-              <button type="submit" style={styles.linkButton}>
-                Save details
-              </button>
-              <button
-                type="button"
-                style={styles.secondaryButton}
-                onClick={() => {
-                  resetDrafts(series);
-                  setIsEditing(false);
-                  setActionError("");
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+            </form>
+          </div>
         ) : null}
 
         {actionError ? (
@@ -741,26 +768,27 @@ export function SeriesPage() {
                 Add later issues directly to {series.title}.
               </p>
             </div>
-            <button
-              type="button"
-              disabled={isAppending}
-              style={styles.startReadingButton}
-              onClick={() => archiveInputRef.current?.click()}
-            >
-              <Upload size={14} />
-              {isAppending ? "Adding..." : "Add Chapters"}
-            </button>
+            <div className="appendActions">
+              <button
+                type="button"
+                disabled={isAppending}
+                style={styles.startReadingButton}
+                onClick={() => archiveInputRef.current?.click()}
+              >
+                <Upload size={14} />
+                {isAppending ? "Adding..." : "Add Chapters"}
+              </button>
+              <button
+                type="button"
+                className="appendDropzoneButton"
+                disabled={isAppending}
+                style={styles.appendDropzone}
+                onClick={() => archiveInputRef.current?.click()}
+              >
+                <Plus size={15} /> Upload &amp; append
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            disabled={isAppending}
-            style={styles.appendDropzone}
-            onClick={() => archiveInputRef.current?.click()}
-          >
-            <Plus size={18} />
-            <strong>Upload &amp; append more chapters to this series</strong>
-            <span>CBZ, ZIP, EPUB, or image files</span>
-          </button>
           {appendMessage ? (
             <p role="status" style={styles.appendMessage}>
               {appendMessage}
@@ -837,24 +865,60 @@ export function SeriesPage() {
                           </span>
                           <span>{chapter.pageCount} pages</span>
                         </Link>
-                        <button
-                          type="button"
-                          style={styles.secondaryButton}
-                          aria-pressed={Boolean(progress?.completedAt)}
-                          onClick={() => void toggleChapterCompletion(chapter)}
-                        >
-                          {progress?.completedAt
-                            ? "Mark unread"
-                            : "Mark complete"}
-                        </button>
-                        <button
-                          type="button"
-                          style={styles.secondaryButton}
-                          disabled={isExporting}
-                          onClick={() => void exportChapter(chapter.id)}
-                        >
-                          Export
-                        </button>
+                        <div className="chapterActionMenu">
+                          <button
+                            type="button"
+                            className="chapterMenuTrigger"
+                            aria-label={`Actions for ${chapter.title}`}
+                            aria-expanded={openChapterMenuId === chapter.id}
+                            onClick={() =>
+                              setOpenChapterMenuId((current) =>
+                                current === chapter.id ? null : chapter.id,
+                              )
+                            }
+                          >
+                            <MoreVertical size={18} />
+                          </button>
+                          {openChapterMenuId === chapter.id ? (
+                            <div
+                              className="chapterMenu"
+                              role="group"
+                              aria-label={`${chapter.title} actions`}
+                              onBlur={(event) => {
+                                if (
+                                  !event.currentTarget.contains(
+                                    event.relatedTarget as Node | null,
+                                  )
+                                ) {
+                                  setOpenChapterMenuId(null);
+                                }
+                              }}
+                            >
+                              <button
+                                type="button"
+                                aria-pressed={Boolean(progress?.completedAt)}
+                                onClick={() => {
+                                  void toggleChapterCompletion(chapter);
+                                  setOpenChapterMenuId(null);
+                                }}
+                              >
+                                {progress?.completedAt
+                                  ? "Mark unread"
+                                  : "Mark complete"}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isExporting}
+                                onClick={() => {
+                                  void exportChapter(chapter.id);
+                                  setOpenChapterMenuId(null);
+                                }}
+                              >
+                                Export chapter
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
                     );
                   })()}
@@ -908,9 +972,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     gap: 16,
     padding: 18,
-    border: "1px solid var(--app-border)",
-    borderRadius: 10,
-    background: "var(--app-panel)",
   },
   hiddenInput: { display: "none" },
   detailsGrid: {
@@ -1049,7 +1110,7 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     margin: "8px 0 0",
     fontFamily: "var(--font-display)",
-    fontSize: 38,
+    fontSize: 20,
     fontWeight: 600,
     lineHeight: 1.08,
     overflowWrap: "anywhere",
@@ -1059,10 +1120,7 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: "minmax(108px, 0.7fr) minmax(0, 1.6fr)",
     gap: "clamp(14px, 3vw, 34px)",
     alignItems: "center",
-    padding: "clamp(18px, 3vw, 34px)",
-    border: "1px solid var(--app-border)",
-    borderRadius: 12,
-    background: "var(--app-panel)",
+    padding: "8px 0",
   },
   seriesCover: {
     aspectRatio: "0.72",
@@ -1128,15 +1186,15 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 12,
   },
   appendDropzone: {
-    display: "grid",
-    justifyItems: "center",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 7,
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "20px 12px",
-    border: "1px dashed var(--app-border-strong)",
-    borderRadius: 8,
-    background: "var(--app-bg)",
+    minHeight: 40,
+    padding: "0 12px",
+    border: "1px solid var(--app-border)",
+    borderRadius: 7,
+    background: "transparent",
     color: "var(--app-text)",
     cursor: "pointer",
   },
@@ -1217,20 +1275,19 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     padding: 0,
     display: "grid",
-    gap: 8,
+    gap: 0,
   },
   listItem: {
-    background: "var(--app-panel)",
-    borderRadius: 12,
-    border: "1px solid var(--app-border)",
+    borderBottom: "1px solid var(--app-border)",
   },
   chapterLink: {
     display: "flex",
+    minWidth: 0,
     justifyContent: "space-between",
     gap: 16,
     textDecoration: "none",
     color: "inherit",
-    padding: "16px 18px",
+    padding: "14px 2px",
   },
   chapterDetails: { display: "grid", gap: 6, minWidth: 0 },
   progressLabel: { color: "#afc1b2", fontSize: 13 },

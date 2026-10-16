@@ -17,7 +17,7 @@
   --app-hover: #ffffff0a;
   --app-selected: #d5f36b12;
   --app-shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.22);
-  --app-radius-control: 8px;
+  --app-radius-control: 6px;
   --app-motion-fast: 140ms ease;
   --app-motion-standard: 200ms ease;
   --app-lime: #f4f5f4;
@@ -166,8 +166,7 @@ button:disabled {
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
   min-height: 100vh;
-  background-image: linear-gradient(90deg, #ffffff04 1px, transparent 1px);
-  background-size: 40px 100%;
+  background: var(--app-bg);
 }
 
 .appSidebar {
@@ -257,7 +256,7 @@ button:disabled {
 }
 
 .appNavLinkActive {
-  border-color: #39452f;
+  border-color: transparent;
   background: var(--app-selected);
   color: var(--app-lime);
 }
@@ -289,7 +288,55 @@ button:disabled {
 }
 
 .appMobileNav {
+  position: fixed;
+  z-index: 50;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-height: calc(64px + env(safe-area-inset-bottom));
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--app-border);
+  background: color-mix(in srgb, var(--app-sidebar) 94%, transparent);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.18);
+}
+
+.appMobileNav .appNavLink {
+  display: grid;
+  min-width: 0;
+  min-height: 48px;
+  align-content: center;
+  justify-items: center;
+  gap: 3px;
+  padding: 3px 2px;
+  border-color: transparent;
+  border-radius: var(--app-radius-control);
+  font-size: 10px;
+  line-height: 1.1;
+}
+
+.appMobileNav .appNavLinkActive {
+  background: var(--app-selected);
+}
+
+.appTopbarUtilities {
   display: none;
+}
+
+.appTopbarUtility {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: var(--app-muted);
+  text-decoration: none;
+}
+
+.appTopbarUtility:hover {
+  color: var(--app-text);
 }
 
 .settingsSectionNav {
@@ -305,8 +352,8 @@ button:disabled {
 }
 
 .settingsPagePanel {
-  grid-template-columns: 205px minmax(0, 1fr);
-  column-gap: 36px;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 0;
   row-gap: 0;
 }
 
@@ -317,43 +364,93 @@ button:disabled {
 
 .settingsPagePanel > .settingsSectionNav {
   position: sticky !important;
-  top: 82px !important;
-  display: grid !important;
+  top: 66px !important;
+  display: flex !important;
   grid-column: 1;
-  grid-row: 2 / span 8;
-  align-content: start;
-  justify-content: stretch;
-  gap: 5px;
-  height: fit-content;
-  padding: 8px;
-  border: 1px solid var(--app-border);
-  border-radius: 10px;
-  background: var(--app-panel);
-  box-shadow: var(--app-shadow-soft);
+  grid-row: auto;
+  align-items: center;
+  gap: 4px;
+  height: auto;
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid var(--app-border);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--app-bg) 94%, transparent);
+  box-shadow: none;
 }
 
-.settingsPagePanel > .settingsSectionNav a {
+.settingsPagePanel > .settingsSectionNav .settingsTab {
   min-height: 38px;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  border-radius: 6px;
+  flex: 0 0 auto;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
   color: var(--app-muted);
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
   transition:
     color var(--app-motion-fast),
-    background var(--app-motion-fast);
+    border-color var(--app-motion-fast);
 }
 
-.settingsPagePanel > .settingsSectionNav a:hover,
-.settingsPagePanel > .settingsSectionNav a:focus-visible {
-  background: var(--app-hover);
+.settingsPagePanel > .settingsSectionNav .settingsTab:hover,
+.settingsPagePanel > .settingsSectionNav .settingsTab[aria-pressed="true"] {
+  border-bottom-color: var(--app-lime);
   color: var(--app-text);
 }
 
 .settingsPagePanel > .settingsSection {
-  grid-column: 2;
+  grid-column: 1;
   padding: 24px 0;
+}
+
+.settingsPagePanel > .settingsSection[hidden] {
+  display: none !important;
+}
+
+.settingsThemeOption {
+  border: 0 !important;
+  border-bottom: 1px solid var(--app-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  outline: none !important;
+}
+
+.settingsThemeOption[aria-pressed="true"] {
+  border-bottom: 2px solid var(--app-lime) !important;
+}
+
+.settingsModeOption {
+  min-height: 0 !important;
+  padding: 14px 4px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--app-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.settingsModeOption[aria-pressed="true"] {
+  border-bottom: 2px solid var(--app-lime) !important;
+}
+
+.settingsPreviewBand {
+  border: 0 !important;
+  border-bottom: 1px solid var(--app-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.settingsSection > label {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.settingsSection h2 {
+  font-size: 18px !important;
 }
 
 .appMainShell {
@@ -422,7 +519,43 @@ button:disabled {
 
 .appView {
   min-width: 0;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
   animation: app-view-in 220ms ease both;
+}
+
+.historyLink {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 2px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.historyCopy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.historyCopy strong {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historyMeta,
+.historyDate {
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
+.historyDate {
+  text-align: right;
+  white-space: nowrap;
 }
 
 .libraryHeader {
@@ -499,6 +632,180 @@ button:disabled {
   gap: 8px;
 }
 
+.seriesCardMetadata {
+  display: grid;
+  gap: 5px;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition:
+    max-height 180ms ease,
+    opacity 140ms ease;
+}
+
+.seriesCard:hover .seriesCardMetadata,
+.seriesCard:focus-visible .seriesCardMetadata,
+.cardShell[data-revealed="true"] .seriesCardMetadata {
+  max-height: 220px;
+  opacity: 1;
+}
+
+.seriesCardMenuTrigger {
+  position: absolute;
+  z-index: 3;
+  top: 8px;
+  right: 48px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #101311cc;
+  color: var(--app-text);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--app-motion-fast);
+}
+
+.cardShell:hover .seriesCardMenuTrigger,
+.cardShell:focus-within .seriesCardMenuTrigger,
+.cardShell[data-revealed="true"] .seriesCardMenuTrigger {
+  opacity: 1;
+}
+
+.seriesCardMenu {
+  position: absolute;
+  z-index: 5;
+  top: 46px;
+  right: 8px;
+  display: grid;
+  min-width: 160px;
+  padding: 4px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: var(--app-panel-raised);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.seriesCardMenu button {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 9px;
+  border: 0;
+  background: transparent;
+  color: var(--app-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.seriesCardMenu button:hover {
+  background: var(--app-hover);
+}
+
+.seriesEditorBackdrop {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(5px);
+}
+
+.seriesEditorDialog {
+  width: min(900px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 8px;
+  background: var(--app-panel);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.seriesEditorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.seriesEditorHeader h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+
+.seriesEditorHeader button {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-text);
+  cursor: pointer;
+}
+
+.appendActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chapterActionMenu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.chapterMenuTrigger {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-muted);
+  cursor: pointer;
+}
+
+.chapterMenuTrigger:hover,
+.chapterMenuTrigger[aria-expanded="true"] {
+  background: var(--app-hover);
+  color: var(--app-text);
+}
+
+.chapterMenu {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 4px);
+  right: 0;
+  display: grid;
+  min-width: 170px;
+  padding: 4px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: var(--app-panel-raised);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.chapterMenu button {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--app-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.chapterMenu button:hover {
+  background: var(--app-hover);
+}
+
 .libraryClearFilters {
   min-height: 35px;
   padding: 0 10px;
@@ -560,7 +867,7 @@ button:disabled {
 .importHeader h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 36px;
+  font-size: 20px;
   font-weight: 600;
   line-height: 1.15;
 }
@@ -811,7 +1118,6 @@ button:disabled {
   .appShell {
     display: flex;
     flex-direction: column;
-    background-size: 32px 100%;
   }
 
   .appSidebar {
@@ -852,44 +1158,6 @@ button:disabled {
 
   .appNavGroup {
     display: none;
-  }
-
-  .appMobileNav {
-    position: fixed;
-    z-index: 30;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    min-height: calc(64px + env(safe-area-inset-bottom));
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--app-border);
-    background: color-mix(in srgb, var(--app-sidebar) 94%, transparent);
-    backdrop-filter: blur(18px);
-    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.18);
-  }
-
-  .appMobileNav .appNavLink {
-    display: grid;
-    min-width: 0;
-    min-height: 48px;
-    align-content: center;
-    justify-items: center;
-    gap: 3px;
-    padding: 3px 2px;
-    border-radius: var(--app-radius-control);
-    font-size: 10px;
-    line-height: 1.1;
-  }
-
-  .appMobileNav .appNavLinkActive {
-    border-color: transparent;
-    background: var(--app-selected);
-  }
-
-  .appMainShell {
-    padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
 
   .appTopbar {
@@ -942,14 +1210,16 @@ button:disabled {
     display: none;
   }
 
+  .appTopbarUtilities {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
   .libraryHeader {
     display: grid;
     align-items: start;
     gap: 14px;
-  }
-
-  .libraryHeader .title {
-    font-size: 31px;
   }
 
   .libraryHeaderActions {
@@ -976,17 +1246,21 @@ button:disabled {
   }
 
   .statsRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    row-gap: 12px;
-    padding: 12px 0;
+    gap: 7px 14px;
+    padding: 9px 0;
   }
 
-  .statsRow .statItem {
-    padding: 0 12px;
+  .seriesEditorBackdrop {
+    padding: 12px;
   }
 
-  .statsRow .statItem:nth-child(2) {
-    border-right: 0;
+  .seriesEditorDialog {
+    max-height: calc(100dvh - 24px);
+  }
+
+  .appendHeader {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .importPage {
@@ -997,10 +1271,6 @@ button:disabled {
 
   .importHeader {
     align-items: start;
-  }
-
-  .importHeader h1 {
-    font-size: 30px;
   }
 
   .importLibraryLink span {

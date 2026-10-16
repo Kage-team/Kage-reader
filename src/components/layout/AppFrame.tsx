@@ -6,6 +6,8 @@ import {
   BookOpenCheck,
   Clock3,
   FileUp,
+  History,
+  ListOrdered,
   Settings,
   ShieldCheck,
 } from "lucide-react";
@@ -70,6 +72,20 @@ export function AppFrame({ children }: PropsWithChildren) {
             <Bookmark size={17} />
             <span>Favorites</span>
           </NavLink>
+          <NavLink
+            to="/?view=queue"
+            className={() => navClass(isLibraryRoute && view === "queue")}
+          >
+            <ListOrdered size={17} />
+            <span>Queue</span>
+          </NavLink>
+          <NavLink
+            to="/?view=history"
+            className={() => navClass(isLibraryRoute && view === "history")}
+          >
+            <History size={17} />
+            <span>History</span>
+          </NavLink>
         </nav>
 
         <nav className="appNavGroup">
@@ -119,23 +135,23 @@ export function AppFrame({ children }: PropsWithChildren) {
           aria-label="Favorites"
         >
           <Bookmark size={18} />
-          <span>Saved</span>
+          <span>Favorites</span>
         </NavLink>
         <NavLink
-          to="/import"
-          className={({ isActive }) => navClass(isActive)}
-          aria-label="Import books"
+          to="/?view=queue"
+          className={() => navClass(isLibraryRoute && view === "queue")}
+          aria-label="Reading queue"
         >
-          <FileUp size={18} />
-          <span>Import</span>
+          <ListOrdered size={18} />
+          <span>Queue</span>
         </NavLink>
         <NavLink
-          to="/settings"
-          className={({ isActive }) => navClass(isActive)}
-          aria-label="Settings"
+          to="/?view=history"
+          className={() => navClass(isLibraryRoute && view === "history")}
+          aria-label="Reading history"
         >
-          <Settings size={18} />
-          <span>Settings</span>
+          <History size={18} />
+          <span>History</span>
         </NavLink>
       </nav>
 
@@ -147,6 +163,24 @@ export function AppFrame({ children }: PropsWithChildren) {
             <strong>{pageName}</strong>
           </div>
           <div className="appTopbarStatus">
+            <div className="appTopbarUtilities">
+              <NavLink
+                to="/import"
+                className="appTopbarUtility"
+                aria-label="Import books"
+                title="Import books"
+              >
+                <FileUp size={17} />
+              </NavLink>
+              <NavLink
+                to="/settings"
+                className="appTopbarUtility"
+                aria-label="Settings"
+                title="Settings"
+              >
+                <Settings size={17} />
+              </NavLink>
+            </div>
             <span className="appStatusText">
               <span className="appLocalDot" /> Offline-ready library
             </span>

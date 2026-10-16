@@ -114,6 +114,15 @@ const ACCENT_SWATCHES: Array<{
   { id: "cobalt", label: "Cobalt", color: "#528bff" },
 ];
 
+const SETTINGS_TABS = [
+  { id: "appearance", label: "Appearance" },
+  { id: "reading", label: "Reading" },
+  { id: "content", label: "Content" },
+  { id: "privacy", label: "Privacy" },
+  { id: "storage", label: "Storage" },
+  { id: "backup", label: "Backup" },
+] as const;
+
 function formatBytes(bytes?: number): string {
   if (bytes === undefined || !Number.isFinite(bytes)) {
     return "Unavailable";
@@ -172,6 +181,8 @@ export function SettingsPage({
   onInstallPromptConsumed,
 }: SettingsPageProps) {
   const [preferences, setPreferences] = useState<Preferences>(getPreferences);
+  const [activeSettingsTab, setActiveSettingsTab] =
+    useState<(typeof SETTINGS_TABS)[number]["id"]>("appearance");
   const [storageStatus, setStorageStatus] = useState<StorageStatus>({});
   const [seriesStorage, setSeriesStorage] = useState<SeriesStorageUsage[]>([]);
   const [storageMessage, setStorageMessage] = useState("");
@@ -429,38 +440,26 @@ export function SettingsPage({
         <nav
           className="settingsSectionNav"
           style={styles.settingsJumpNav}
-          aria-label="Settings sections"
+          aria-label="Settings categories"
         >
-          <a href="#appearance-heading" style={styles.settingsJumpLink}>
-            Appearance
-          </a>
-          <a href="#reading-heading" style={styles.settingsJumpLink}>
-            Reading
-          </a>
-          <a href="#content-heading" style={styles.settingsJumpLink}>
-            Content
-          </a>
-          <a href="#adult-access-heading" style={styles.settingsJumpLink}>
-            Privacy
-          </a>
-          <a href="#storage-heading" style={styles.settingsJumpLink}>
-            Storage
-          </a>
-          <a href="#backup-heading" style={styles.settingsJumpLink}>
-            Backup
-          </a>
-          <a href="#shortcuts-heading" style={styles.settingsJumpLink}>
-            Shortcuts
-          </a>
-          <a href="#install-heading" style={styles.settingsJumpLink}>
-            Installation
-          </a>
+          {SETTINGS_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className="settingsTab"
+              aria-pressed={activeSettingsTab === tab.id}
+              onClick={() => setActiveSettingsTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </nav>
 
         <section
           className="settingsSection"
           style={styles.section}
           aria-labelledby="appearance-heading"
+          hidden={activeSettingsTab !== "appearance"}
         >
           <div>
             <h2 id="appearance-heading" style={styles.sectionTitle}>
@@ -475,6 +474,7 @@ export function SettingsPage({
               <button
                 key={theme.id}
                 type="button"
+                className="settingsThemeOption"
                 aria-pressed={preferences.theme === theme.id}
                 onClick={() => updatePreferences({ theme: theme.id })}
                 style={{
@@ -482,8 +482,7 @@ export function SettingsPage({
                   ...(preferences.theme === theme.id
                     ? styles.selectedThemeOption
                     : {}),
-                  background: theme.background,
-                  color: theme.text,
+                  background: "transparent",
                 }}
               >
                 <span
@@ -530,7 +529,7 @@ export function SettingsPage({
               ))}
             </div>
           </div>
-          <div style={styles.themePreviewBand}>
+          <div className="settingsPreviewBand" style={styles.themePreviewBand}>
             <span style={styles.themePreviewLabel}>
               <Sparkles size={15} /> Preview
             </span>
@@ -562,6 +561,7 @@ export function SettingsPage({
           className="settingsSection"
           style={styles.section}
           aria-labelledby="reading-heading"
+          hidden={activeSettingsTab !== "reading"}
         >
           <div style={styles.readerSettingsHeader}>
             <h2 id="reading-heading" style={styles.sectionTitle}>
@@ -596,6 +596,7 @@ export function SettingsPage({
               <button
                 key={option.mode}
                 type="button"
+                className="settingsModeOption"
                 aria-pressed={preferences.defaultReaderMode === option.mode}
                 onClick={() =>
                   updatePreferences({
@@ -864,6 +865,7 @@ export function SettingsPage({
           className="settingsSection"
           style={styles.section}
           aria-labelledby="content-heading"
+          hidden={activeSettingsTab !== "content"}
         >
           <div>
             <h2 id="content-heading" style={styles.sectionTitle}>
@@ -894,6 +896,7 @@ export function SettingsPage({
           className="settingsSection"
           style={styles.section}
           aria-labelledby="adult-access-heading"
+          hidden={activeSettingsTab !== "privacy"}
         >
           <div>
             <h2 id="adult-access-heading" style={styles.sectionTitle}>
@@ -979,6 +982,7 @@ export function SettingsPage({
           className="settingsSection"
           style={styles.section}
           aria-labelledby="storage-heading"
+          hidden={activeSettingsTab !== "storage"}
         >
           <div>
             <h2 id="storage-heading" style={styles.sectionTitle}>
@@ -1081,6 +1085,7 @@ export function SettingsPage({
           className="settingsSection"
           style={styles.section}
           aria-labelledby="backup-heading"
+          hidden={activeSettingsTab !== "backup"}
         >
           <div>
             <h2 id="backup-heading" style={styles.sectionTitle}>
@@ -1156,6 +1161,7 @@ export function SettingsPage({
           className="settingsSection"
           style={styles.section}
           aria-labelledby="shortcuts-heading"
+          hidden={activeSettingsTab !== "reading"}
         >
           <div>
             <h2 id="shortcuts-heading" style={styles.sectionTitle}>
@@ -1199,6 +1205,7 @@ export function SettingsPage({
           className="settingsSection"
           style={styles.section}
           aria-labelledby="install-heading"
+          hidden={activeSettingsTab !== "appearance"}
         >
           <div>
             <h2 id="install-heading" style={styles.sectionTitle}>
@@ -1314,7 +1321,7 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     margin: "7px 0 0",
     fontFamily: "var(--font-display)",
-    fontSize: 36,
+    fontSize: 20,
     fontWeight: 600,
   },
   section: {
