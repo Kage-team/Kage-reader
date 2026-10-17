@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import { AppFrame } from "./components/layout/AppFrame";
 import { ImportPage } from "./components/import/ImportPage";
 import { LibraryPage } from "./components/library/LibraryPage";
@@ -7,12 +7,27 @@ import { ReaderPage } from "./components/reader/ReaderPage";
 import { SettingsPage } from "./components/settings/SettingsPage";
 import { SeriesPage } from "./components/series/SeriesPage";
 import { AdultContentGate } from "./components/security/AdultContentGate";
+import { AppFrameB } from "./components/experimental/AppFrameB";
+import { ActivityB, HomeB, LibraryB, MoreB } from "./components/experimental/ScreensB";
 import {
   applyPreferencesToDocument,
   getPreferences,
 } from "./lib/preferences/preferences";
 import type { PwaInstallPrompt } from "./lib/pwa/install";
 import { applyStealthMode } from "./lib/security/stealth";
+
+function RootRoute() {
+  const [searchParams] = useSearchParams();
+  const layout = searchParams.get("layout");
+  const screen = searchParams.get("screen") ?? "home";
+
+  if (layout === "b") {
+    const screenContent = screen === "library" ? <LibraryB /> : screen === "activity" ? <ActivityB /> : screen === "more" ? <MoreB /> : <HomeB />;
+    return <AppFrameB>{screenContent}</AppFrameB>;
+  }
+
+  return <AppFrame><LibraryPage /></AppFrame>;
+}
 
 export function App() {
   const [installPrompt, setInstallPrompt] = useState<PwaInstallPrompt | null>(
@@ -48,11 +63,7 @@ export function App() {
       <Routes>
         <Route
           path="/"
-          element={
-            <AppFrame>
-              <LibraryPage />
-            </AppFrame>
-          }
+          element={<RootRoute />}
         />
         <Route
           path="/import"
