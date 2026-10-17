@@ -3526,6 +3526,189 @@ button:disabled {
   transition: width 180ms ease;
 }
 
+/* Series detail presentation */
+.seriesChapterSection,
+.chapterSection {
+  min-width: 0;
+}
+
+.chapterSection {
+  gap: 14px;
+}
+
+.chapterSection > .chapterHeader {
+  position: sticky;
+  z-index: 4;
+  top: 0;
+  margin: 0 -4px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--app-border);
+  background: color-mix(in srgb, var(--app-bg) 92%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.chapterSection > .chapterHeader .chapterHeading {
+  letter-spacing: -0.02em;
+}
+
+.seriesChapterActions {
+  margin-left: auto;
+}
+
+.seriesAddChapters,
+.chapterStatusToggle,
+.seriesActionsTrigger {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.seriesAddChapters {
+  width: 44px;
+  height: 44px;
+}
+
+.chapterSection > [role="status"],
+main > section > [role="alert"] {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--app-lime) 30%, var(--app-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--app-lime) 9%, var(--app-panel));
+  color: var(--app-text);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+main > section > [role="alert"] {
+  border-color: color-mix(in srgb, var(--app-danger) 50%, var(--app-border));
+  background: color-mix(in srgb, var(--app-danger) 10%, var(--app-panel));
+  color: var(--app-danger);
+}
+
+.seriesSummary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.seriesHeroContent {
+  gap: 11px;
+}
+
+.startReadingButton {
+  min-height: 44px;
+  justify-content: center;
+  padding: 0 15px;
+  transition: transform 190ms ease, opacity 190ms ease;
+}
+
+.startReadingButton:hover {
+  transform: translateY(-1px);
+}
+
+.chapterSection > ul {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+}
+
+.chapterSection > ul > li {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-panel);
+}
+
+.chapterSection .chapterLink {
+  min-height: 44px;
+  padding: 7px 2px;
+}
+
+.chapterStatusToggle {
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+  border-radius: 8px;
+  transition: transform 190ms ease, opacity 190ms ease, background-color 190ms ease;
+}
+
+.chapterStatusToggle[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--app-lime) 12%, transparent);
+}
+
+.seriesChapterProgress {
+  margin: 0 48px 5px 2px;
+}
+
+.seriesActionsPopover .seriesDeleteAction {
+  color: var(--app-danger);
+  font-weight: 700;
+}
+
+.seriesActionsPopover button,
+.seriesEditButton,
+.seriesActionsTrigger,
+.seriesAddChapters {
+  transition: transform 190ms ease, opacity 190ms ease;
+}
+
+.seriesActionsPopover button:hover,
+.seriesEditButton:hover,
+.seriesActionsTrigger:hover,
+.seriesAddChapters:hover,
+.chapterStatusToggle:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .chapterSection > .chapterHeader {
+    top: -1px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .seriesHero {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 13px;
+    align-items: start;
+  }
+
+  .seriesHeroContent {
+    gap: 9px;
+  }
+
+  .seriesSummary {
+    -webkit-line-clamp: 3;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .startReadingButton {
+    width: 100%;
+  }
+
+  .chapterTitleLine strong {
+    font-size: 13px;
+  }
+
+  .chapterPageCount {
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .startReadingButton,
+  .chapterStatusToggle,
+  .seriesActionsPopover button,
+  .seriesEditButton,
+  .seriesActionsTrigger,
+  .seriesAddChapters {
+    transition: none;
+  }
+}
+
 .readerHeader .readerChapterTitleTrigger {
   display: flex;
   min-width: 0;
