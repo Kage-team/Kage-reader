@@ -1146,6 +1146,121 @@ button:disabled {
   }
 }
 
+/* Mobile library bug fixes: keep controls bounded to their visible surfaces. */
+:root {
+  --mobile-nav-height: 76px;
+}
+
+.libraryShelfSection {
+  min-width: 0;
+}
+
+.librarySortFilter .sortField {
+  position: relative;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .appView {
+    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+  }
+
+  .libraryHeaderActions {
+    position: relative;
+    z-index: 1;
+  }
+
+  .libraryHeaderCopy h1,
+  .libraryShelfHeader h2 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .libraryHeaderActions {
+    border: 0;
+    padding: 0;
+    background: transparent;
+  }
+
+  html,
+  body,
+  #root,
+  .appShell,
+  .appView {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .libraryTypeFilters {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .libraryTypeFilters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .librarySelectionToolbar {
+    width: calc(100% - 16px);
+    max-width: calc(100% - 16px);
+  }
+
+  .libraryShelfHeader {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch;
+  }
+
+  .libraryShelfHeader > div:first-child {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .libraryShelfTools {
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) 44px auto;
+  }
+
+  .libraryShelfTools .viewModeToggle,
+  .libraryShelfTools .librarySelectToggle {
+    height: 44px;
+    min-width: 44px;
+  }
+
+  .libraryShelfTools .viewModeToggle {
+    justify-self: end;
+  }
+
+  .libraryShelfTools .librarySelectToggle {
+    width: auto;
+    min-width: 82px;
+  }
+
+  .libraryTypeFilters {
+    border: 0;
+    padding-inline: 0;
+  }
+
+  .librarySelectionToolbar {
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+  }
+
+  .librarySelectionToolbar.is-active {
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+  }
+
+  .libraryEntries,
+  .libraryLoadingGrid,
+  .libraryEmptyCard {
+    min-width: 0;
+  }
+}
+
 /* Mobile library controls: keep mode changes and selection actions visible and reachable. */
 @media (max-width: 720px) {
   .libraryHeader {

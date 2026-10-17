@@ -612,6 +612,7 @@ export function LibraryPage() {
           hidden={view === "insights" || view === "history"}
         >
           <header
+            className="libraryShelfHeader"
             style={styles.shelfHeader}
             hidden={["favorites", "continue", "queue"].includes(view)}
           >
@@ -683,7 +684,7 @@ export function LibraryPage() {
               </span>
             </label>
             <label className="librarySortFilter" style={styles.filterField}>
-              <span style={styles.sortField}>
+              <span className="sortField" style={styles.sortField}>
                 <ArrowDownWideNarrow size={15} />
                 <select
                   value={sortBy}
