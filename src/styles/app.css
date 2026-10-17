@@ -1146,6 +1146,188 @@ button:disabled {
   }
 }
 
+/* Mobile library controls: keep mode changes and selection actions visible and reachable. */
+@media (max-width: 720px) {
+  .libraryHeader {
+    display: grid;
+    gap: 10px;
+  }
+
+  .libraryHeaderCopy {
+    width: 100%;
+  }
+
+  .libraryHeaderActions {
+    width: 100%;
+    justify-content: space-between;
+    padding: 4px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--app-panel) 92%, transparent);
+  }
+
+  .librarySafeModeToggle {
+    min-height: 40px;
+  }
+
+  .librarySafeModeToggle button {
+    min-height: 36px;
+    padding-inline: 12px;
+    font-size: 11px;
+  }
+
+  .libraryHeaderActions .libraryIconAction {
+    width: 40px;
+    height: 40px;
+    border-color: var(--app-border);
+  }
+
+  .libraryShelfHeader {
+    display: grid;
+    gap: 10px;
+  }
+
+  .libraryShelfTools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .librarySeriesCount {
+    align-self: center;
+    justify-self: start;
+  }
+
+  .libraryShelfTools .viewModeToggle,
+  .libraryShelfTools .librarySelectToggle {
+    min-height: 44px;
+  }
+
+  .libraryShelfTools .librarySelectToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding-inline: 10px;
+    border: 1px solid var(--app-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--app-panel-raised);
+    color: var(--app-text);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .libraryShelfTools .librarySelectToggle[aria-pressed="true"] {
+    border-color: var(--app-lime);
+    background: color-mix(in srgb, var(--app-lime) 18%, var(--app-panel));
+    color: var(--app-lime);
+  }
+
+  .librarySearchSortRow {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+
+  .librarySortFilter {
+    width: 44px;
+  }
+
+  .librarySortFilter .sortField {
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .librarySortFilter select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    opacity: 0;
+  }
+
+  .librarySelectionToolbar.is-active {
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    gap: 8px;
+    padding: 12px;
+    border-color: var(--app-lime);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32);
+  }
+
+  .librarySelectionCount {
+    font-size: 13px;
+  }
+
+  .librarySelectionPrimaryActions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .librarySelectionPrimaryActions .libraryBulkActionPrimary {
+    grid-column: 1 / -1;
+  }
+
+  .libraryBulkAction,
+  .libraryBulkMore summary {
+    min-height: 44px !important;
+  }
+
+  .libraryBulkActionDanger {
+    grid-column: 1 / -1;
+  }
+
+  .libraryEntries.is-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .libraryEntries.is-list .libraryCard {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    align-items: stretch;
+    min-height: 104px;
+    padding: 6px;
+    border-color: var(--app-border);
+    background: var(--app-panel);
+  }
+
+  .libraryEntries.is-list .libraryCard > label {
+    grid-column: 1 / -1;
+    padding: 3px 4px 6px !important;
+  }
+
+  .libraryEntries.is-list .libraryCard > a {
+    display: grid !important;
+    grid-column: 1 / -1;
+    grid-template-columns: 72px minmax(0, 1fr) !important;
+    min-width: 0;
+    gap: 10px !important;
+    align-items: center;
+    padding: 0 !important;
+  }
+
+  .libraryEntries.is-list .libraryCard > a > div:first-child {
+    width: 72px !important;
+    height: 96px !important;
+    aspect-ratio: auto !important;
+  }
+
+  .libraryEntries.is-list .libraryCard > a > div:last-child {
+    min-width: 0;
+    padding: 4px 2px !important;
+  }
+
+  .libraryEntries.is-list .seriesCardMenuTrigger {
+    top: 7px;
+    right: 7px;
+    opacity: 1;
+  }
+
+  .libraryEntries.is-list .coverChapterBadge {
+    top: 6px;
+    right: auto;
+    left: 6px;
+  }
+}
+
 .libraryImportLink {
   display: inline-flex;
   min-height: 40px;
