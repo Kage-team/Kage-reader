@@ -6,15 +6,15 @@ import {
   ArrowDown,
   ArrowUp,
   BookOpen,
+  Grid2X2,
   Heart,
+  List,
   ListChecks,
   MoreHorizontal,
   Plus,
   Search,
   ShieldAlert,
   ShieldCheck,
-  SlidersHorizontal,
-  X,
 } from "lucide-react";
 import { AdultAccessPrompt } from "../security/AdultAccessPrompt";
 import {
@@ -38,6 +38,7 @@ import {
 } from "../../lib/storage/db";
 import type { Series, SeriesType } from "../../lib/storage/types";
 import { hasAdultAccess } from "../../lib/security/adultPin";
+import { useViewMode } from "./useViewMode";
 
 const SERIES_TYPES: SeriesType[] = ["manga", "manhua", "oel", "novel"];
 const SERIES_TYPE_COLORS: Record<SeriesType, string> = {
@@ -86,7 +87,6 @@ export function LibraryPage() {
   const [selectedType, setSelectedType] = useState<SeriesType | "all">("all");
   const [selectedTag, setSelectedTag] = useState("");
   const [selectedCollection, setSelectedCollection] = useState("");
-  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("recent");
   const [selectionMode, setSelectionMode] = useState(false);
   const [revealedCardId, setRevealedCardId] = useState<string | null>(null);
@@ -103,6 +103,8 @@ export function LibraryPage() {
   const [disableSafeModeAfterUnlock, setDisableSafeModeAfterUnlock] =
     useState(false);
   const [preferences, setPreferences] = useState<Preferences>(getPreferences);
+  const [libraryViewMode, setLibraryViewMode] = useViewMode("kage-library-view-mode");
+  const [historyViewMode, setHistoryViewMode] = useViewMode("kage-history-view-mode");
   const requestedView = searchParams.get("view");
   const view =
     requestedView === "favorites" ||
@@ -391,12 +393,6 @@ export function LibraryPage() {
       right.updatedAt - left.updatedAt || left.title.localeCompare(right.title)
     );
   });
-  const availableTags = Array.from(
-    new Set(accessibleEntries.flatMap((entry) => entry.tags)),
-  ).sort((left, right) => left.localeCompare(right));
-  const availableCollections = Array.from(
-    new Set(accessibleEntries.flatMap((entry) => entry.collections)),
-  ).sort((left, right) => left.localeCompare(right));
   const visibleRecentChapters = recentChapters.filter((item) =>
     filteredEntries.some((entry) => entry.id === item.seriesId),
   );
@@ -558,8 +554,15 @@ export function LibraryPage() {
             style={styles.resumeSection}
             aria-labelledby="recent-chapters-title"
           >
+            <div className="historySectionHeader">
+              <h2 style={styles.sectionTitle}>Recently read</h2>
+              <div className="viewModeToggle" role="group" aria-label="History view">
+                <button type="button" className={historyViewMode === "grid" ? "is-active" : ""} aria-label="History grid view" aria-pressed={historyViewMode === "grid"} onClick={() => setHistoryViewMode("grid")}><Grid2X2 size={15} /></button>
+                <button type="button" className={historyViewMode === "list" ? "is-active" : ""} aria-label="History list view" aria-pressed={historyViewMode === "list"} onClick={() => setHistoryViewMode("list")}><List size={15} /></button>
+              </div>
+            </div>
             {visibleRecentChapters.length > 0 ? (
-              <ul style={styles.list}>
+              <ul className={`historyEntries ${historyViewMode === "grid" ? "is-grid" : "is-list"}`} style={styles.list}>
                 {visibleRecentChapters.map((item) => (
                   <li key={item.id} style={styles.listItem}>
                     <Link
@@ -643,6 +646,26 @@ export function LibraryPage() {
               <span className="librarySeriesCount">
                 {visibleEntries.length} series
               </span>
+              <div className="viewModeToggle" role="group" aria-label="Library view">
+                <button
+                  type="button"
+                  className={libraryViewMode === "grid" ? "is-active" : ""}
+                  aria-label="Grid view"
+                  aria-pressed={libraryViewMode === "grid"}
+                  onClick={() => setLibraryViewMode("grid")}
+                >
+                  <Grid2X2 size={15} /> <span>Grid</span>
+                </button>
+                <button
+                  type="button"
+                  className={libraryViewMode === "list" ? "is-active" : ""}
+                  aria-label="List view"
+                  aria-pressed={libraryViewMode === "list"}
+                  onClick={() => setLibraryViewMode("list")}
+                >
+                  <List size={15} /> <span>List</span>
+                </button>
+              </div>
               <button
                 type="button"
                 className="librarySelectToggle"
@@ -885,7 +908,7 @@ export function LibraryPage() {
               ) : null}
             </div>
           ) : (
-            <div style={styles.grid}>
+            <div className={`libraryEntries ${libraryViewMode === "list" ? "is-list" : "is-grid"}`}>
               {visibleEntries.map((entry) => (
                 <article
                   key={entry.id}
