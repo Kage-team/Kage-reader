@@ -427,6 +427,7 @@ export function LibraryPage() {
             </div>
           ) : null}
           <div className="libraryHeaderActions" style={styles.headerActions}>
+            <span className="libraryControlsLabel">View options</span>
             <div
               className="librarySafeModeToggle"
               role="group"
@@ -460,6 +461,7 @@ export function LibraryPage() {
               title="18+ Vault"
             >
               <ShieldAlert size={16} />
+              <span>Vault</span>
             </Link>
             <Link
               to="/?view=insights"
@@ -468,6 +470,7 @@ export function LibraryPage() {
               title="Insights"
             >
               <Activity size={16} />
+              <span>Insights</span>
             </Link>
           </div>
         </header>

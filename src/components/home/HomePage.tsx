@@ -17,7 +17,10 @@ export function HomePage() {
           <h1>Welcome back.</h1>
           <p>Keep your manga close, private, and ready to read offline.</p>
         </div>
-        <Link className="homePrimaryAction" to="/import"><FileUp size={17} /> Add to library</Link>
+        <div className="homeHeroActions">
+          <Link className="homePrimaryAction" to="/import"><FileUp size={17} /> Add to library</Link>
+          <Link className="homeHeroSecondary" to="/?view=all">Open library</Link>
+        </div>
       </section>
       <section className="homeRails" aria-label="Library shortcuts">
         {rails.map(({ title, description, href, icon: Icon }) => (

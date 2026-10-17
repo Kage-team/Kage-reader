@@ -1470,6 +1470,7 @@ button:disabled {
   gap: 6px;
 }
 
+.libraryControlsLabel { display: none; color: var(--app-muted); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .librarySafeModeToggle {
   display: inline-flex;
   align-items: center;
@@ -1501,7 +1502,10 @@ button:disabled {
 }
 
 .libraryIconAction {
-  display: grid;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 34px;
   height: 34px;
   place-items: center;
@@ -2636,7 +2640,25 @@ button:disabled {
 
   .libraryHeaderActions {
     justify-content: flex-start;
-    width: auto;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .libraryControlsLabel {
+    display: block;
+    flex-basis: 100%;
+  }
+
+  .libraryHeaderActions .libraryIconAction {
+    min-width: 82px;
+    padding-inline: 10px;
+  }
+
+  .libraryHeaderActions .libraryIconAction span {
+    display: inline;
+    font-size: 11px;
+    font-weight: 800;
   }
 
   .librarySearchSortRow {
@@ -5300,8 +5322,11 @@ main > section > [role="alert"] {
 .homeHero p { max-width: 520px; margin: 0; color: var(--app-muted); font-size: 16px; }
 .eyebrow { display: inline-flex; align-items: center; gap: 7px; color: var(--app-lime); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
 .homePrimaryAction, .secondaryButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 12px; font-weight: 800; text-decoration: none; }
-.homePrimaryAction { background: var(--app-lime); color: var(--app-ink); }
+.homePrimaryAction { background: #b8f34a; color: #10130f !important; }
 .secondaryButton { border: 1px solid var(--app-border-strong); color: var(--app-text); }
+.homeHeroActions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.homeHeroSecondary { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid var(--app-border-strong); border-radius: 12px; color: var(--app-text); font-weight: 800; text-decoration: none; }
+.homeHeroSecondary:hover { border-color: var(--app-lime); color: var(--app-lime); }
 .homeRails { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
 .homeRailCard { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; min-height: 92px; padding: 16px; border: 1px solid var(--app-border); border-radius: 16px; background: var(--app-panel); color: var(--app-text); text-decoration: none; transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease; }
 .homeRailCard:hover { transform: translateY(-2px); border-color: var(--app-border-strong); background: var(--app-panel-raised); }
@@ -5320,6 +5345,8 @@ main > section > [role="alert"] {
   .homePage { padding-top: 14px; }
   .homeHero { display: grid; gap: 20px; padding: 22px; border-radius: 18px; }
   .homeHero h1 { font-size: 38px; }
+  .homeHeroActions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .homeHeroActions > a { width: 100%; }
   .homePrimaryAction { width: 100%; }
   .homeRails { grid-template-columns: 1fr; gap: 10px; }
   .homeRailCard { min-height: 76px; }
