@@ -1,5 +1,6 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
+@import "./tokens.css";
 
 :root {
   color-scheme: dark;
@@ -305,21 +306,48 @@ button:disabled {
 }
 
 .appMobileNav .appNavLink {
+  position: relative;
   display: grid;
   min-width: 0;
-  min-height: 48px;
+  min-height: 52px;
   align-content: center;
   justify-items: center;
   gap: 3px;
-  padding: 3px 2px;
+  padding: 5px 2px;
   border-color: transparent;
   border-radius: var(--app-radius-control);
+  color: var(--app-muted);
   font-size: 10px;
   line-height: 1.1;
+  opacity: 0.78;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+.appMobileNav .appNavLink::before {
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  width: 22px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--app-lime);
+  content: "";
+  opacity: 0;
+  transform: translateX(-50%) scaleX(0.55);
 }
 
 .appMobileNav .appNavLinkActive {
   background: var(--app-selected);
+  color: var(--app-text);
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.appMobileNav .appNavLinkActive::before {
+  opacity: 1;
+  transform: translateX(-50%) scaleX(1);
 }
 
 .appTopbarUtilities {
@@ -570,6 +598,849 @@ button:disabled {
 
 .libraryHeaderCopy {
   min-width: 0;
+}
+
+/* Library presentation */
+.libraryHeader {
+  gap: 12px;
+}
+
+.libraryShelfSection {
+  display: grid;
+  gap: 14px;
+}
+
+.libraryShelfHeader {
+  gap: 10px;
+}
+
+.librarySearchSortRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.32fr);
+  align-items: end;
+  gap: 8px;
+}
+
+.librarySecondaryControls {
+  display: grid;
+  gap: 8px;
+  padding-top: 2px;
+  border-top: 1px solid color-mix(in srgb, var(--app-border) 72%, transparent);
+}
+
+.libraryAdvancedFilters {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid var(--app-border);
+  border-radius: 7px;
+  background: var(--app-panel);
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.libraryAdvancedFilters:hover,
+.libraryAdvancedFilters[aria-expanded="true"] {
+  border-color: var(--app-border-strong);
+  background: var(--app-panel-raised);
+  color: var(--app-text);
+}
+
+.libraryAdvancedFilters i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--app-lime);
+}
+
+.librarySelectionToolbar.is-active {
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--app-lime) 35%, var(--app-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--app-lime) 7%, var(--app-panel));
+}
+
+.librarySelectionToolbar.is-active button {
+  min-height: 40px;
+}
+
+.libraryLoadingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 18px 12px;
+}
+
+.librarySkeletonCard {
+  display: grid;
+  gap: 9px;
+}
+
+.librarySkeletonCover,
+.librarySkeletonLine {
+  border-radius: 7px;
+  background: linear-gradient(100deg, var(--app-panel-raised) 25%, color-mix(in srgb, var(--app-text) 9%, var(--app-panel-raised)) 45%, var(--app-panel-raised) 65%);
+  background-size: 220% 100%;
+  animation: library-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.librarySkeletonCover {
+  aspect-ratio: 2 / 3;
+}
+
+.librarySkeletonLine {
+  width: 58%;
+  height: 11px;
+}
+
+.librarySkeletonLineWide {
+  width: 86%;
+}
+
+.libraryCard {
+  border: 1px solid transparent;
+  border-radius: 9px;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.libraryCard.is-selected {
+  border-color: var(--app-lime);
+  background: color-mix(in srgb, var(--app-lime) 8%, var(--app-panel));
+}
+
+.libraryCard.has-resume .coverProgressOverlay {
+  background: linear-gradient(transparent, color-mix(in srgb, var(--app-lime) 26%, rgba(0, 0, 0, 0.88)));
+}
+
+.libraryCard .seriesCardMenuTrigger,
+.libraryCard .libraryIconAction,
+.libraryCard .librarySelectToggle {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.libraryCard:nth-child(-n + 6) {
+  animation: library-card-in 200ms ease both;
+  animation-delay: calc(min(var(--library-card-index, 0), 5) * 24ms);
+}
+
+.libraryCard[data-card-index="0"] { --library-card-index: 0; }
+.libraryCard[data-card-index="1"] { --library-card-index: 1; }
+.libraryCard[data-card-index="2"] { --library-card-index: 2; }
+.libraryCard[data-card-index="3"] { --library-card-index: 3; }
+.libraryCard[data-card-index="4"] { --library-card-index: 4; }
+.libraryCard[data-card-index="5"] { --library-card-index: 5; }
+
+@keyframes library-card-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes library-skeleton-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+.librarySelectionToolbar {
+  position: sticky;
+  z-index: 4;
+  top: 78px;
+  min-height: 44px;
+  padding: 4px 0;
+  background: color-mix(in srgb, var(--app-panel) 94%, transparent);
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+
+.librarySelectionToolbar:not(.is-active) {
+  min-height: 0;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+}
+
+.librarySelectionToolbar.is-active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.librarySelectionCount {
+  flex: 0 0 auto;
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.librarySelectionPrimaryActions,
+.libraryBulkMoreMenu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.libraryBulkAction,
+.libraryBulkMore summary {
+  min-height: 44px !important;
+  padding-inline: 11px !important;
+  border-radius: 7px !important;
+  font-size: 11px !important;
+  white-space: nowrap;
+}
+
+.libraryBulkMore {
+  position: relative;
+}
+
+.libraryBulkMore summary {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+  border: 1px solid var(--app-border);
+  background: var(--app-panel);
+  color: var(--app-text);
+  font-weight: 700;
+}
+
+.libraryBulkMore summary::-webkit-details-marker {
+  display: none;
+}
+
+.libraryBulkMoreMenu {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 170px;
+  padding: 6px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 8px;
+  background: var(--app-panel-raised);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.libraryBulkActionDanger {
+  margin-left: auto;
+  border-color: color-mix(in srgb, var(--app-danger) 52%, var(--app-border)) !important;
+  color: var(--app-danger) !important;
+}
+
+.librarySelectToggleLabel {
+  display: none;
+}
+
+.historyLink {
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 76px;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.historyLink:hover,
+.historyLink:focus-visible {
+  border-color: var(--app-border-strong);
+  background: var(--app-hover);
+}
+
+.historyThumb {
+  display: grid;
+  width: 48px;
+  height: 64px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--app-panel-raised);
+  color: var(--app-muted);
+}
+
+.historyThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.historyCopy {
+  gap: 5px;
+}
+
+.historyProgress {
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--app-border-strong);
+}
+
+.historyProgress > span {
+  display: block;
+  height: 100%;
+  background: var(--app-lime);
+}
+
+@media (max-width: 720px) {
+  .librarySelectionToolbar {
+    position: fixed;
+    z-index: 55;
+    right: 8px;
+    bottom: calc(70px + env(safe-area-inset-bottom));
+    left: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    max-height: min(42dvh, 260px);
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid var(--app-border-strong);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--app-panel) 97%, transparent);
+    box-shadow: var(--app-shadow-soft);
+  }
+
+  .librarySelectionToolbar:not(.is-active) {
+    display: flex;
+    max-height: 0;
+    border-width: 0;
+    transform: translateY(10px);
+  }
+
+  .librarySelectionToolbar.is-active {
+    gap: 7px;
+  }
+
+  .librarySelectionCount {
+    width: 100%;
+  }
+
+  .librarySelectionPrimaryActions,
+  .libraryBulkMore,
+  .libraryBulkActionDanger {
+    flex: 1 1 auto;
+  }
+
+  .librarySelectionPrimaryActions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .libraryBulkAction,
+  .libraryBulkMore summary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .libraryBulkMoreMenu {
+    right: 0;
+    bottom: calc(100% + 6px);
+    top: auto;
+    left: auto;
+  }
+
+  .libraryBulkActionDanger {
+    margin-left: 0;
+  }
+
+  .librarySelectToggle {
+    width: auto;
+    padding-inline: 10px;
+    gap: 6px;
+  }
+
+  .librarySelectToggleLabel {
+    display: inline;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .historyLink {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .historyThumb {
+    width: 44px;
+    height: 60px;
+  }
+
+  .historyDate {
+    grid-column: 2;
+    justify-self: start;
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .librarySelectionToolbar,
+  .historyLink {
+    transition: none;
+  }
+}
+
+/* Shared library/history view controls and content rhythm. */
+.historySectionHeader,
+.libraryShelfSection,
+.libraryShelfSection > .librarySearchSortRow,
+.libraryShelfSection > .librarySecondaryControls,
+.libraryShelfSection > .librarySelectionToolbar,
+.libraryShelfSection > .libraryEntries,
+.libraryShelfSection > .libraryLoadingGrid,
+.libraryShelfSection > .libraryEmptyCard {
+  width: min(100%, 960px);
+  margin-inline: auto;
+}
+
+.historySectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.historySectionHeader .sectionTitle {
+  margin: 0;
+}
+
+.viewModeToggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-md);
+  background: var(--app-panel-raised);
+}
+
+.viewModeToggle button {
+  display: inline-flex;
+  min-block-size: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--app-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  transition: transform var(--motion-fast) var(--ease-standard), opacity var(--motion-fast) var(--ease-standard), background-color var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard);
+}
+
+.viewModeToggle button:hover {
+  background: var(--app-hover);
+  color: var(--app-text);
+}
+
+.viewModeToggle button:active {
+  transform: scale(0.97);
+}
+
+.viewModeToggle button.is-active {
+  border-color: color-mix(in srgb, var(--app-lime) 55%, var(--app-border));
+  background: color-mix(in srgb, var(--app-lime) 16%, var(--app-panel));
+  color: var(--app-lime);
+}
+
+.libraryShelfTools {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.libraryShelfTools .viewModeToggle {
+  order: 2;
+}
+
+.libraryShelfTools .librarySelectToggle {
+  order: 3;
+}
+
+.librarySearchSortRow {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.librarySearchFilter {
+  min-width: 0;
+}
+
+.librarySortFilter {
+  min-width: 0;
+  width: min(100%, 220px);
+}
+
+.librarySecondaryControls {
+  padding-block: var(--space-2) 0;
+}
+
+.libraryTypeFilters {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-block: var(--space-1);
+  scrollbar-width: thin;
+}
+
+.libraryTypeFilters > button {
+  flex: 0 0 auto;
+  min-block-size: var(--touch-target);
+}
+
+.libraryEntries,
+.libraryLoadingGrid {
+  padding-bottom: var(--space-4);
+}
+
+@media (max-width: 720px) {
+  .historySectionHeader,
+  .libraryShelfHeader {
+    align-items: flex-start;
+  }
+
+  .historySectionHeader {
+    gap: var(--space-3);
+  }
+
+  .historySectionHeader .viewModeToggle button span,
+  .libraryShelfTools .viewModeToggle button span {
+    display: none;
+  }
+
+  .libraryShelfTools {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .librarySearchSortRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .librarySortFilter {
+    width: auto;
+  }
+
+  .librarySortFilter select {
+    max-width: 44px;
+    color: transparent;
+  }
+
+  .libraryShelfSection > .libraryEntries,
+  .libraryShelfSection > .libraryLoadingGrid {
+    padding-bottom: var(--space-6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewModeToggle button {
+    transition: none;
+  }
+}
+
+/* Mobile library bug fixes: keep controls bounded to their visible surfaces. */
+:root {
+  --mobile-nav-height: 76px;
+}
+
+.libraryShelfSection {
+  min-width: 0;
+}
+
+.librarySortFilter .sortField {
+  position: relative;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .appView {
+    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+  }
+
+  .libraryHeaderActions {
+    position: relative;
+    z-index: 1;
+  }
+
+  .libraryHeaderCopy h1,
+  .libraryShelfHeader h2 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .libraryHeaderActions {
+    border: 0;
+    padding: 0;
+    background: transparent;
+  }
+
+  html,
+  body,
+  #root,
+  .appShell,
+  .appView {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .libraryTypeFilters {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .libraryTypeFilters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .librarySelectionToolbar {
+    width: calc(100% - 16px);
+    max-width: calc(100% - 16px);
+  }
+
+  .libraryShelfHeader {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch;
+  }
+
+  .libraryShelfHeader > div:first-child {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .libraryShelfTools {
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) 44px auto;
+  }
+
+  .libraryShelfTools .viewModeToggle,
+  .libraryShelfTools .librarySelectToggle {
+    height: 44px;
+    min-width: 44px;
+  }
+
+  .libraryShelfTools .viewModeToggle {
+    justify-self: end;
+  }
+
+  .libraryShelfTools .librarySelectToggle {
+    width: auto;
+    min-width: 82px;
+  }
+
+  .libraryTypeFilters {
+    border: 0;
+    padding-inline: 0;
+  }
+
+  .librarySelectionToolbar {
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+  }
+
+  .librarySelectionToolbar.is-active {
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+  }
+
+  .libraryEntries,
+  .libraryLoadingGrid,
+  .libraryEmptyCard {
+    min-width: 0;
+  }
+}
+
+/* Mobile library controls: keep mode changes and selection actions visible and reachable. */
+@media (max-width: 720px) {
+  .libraryHeader {
+    display: grid;
+    gap: 10px;
+  }
+
+  .libraryHeaderCopy {
+    width: 100%;
+  }
+
+  .libraryHeaderActions {
+    width: 100%;
+    justify-content: space-between;
+    padding: 4px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--app-panel) 92%, transparent);
+  }
+
+  .librarySafeModeToggle {
+    min-height: 40px;
+  }
+
+  .librarySafeModeToggle button {
+    min-height: 36px;
+    padding-inline: 12px;
+    font-size: 11px;
+  }
+
+  .libraryHeaderActions .libraryIconAction {
+    width: 40px;
+    height: 40px;
+    border-color: var(--app-border);
+  }
+
+  .libraryShelfHeader {
+    display: grid;
+    gap: 10px;
+  }
+
+  .libraryShelfTools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .librarySeriesCount {
+    align-self: center;
+    justify-self: start;
+  }
+
+  .libraryShelfTools .viewModeToggle,
+  .libraryShelfTools .librarySelectToggle {
+    min-height: 44px;
+  }
+
+  .libraryShelfTools .librarySelectToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding-inline: 10px;
+    border: 1px solid var(--app-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--app-panel-raised);
+    color: var(--app-text);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .libraryShelfTools .librarySelectToggle[aria-pressed="true"] {
+    border-color: var(--app-lime);
+    background: color-mix(in srgb, var(--app-lime) 18%, var(--app-panel));
+    color: var(--app-lime);
+  }
+
+  .librarySearchSortRow {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+
+  .librarySortFilter {
+    width: 44px;
+  }
+
+  .librarySortFilter .sortField {
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .librarySortFilter select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    opacity: 0;
+  }
+
+  .librarySelectionToolbar.is-active {
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    gap: 8px;
+    padding: 12px;
+    border-color: var(--app-lime);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32);
+  }
+
+  .librarySelectionCount {
+    font-size: 13px;
+  }
+
+  .librarySelectionPrimaryActions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .librarySelectionPrimaryActions .libraryBulkActionPrimary {
+    grid-column: 1 / -1;
+  }
+
+  .libraryBulkAction,
+  .libraryBulkMore summary {
+    min-height: 44px !important;
+  }
+
+  .libraryBulkActionDanger {
+    grid-column: 1 / -1;
+  }
+
+  .libraryEntries.is-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .libraryEntries.is-list .libraryCard {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    align-items: stretch;
+    min-height: 104px;
+    padding: 6px;
+    border-color: var(--app-border);
+    background: var(--app-panel);
+  }
+
+  .libraryEntries.is-list .libraryCard > label {
+    grid-column: 1 / -1;
+    padding: 3px 4px 6px !important;
+  }
+
+  .libraryEntries.is-list .libraryCard > a {
+    display: grid !important;
+    grid-column: 1 / -1;
+    grid-template-columns: 72px minmax(0, 1fr) !important;
+    min-width: 0;
+    gap: 10px !important;
+    align-items: center;
+    padding: 0 !important;
+  }
+
+  .libraryEntries.is-list .libraryCard > a > div:first-child {
+    width: 72px !important;
+    height: 96px !important;
+    aspect-ratio: auto !important;
+  }
+
+  .libraryEntries.is-list .libraryCard > a > div:last-child {
+    min-width: 0;
+    padding: 4px 2px !important;
+  }
+
+  .libraryEntries.is-list .seriesCardMenuTrigger {
+    top: 7px;
+    right: 7px;
+    opacity: 1;
+  }
+
+  .libraryEntries.is-list .coverChapterBadge {
+    top: 6px;
+    right: auto;
+    left: 6px;
+  }
 }
 
 .libraryImportLink {
@@ -1341,6 +2212,279 @@ button:disabled {
   text-transform: capitalize;
 }
 
+/* Import screen presentation: keep queue semantics and controls unchanged. */
+.importPage {
+  --import-motion: 190ms ease;
+}
+
+.importDropZone,
+.importQueue,
+.importProgressModal {
+  transition:
+    transform var(--import-motion),
+    opacity var(--import-motion),
+    border-color var(--import-motion),
+    background-color var(--import-motion);
+}
+
+.importDropZone {
+  position: relative;
+}
+
+.importDropZoneActive {
+  transform: translateY(-2px);
+}
+
+.importPrimaryButton,
+.importSecondaryButton,
+.importLibraryLink,
+.importQueueLink {
+  min-height: 44px;
+}
+
+.importPrimaryButton,
+.importSecondaryButton {
+  transition:
+    transform var(--import-motion),
+    opacity var(--import-motion),
+    border-color var(--import-motion),
+    background-color var(--import-motion);
+}
+
+.importPrimaryButton:active,
+.importSecondaryButton:active,
+.importLibraryLink:active,
+.importQueueLink:active {
+  transform: translateY(1px);
+}
+
+.importProgressBackdrop {
+  animation: import-overlay-in var(--import-motion) both;
+}
+
+.importProgressModal {
+  animation: import-modal-in var(--import-motion) both;
+}
+
+.importProgressItems {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-border-strong) transparent;
+}
+
+.importProgressItem {
+  min-height: 38px;
+  padding-block: 7px;
+}
+
+.importProgressItemState {
+  display: inline-flex;
+  min-width: 58px;
+  justify-content: flex-end;
+  font-weight: 700;
+}
+
+.importProgressItemState::after {
+  content: none;
+}
+
+.importProgressItemState[data-state="working"] {
+  color: var(--app-lime);
+}
+
+.importProgressItemState[data-state="working"]::after {
+  content: "reading";
+}
+
+.importProgressItemState[data-state="saved"]::after {
+  content: "done";
+}
+
+.importProgressItemState[data-state="cancelled"]::after {
+  content: "queued";
+}
+
+.importProgressItemState[data-state="duplicate"]::after {
+  content: "duplicate";
+}
+
+.importProgressItemState[data-state="error"]::after {
+  content: "error";
+}
+
+.importProgressItemState[data-state="working"],
+.importProgressItemState[data-state="saved"],
+.importProgressItemState[data-state="cancelled"],
+.importProgressItemState[data-state="duplicate"],
+.importProgressItemState[data-state="error"] {
+  font-size: 0;
+}
+
+.importProgressItemState[data-state="working"]::after,
+.importProgressItemState[data-state="saved"]::after,
+.importProgressItemState[data-state="cancelled"]::after,
+.importProgressItemState[data-state="duplicate"]::after,
+.importProgressItemState[data-state="error"]::after {
+  font-size: 10px;
+}
+
+.importProgressActions .importSecondaryButton {
+  min-width: 112px;
+}
+
+@keyframes import-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes import-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .importDropZone > p {
+    display: none;
+  }
+
+  .importDropZone {
+    min-height: 0;
+    padding: 24px 16px;
+  }
+
+  .importDropMark {
+    width: 46px;
+  }
+}
+
+@media (max-width: 560px) {
+  .importPage {
+    gap: 18px;
+    min-height: calc(100dvh - 52px);
+    padding: 20px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .importHeader {
+    align-items: start;
+    gap: 12px;
+  }
+
+  .importHeader h1 {
+    font-size: 22px;
+  }
+
+  .importSubtitle {
+    max-width: 28ch;
+  }
+
+  .importLibraryLink {
+    min-height: 44px;
+    margin-top: -8px;
+  }
+
+  .importDropZone {
+    gap: 10px;
+    border-radius: 12px;
+  }
+
+  .importDropZone h2 {
+    font-size: 18px;
+  }
+
+  .importActions {
+    width: 100%;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 5px;
+  }
+
+  .importActions > button {
+    width: 100%;
+  }
+
+  .importPrimaryButton {
+    min-height: 52px;
+    font-size: 13px;
+  }
+
+  .importSecondaryButton {
+    min-height: 44px;
+  }
+
+  .importProgressBackdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .importProgressModal {
+    gap: 12px;
+    width: 100%;
+    max-height: min(620px, calc(100dvh - 12px));
+    padding: 18px 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 16px 16px 0 0;
+  }
+
+  .importProgressItems {
+    max-height: min(230px, 30dvh);
+  }
+
+  .importProgressMeta,
+  .importProgressActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .importProgressActions .importSecondaryButton {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .importQueueHeader {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .importQueueHeader .importActions {
+    margin-top: 0;
+  }
+
+  .importQueueItem {
+    grid-template-columns: 8px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .importQueueState {
+    grid-column: 2;
+    justify-self: start;
+    font-size: 10px;
+  }
+
+  .importQueueItem .importSecondaryButton {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .importDropZone,
+  .importQueue,
+  .importProgressModal,
+  .importPrimaryButton,
+  .importSecondaryButton,
+  .importLibraryLink,
+  .importQueueLink,
+  .importProgressBackdrop {
+    animation: none;
+    transition: none;
+  }
+}
+
 .novelTextContent p {
   margin-block: 0 var(--novel-paragraph-gap, 16px);
   text-indent: var(--novel-paragraph-indent, 0);
@@ -1392,8 +2536,8 @@ button:disabled {
     position: sticky;
     z-index: 10;
     top: 0;
-    height: 56px;
-    flex: 0 0 56px;
+    height: 52px;
+    flex: 0 0 52px;
     flex-direction: row;
     align-items: center;
     min-width: 0;
@@ -1465,13 +2609,13 @@ button:disabled {
   }
 
   .appTopbar {
-    top: 56px;
-    min-height: 50px;
-    padding: 0 18px;
+    top: 52px;
+    min-height: 46px;
+    padding: 0 14px;
   }
 
   :root {
-    --settings-nav-top: 106px;
+    --settings-nav-top: 98px;
   }
 
   .appStatusText {
@@ -1992,9 +3136,9 @@ button:disabled {
 .readerHudBack,
 .readerHudIconButton {
   display: grid;
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   place-items: center;
   border: 1px solid transparent;
   border-radius: 7px;
@@ -2114,9 +3258,18 @@ button:disabled {
 }
 
 .readerBottomHud .readerHudIconButton {
-  width: 34px;
-  height: 34px;
-  flex-basis: 34px;
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+}
+
+.readerBottomHud {
+  bottom: calc(env(safe-area-inset-bottom) + 56px);
+  padding: 6px 8px;
+}
+
+.readerBottomHud input[type="range"] {
+  min-height: 44px;
 }
 
 .readerNovelBottomActions {
@@ -2137,9 +3290,14 @@ button:disabled {
 }
 
 .readerNovelBottomActions .readerHudIconButton {
-  width: 34px;
-  height: 34px;
-  flex-basis: 34px;
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+}
+
+.readerNovelBottomActions {
+  bottom: calc(env(safe-area-inset-bottom) + 112px);
+  padding: 6px 8px;
 }
 
 .readerBottomMode {
@@ -2211,9 +3369,9 @@ button:disabled {
 .readerSettingsBack,
 .readerSettingsClose {
   display: grid;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   place-items: center;
   border: 1px solid var(--app-border);
   border-radius: 50%;
@@ -2337,6 +3495,35 @@ button:disabled {
 .novelChapterBlock {
   content-visibility: auto;
   contain-intrinsic-size: auto 1200px;
+}
+
+.readerChrome,
+.readerToolbar {
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
+}
+
+.readerHudHeader,
+.readerHudRail,
+.readerNovelBottomActions {
+  will-change: opacity, transform;
+}
+
+.readerHudHeader.readerChromeHidden {
+  transform: translateY(-12px) !important;
+}
+
+.readerHudRailLeft.readerChromeHidden {
+  transform: translate(-8px, -50%) !important;
+}
+
+.readerHudRailRight.readerChromeHidden {
+  transform: translate(8px, -50%) !important;
+}
+
+.readerNovelBottomActions.readerChromeHidden {
+  transform: translate(-50%, 12px) !important;
 }
 
 .readerChromeHidden {
@@ -2476,6 +3663,17 @@ button:disabled {
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .readerChrome,
+  .readerToolbar,
+  .readerHudHeader,
+  .readerHudRail,
+  .readerNovelBottomActions {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 @media (max-width: 700px) {
@@ -3353,6 +4551,189 @@ button:disabled {
   transition: width 180ms ease;
 }
 
+/* Series detail presentation */
+.seriesChapterSection,
+.chapterSection {
+  min-width: 0;
+}
+
+.chapterSection {
+  gap: 14px;
+}
+
+.chapterSection > .chapterHeader {
+  position: sticky;
+  z-index: 4;
+  top: 0;
+  margin: 0 -4px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--app-border);
+  background: color-mix(in srgb, var(--app-bg) 92%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.chapterSection > .chapterHeader .chapterHeading {
+  letter-spacing: -0.02em;
+}
+
+.seriesChapterActions {
+  margin-left: auto;
+}
+
+.seriesAddChapters,
+.chapterStatusToggle,
+.seriesActionsTrigger {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.seriesAddChapters {
+  width: 44px;
+  height: 44px;
+}
+
+.chapterSection > [role="status"],
+main > section > [role="alert"] {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--app-lime) 30%, var(--app-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--app-lime) 9%, var(--app-panel));
+  color: var(--app-text);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+main > section > [role="alert"] {
+  border-color: color-mix(in srgb, var(--app-danger) 50%, var(--app-border));
+  background: color-mix(in srgb, var(--app-danger) 10%, var(--app-panel));
+  color: var(--app-danger);
+}
+
+.seriesSummary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.seriesHeroContent {
+  gap: 11px;
+}
+
+.startReadingButton {
+  min-height: 44px;
+  justify-content: center;
+  padding: 0 15px;
+  transition: transform 190ms ease, opacity 190ms ease;
+}
+
+.startReadingButton:hover {
+  transform: translateY(-1px);
+}
+
+.chapterSection > ul {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+}
+
+.chapterSection > ul > li {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-panel);
+}
+
+.chapterSection .chapterLink {
+  min-height: 44px;
+  padding: 7px 2px;
+}
+
+.chapterStatusToggle {
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+  border-radius: 8px;
+  transition: transform 190ms ease, opacity 190ms ease, background-color 190ms ease;
+}
+
+.chapterStatusToggle[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--app-lime) 12%, transparent);
+}
+
+.seriesChapterProgress {
+  margin: 0 48px 5px 2px;
+}
+
+.seriesActionsPopover .seriesDeleteAction {
+  color: var(--app-danger);
+  font-weight: 700;
+}
+
+.seriesActionsPopover button,
+.seriesEditButton,
+.seriesActionsTrigger,
+.seriesAddChapters {
+  transition: transform 190ms ease, opacity 190ms ease;
+}
+
+.seriesActionsPopover button:hover,
+.seriesEditButton:hover,
+.seriesActionsTrigger:hover,
+.seriesAddChapters:hover,
+.chapterStatusToggle:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .chapterSection > .chapterHeader {
+    top: -1px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .seriesHero {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 13px;
+    align-items: start;
+  }
+
+  .seriesHeroContent {
+    gap: 9px;
+  }
+
+  .seriesSummary {
+    -webkit-line-clamp: 3;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .startReadingButton {
+    width: 100%;
+  }
+
+  .chapterTitleLine strong {
+    font-size: 13px;
+  }
+
+  .chapterPageCount {
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .startReadingButton,
+  .chapterStatusToggle,
+  .seriesActionsPopover button,
+  .seriesEditButton,
+  .seriesActionsTrigger,
+  .seriesAddChapters {
+    transition: none;
+  }
+}
+
 .readerHeader .readerChapterTitleTrigger {
   display: flex;
   min-width: 0;
@@ -3800,5 +5181,192 @@ button:disabled {
   .seriesAddChapters {
     min-height: 32px;
     padding: 0 8px;
+  }
+}
+
+/* Settings presentation pass: navigation, section rhythm, status feedback, and danger zones. */
+.settingsPagePanel {
+  --settings-control-height: 44px;
+}
+
+.settingsPagePanel > .settingsSectionNav {
+  position: sticky;
+  z-index: 3;
+  top: var(--settings-nav-top, 66px);
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 28px), transparent 100%);
+}
+
+.settingsPagePanel > .settingsSectionNav::-webkit-scrollbar {
+  display: none;
+}
+
+.settingsPagePanel > .settingsSectionNav .settingsTab {
+  min-width: max-content;
+  min-height: var(--settings-control-height);
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--app-muted);
+  transition: color 180ms ease, opacity 180ms ease, transform 180ms ease;
+}
+
+.settingsPagePanel > .settingsSectionNav .settingsTab:hover {
+  color: var(--app-text);
+  background: color-mix(in srgb, var(--app-panel) 72%, transparent);
+}
+
+.settingsPagePanel > .settingsSectionNav .settingsTab[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--app-lime) 60%, var(--app-border));
+  background: color-mix(in srgb, var(--app-lime) 14%, var(--app-panel));
+  color: var(--app-text);
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--app-lime);
+}
+
+.settingsPagePanel > .settingsSection {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+}
+
+.settingsPagePanel > .settingsSection > div:first-child {
+  display: grid;
+  gap: 7px;
+}
+
+.settingsPagePanel > .settingsSection h2 {
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.settingsPagePanel > .settingsSection label,
+.settingsPagePanel > .settingsSection button,
+.settingsPagePanel > .settingsSection select,
+.settingsPagePanel > .settingsSection input:not([type="range"]):not([type="checkbox"]) {
+  min-height: var(--settings-control-height);
+}
+
+.settingsPagePanel > .settingsSection > label,
+.settingsPagePanel > .settingsSection .toggleRow,
+.settingsPagePanel > .settingsSection .field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.settingsPagePanel > .settingsSection .description {
+  line-height: 1.55;
+}
+
+.settingsPagePanel > .settingsSection .storageGrid {
+  gap: 10px;
+}
+
+.settingsPagePanel > .settingsSection .storageGrid > div {
+  min-height: 76px;
+  padding: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-panel) 80%, transparent);
+}
+
+.settingsPagePanel > .settingsSection .storageValue {
+  margin-top: 8px;
+  color: var(--app-text);
+  font-weight: 700;
+}
+
+.settingsPagePanel > .settingsSection [role="status"] {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--app-lime) 34%, var(--app-border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--app-lime) 8%, var(--app-panel));
+}
+
+.settingsPagePanel > .settingsSection[aria-labelledby="backup-heading"] > div:first-child > p[role="status"] {
+  border-color: color-mix(in srgb, var(--app-danger) 36%, var(--app-border));
+  background: color-mix(in srgb, var(--app-danger) 9%, var(--app-panel));
+}
+
+.settingsPagePanel > .settingsSection[aria-labelledby="backup-heading"] .backupActions,
+.settingsPagePanel > .settingsSection[aria-labelledby="adult-access-heading"] .backupActions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 18px;
+}
+
+.settingsPagePanel > .settingsSection[aria-labelledby="backup-heading"] .backupActions::before,
+.settingsPagePanel > .settingsSection[aria-labelledby="adult-access-heading"] .backupActions::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--app-danger);
+  content: "Danger zone";
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settingsPagePanel > .settingsSection[aria-labelledby="backup-heading"] .backupActions button:last-child,
+.settingsPagePanel > .settingsSection[aria-labelledby="adult-access-heading"] .backupActions button:last-child {
+  border-color: color-mix(in srgb, var(--app-danger) 64%, var(--app-border)) !important;
+  background: color-mix(in srgb, var(--app-danger) 13%, var(--app-panel)) !important;
+  color: var(--app-danger) !important;
+}
+
+.settingsPagePanel > .settingsSection button,
+.settingsPagePanel > .settingsSection label,
+.settingsPagePanel > .settingsSection select {
+  transition: color 180ms ease, opacity 180ms ease, transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.settingsPagePanel > .settingsSection input[type="range"] {
+  transition: none;
+}
+
+@media (max-width: 680px) {
+  .settingsPagePanel > .settingsSectionNav {
+    width: calc(100vw - 32px);
+    margin-inline: -16px;
+    padding-inline: 12px;
+  }
+
+  .settingsPagePanel > .settingsSectionNav .settingsTab {
+    padding-inline: 12px;
+  }
+
+  .settingsPagePanel > .settingsSection {
+    gap: 16px;
+  }
+
+  .settingsPagePanel > .settingsSection > label,
+  .settingsPagePanel > .settingsSection .field {
+    align-items: flex-start;
+  }
+
+  .settingsPagePanel > .settingsSection .backupActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .settingsPagePanel > .settingsSection .backupActions > * {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settingsPagePanel > .settingsSectionNav .settingsTab,
+  .settingsPagePanel > .settingsSection button,
+  .settingsPagePanel > .settingsSection label,
+  .settingsPagePanel > .settingsSection select {
+    transition: none;
   }
 }

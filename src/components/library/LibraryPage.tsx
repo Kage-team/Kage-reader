@@ -6,15 +6,15 @@ import {
   ArrowDown,
   ArrowUp,
   BookOpen,
+  Grid2X2,
   Heart,
+  List,
   ListChecks,
   MoreHorizontal,
   Plus,
   Search,
   ShieldAlert,
   ShieldCheck,
-  SlidersHorizontal,
-  X,
 } from "lucide-react";
 import { AdultAccessPrompt } from "../security/AdultAccessPrompt";
 import {
@@ -38,6 +38,8 @@ import {
 } from "../../lib/storage/db";
 import type { Series, SeriesType } from "../../lib/storage/types";
 import { hasAdultAccess } from "../../lib/security/adultPin";
+import { useViewMode } from "./useViewMode";
+import { ViewModeToggle } from "./ViewModeToggle";
 
 const SERIES_TYPES: SeriesType[] = ["manga", "manhua", "oel", "novel"];
 const SERIES_TYPE_COLORS: Record<SeriesType, string> = {
@@ -54,6 +56,16 @@ const SERIES_TYPE_LABELS: Record<SeriesType, string> = {
   oel: "OEL",
   novel: "Novel",
 };
+
+function formatHistoryAge(timestamp: number): string {
+  const elapsedMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
+  if (elapsedMinutes < 1) return "Just now";
+  if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) return `${elapsedHours}h ago`;
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  return `${elapsedDays}d ago`;
+}
 
 export function LibraryPage() {
   const [searchParams] = useSearchParams();
@@ -74,9 +86,6 @@ export function LibraryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [selectedType, setSelectedType] = useState<SeriesType | "all">("all");
-  const [selectedTag, setSelectedTag] = useState("");
-  const [selectedCollection, setSelectedCollection] = useState("");
-  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("recent");
   const [selectionMode, setSelectionMode] = useState(false);
   const [revealedCardId, setRevealedCardId] = useState<string | null>(null);
@@ -93,6 +102,8 @@ export function LibraryPage() {
   const [disableSafeModeAfterUnlock, setDisableSafeModeAfterUnlock] =
     useState(false);
   const [preferences, setPreferences] = useState<Preferences>(getPreferences);
+  const [libraryViewMode, setLibraryViewMode] = useViewMode("kage-library-view-mode");
+  const [historyViewMode, setHistoryViewMode] = useViewMode("kage-history-view-mode");
   const requestedView = searchParams.get("view");
   const view =
     requestedView === "favorites" ||
@@ -346,8 +357,6 @@ export function LibraryPage() {
   const filteredEntries = filterLibraryEntries(accessibleEntries, {
     query,
     type: selectedType,
-    tag: selectedTag,
-    collection: selectedCollection,
     favoriteOnly: view === "favorites",
     continueOnly: view === "continue",
     queueOnly: view === "queue",
@@ -381,12 +390,6 @@ export function LibraryPage() {
       right.updatedAt - left.updatedAt || left.title.localeCompare(right.title)
     );
   });
-  const availableTags = Array.from(
-    new Set(accessibleEntries.flatMap((entry) => entry.tags)),
-  ).sort((left, right) => left.localeCompare(right));
-  const availableCollections = Array.from(
-    new Set(accessibleEntries.flatMap((entry) => entry.collections)),
-  ).sort((left, right) => left.localeCompare(right));
   const visibleRecentChapters = recentChapters.filter((item) =>
     filteredEntries.some((entry) => entry.id === item.seriesId),
   );
@@ -404,16 +407,10 @@ export function LibraryPage() {
               : view === "insights"
                 ? "Reading insights"
                 : "Your library";
-  const hasActiveFilters =
-    Boolean(query.trim()) ||
-    selectedType !== "all" ||
-    Boolean(selectedTag) ||
-    Boolean(selectedCollection);
+  const hasActiveFilters = Boolean(query.trim()) || selectedType !== "all";
   function clearFilters(): void {
     setQuery("");
     setSelectedType("all");
-    setSelectedTag("");
-    setSelectedCollection("");
   }
 
   return (
@@ -548,31 +545,49 @@ export function LibraryPage() {
             style={styles.resumeSection}
             aria-labelledby="recent-chapters-title"
           >
+            <div className="historySectionHeader">
+              <h2 style={styles.sectionTitle}>Recently read</h2>
+              <div className="viewModeToggle" role="group" aria-label="History view">
+                <button type="button" className={historyViewMode === "grid" ? "is-active" : ""} aria-label="History grid view" aria-pressed={historyViewMode === "grid"} onClick={() => setHistoryViewMode("grid")}><Grid2X2 size={15} /></button>
+                <button type="button" className={historyViewMode === "list" ? "is-active" : ""} aria-label="History list view" aria-pressed={historyViewMode === "list"} onClick={() => setHistoryViewMode("list")}><List size={15} /></button>
+              </div>
+            </div>
             {visibleRecentChapters.length > 0 ? (
-              <ul style={styles.list}>
+              <ul className={`historyEntries ${historyViewMode === "grid" ? "is-grid" : "is-list"}`} style={styles.list}>
                 {visibleRecentChapters.map((item) => (
                   <li key={item.id} style={styles.listItem}>
                     <Link
                       to={`/read/${encodeURIComponent(item.id)}`}
                       style={styles.historyLink}
                     >
+                      <span className="historyThumb" aria-hidden="true">
+                        {coverUrls[item.seriesId] ? (
+                          <img src={coverUrls[item.seriesId]} alt="" />
+                        ) : (
+                          <BookOpen size={18} />
+                        )}
+                      </span>
                       <span className="historyCopy">
-                        <strong>
-                          {item.seriesTitle} —{" "}
+                        <strong>{item.seriesTitle}</strong>
+                        <span className="historyMeta">
                           {item.number !== undefined
                             ? `Chapter ${item.number}`
-                            : item.title}
-                        </strong>
-                        <span className="historyMeta">
-                          Page {Math.min(item.pageIndex + 1, item.pageCount)} of{" "}
+                            : item.title} · Page {Math.min(item.pageIndex + 1, item.pageCount)} of{" "}
                           {item.pageCount}
+                        </span>
+                        <span className="historyProgress" aria-hidden="true">
+                          <span
+                            style={{
+                              width: `${item.pageCount > 0 ? Math.min(100, ((item.pageIndex + 1) / item.pageCount) * 100) : 0}%`,
+                            }}
+                          />
                         </span>
                       </span>
                       <time
                         className="historyDate"
                         dateTime={new Date(item.updatedAt).toISOString()}
                       >
-                        {new Date(item.updatedAt).toLocaleString()}
+                        {formatHistoryAge(item.updatedAt)}
                       </time>
                     </Link>
                   </li>
@@ -597,6 +612,7 @@ export function LibraryPage() {
           hidden={view === "insights" || view === "history"}
         >
           <header
+            className="libraryShelfHeader"
             style={styles.shelfHeader}
             hidden={["favorites", "continue", "queue"].includes(view)}
           >
@@ -622,6 +638,11 @@ export function LibraryPage() {
               <span className="librarySeriesCount">
                 {visibleEntries.length} series
               </span>
+              <ViewModeToggle
+                value={libraryViewMode}
+                onChange={setLibraryViewMode}
+                label="Library view"
+              />
               <button
                 type="button"
                 className="librarySelectToggle"
@@ -637,6 +658,9 @@ export function LibraryPage() {
                 }}
               >
                 <ListChecks size={16} />
+                <span className="librarySelectToggleLabel">
+                  {selectionMode ? "Done" : "Select"}
+                </span>
               </button>
             </div>
           </header>
@@ -660,7 +684,7 @@ export function LibraryPage() {
               </span>
             </label>
             <label className="librarySortFilter" style={styles.filterField}>
-              <span style={styles.sortField}>
+              <span className="sortField" style={styles.sortField}>
                 <ArrowDownWideNarrow size={15} />
                 <select
                   value={sortBy}
@@ -674,69 +698,124 @@ export function LibraryPage() {
                 </select>
               </span>
             </label>
-            <button
-              type="button"
-              className="libraryAdvancedFilters"
-              aria-haspopup="dialog"
-              aria-expanded={isAdvancedFiltersOpen}
-              onClick={() => setIsAdvancedFiltersOpen(true)}
-            >
-              <SlidersHorizontal size={15} />
-              <span>Filters</span>
-              {selectedTag || selectedCollection ? (
-                <i aria-hidden="true" />
-              ) : null}
-            </button>
           </div>
 
-          <div className="librarySelectionToolbar">
+          <div className="librarySecondaryControls">
+            <div className="libraryFilterRail" aria-label="Library filters">
+              <div
+                className="libraryTypeFilters"
+                role="group"
+                aria-label="Content type"
+              >
+                <button
+                  type="button"
+                  aria-pressed={selectedType === "all"}
+                  onClick={() => setSelectedType("all")}
+                  style={{
+                    ...styles.categoryChip,
+                    ...(selectedType === "all" ? styles.categoryChipActive : {}),
+                  }}
+                >
+                  All types <span>{accessibleEntries.length}</span>
+                </button>
+                {SERIES_TYPES.map((type) => {
+                  const count = accessibleEntries.filter((entry) =>
+                    type === "manga"
+                      ? entry.type === "manga" || entry.type === "manhwa"
+                      : entry.type === type,
+                  ).length;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      aria-pressed={selectedType === type}
+                      onClick={() => setSelectedType(type)}
+                      style={{
+                        ...styles.categoryChip,
+                        ...(selectedType === type
+                          ? styles.categoryChipActive
+                          : {}),
+                      }}
+                    >
+                      <span
+                        style={{
+                          ...styles.categoryDot,
+                          background: SERIES_TYPE_COLORS[type],
+                        }}
+                      />
+                      {SERIES_TYPE_LABELS[type]}
+                      <span>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className={`librarySelectionToolbar${selectionMode ? " is-active" : ""}`}>
             {selectionMode ? (
               <>
+                <span className="librarySelectionCount" aria-live="polite">
+                  {selectedSeriesIds.size} selected
+                </span>
+                <div className="librarySelectionPrimaryActions">
+                  <button
+                    type="button"
+                    className="libraryBulkAction libraryBulkActionPrimary"
+                    style={styles.secondaryButton}
+                    onClick={() =>
+                      setSelectedSeriesIds(
+                        new Set(visibleEntries.map((entry) => entry.id)),
+                      )
+                    }
+                  >
+                    Select visible
+                  </button>
+                  <button
+                    type="button"
+                    className="libraryBulkAction"
+                    style={styles.secondaryButton}
+                    disabled={selectedSeriesIds.size === 0}
+                    onClick={() => void bulkAddTag()}
+                  >
+                    Add tag
+                  </button>
+                  <button
+                    type="button"
+                    className="libraryBulkAction"
+                    style={styles.secondaryButton}
+                    onClick={() => setSelectedSeriesIds(new Set())}
+                    disabled={selectedSeriesIds.size === 0}
+                  >
+                    Clear selection
+                  </button>
+                </div>
+                <details className="libraryBulkMore">
+                  <summary>More</summary>
+                  <div className="libraryBulkMoreMenu">
+                    <button
+                      type="button"
+                      className="libraryBulkAction"
+                      style={styles.secondaryButton}
+                      disabled={selectedSeriesIds.size === 0}
+                      onClick={() => void bulkToggleFavorite()}
+                    >
+                      Toggle favorites ({selectedSeriesIds.size})
+                    </button>
+                    <button
+                      type="button"
+                      className="libraryBulkAction"
+                      style={styles.secondaryButton}
+                      disabled={selectedSeriesIds.size === 0}
+                      onClick={() => void bulkAddCollection()}
+                    >
+                      Add to shelf
+                    </button>
+                  </div>
+                </details>
                 <button
                   type="button"
-                  style={styles.secondaryButton}
-                  onClick={() =>
-                    setSelectedSeriesIds(
-                      new Set(visibleEntries.map((entry) => entry.id)),
-                    )
-                  }
-                >
-                  Select visible
-                </button>
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  onClick={() => setSelectedSeriesIds(new Set())}
-                  disabled={selectedSeriesIds.size === 0}
-                >
-                  Clear selection
-                </button>
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  disabled={selectedSeriesIds.size === 0}
-                  onClick={() => void bulkToggleFavorite()}
-                >
-                  Toggle favorites ({selectedSeriesIds.size})
-                </button>
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  disabled={selectedSeriesIds.size === 0}
-                  onClick={() => void bulkAddTag()}
-                >
-                  Add tag
-                </button>
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  disabled={selectedSeriesIds.size === 0}
-                  onClick={() => void bulkAddCollection()}
-                >
-                  Add to shelf
-                </button>
-                <button
-                  type="button"
+                  className="libraryBulkAction libraryBulkActionDanger"
                   style={styles.dangerButton}
                   disabled={selectedSeriesIds.size === 0}
                   onClick={() => void bulkDelete()}
@@ -757,132 +836,16 @@ export function LibraryPage() {
           </div>
           {bulkMessage ? <p role="status">{bulkMessage}</p> : null}
 
-          <div className="libraryFilterRail" aria-label="Library filters">
-            <div
-              className="libraryTypeFilters"
-              role="group"
-              aria-label="Content type"
-            >
-              <button
-                type="button"
-                aria-pressed={selectedType === "all"}
-                onClick={() => setSelectedType("all")}
-                style={{
-                  ...styles.categoryChip,
-                  ...(selectedType === "all" ? styles.categoryChipActive : {}),
-                }}
-              >
-                All types <span>{accessibleEntries.length}</span>
-              </button>
-              {SERIES_TYPES.map((type) => {
-                const count = accessibleEntries.filter((entry) =>
-                  type === "manga"
-                    ? entry.type === "manga" || entry.type === "manhwa"
-                    : entry.type === type,
-                ).length;
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    aria-pressed={selectedType === type}
-                    onClick={() => setSelectedType(type)}
-                    style={{
-                      ...styles.categoryChip,
-                      ...(selectedType === type
-                        ? styles.categoryChipActive
-                        : {}),
-                    }}
-                  >
-                    <span
-                      style={{
-                        ...styles.categoryDot,
-                        background: SERIES_TYPE_COLORS[type],
-                      }}
-                    />
-                    {SERIES_TYPE_LABELS[type]}
-                    <span>{count}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {isAdvancedFiltersOpen ? (
-            <div
-              className="filterSheetOverlay"
-              role="presentation"
-              onClick={(event) => {
-                if (event.target === event.currentTarget) {
-                  setIsAdvancedFiltersOpen(false);
-                }
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") setIsAdvancedFiltersOpen(false);
-              }}
-            >
-              <section
-                className="filterSheet"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="advanced-filters-title"
-              >
-                <header className="filterSheetHeader">
-                  <h2 id="advanced-filters-title">Advanced filters</h2>
-                  <button
-                    type="button"
-                    aria-label="Close filters"
-                    onClick={() => setIsAdvancedFiltersOpen(false)}
-                  >
-                    <X size={17} />
-                  </button>
-                </header>
-                <label className="libraryFilterSelect">
-                  <span>Topic</span>
-                  <select
-                    aria-label="Filter by topic"
-                    value={selectedTag}
-                    onChange={(event) =>
-                      setSelectedTag(event.currentTarget.value)
-                    }
-                  >
-                    <option value="">All tags</option>
-                    {availableTags.map((tag) => (
-                      <option key={tag} value={tag}>
-                        {tag}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="libraryFilterSelect">
-                  <span>Shelf</span>
-                  <select
-                    aria-label="Filter by shelf"
-                    value={selectedCollection}
-                    onChange={(event) =>
-                      setSelectedCollection(event.currentTarget.value)
-                    }
-                  >
-                    <option value="">All shelves</option>
-                    {availableCollections.map((collection) => (
-                      <option key={collection} value={collection}>
-                        {collection}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  className="filterSheetDone"
-                  onClick={() => setIsAdvancedFiltersOpen(false)}
-                >
-                  Done
-                </button>
-              </section>
-            </div>
-          ) : null}
-
           {isLoading ? (
-            <p style={styles.emptyText}>Loading series...</p>
+            <div className="libraryLoadingGrid" aria-label="Loading library" aria-busy="true">
+              {Array.from({ length: 6 }, (_, index) => (
+                <div className="librarySkeletonCard" key={index}>
+                  <div className="librarySkeletonCover" />
+                  <div className="librarySkeletonLine librarySkeletonLineWide" />
+                  <div className="librarySkeletonLine" />
+                </div>
+              ))}
+            </div>
           ) : entries.length === 0 ? (
             <div style={styles.emptyCard}>
               <BookOpen size={25} />
@@ -922,11 +885,13 @@ export function LibraryPage() {
               ) : null}
             </div>
           ) : (
-            <div style={styles.grid}>
+            <div className={`libraryEntries ${libraryViewMode === "list" ? "is-list" : "is-grid"}`}>
               {visibleEntries.map((entry) => (
                 <article
                   key={entry.id}
+                  className={`libraryCard${selectedSeriesIds.has(entry.id) ? " is-selected" : ""}${entry.resume ? " has-resume" : ""}`}
                   style={styles.cardShell}
+                  data-card-index={visibleEntries.indexOf(entry)}
                   data-revealed={
                     revealedCardId === entry.id ? "true" : undefined
                   }

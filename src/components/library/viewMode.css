@@ -1,0 +1,22 @@
+.viewModeToggle { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--app-border); border-radius: 7px; background: var(--app-panel); }
+.viewModeToggle button { display: inline-flex; min-width: 36px; min-height: 34px; align-items: center; justify-content: center; gap: 5px; border: 0; border-radius: 5px; background: transparent; color: var(--app-muted); font: inherit; font-size: 11px; cursor: pointer; }
+.viewModeToggle button.is-active { background: var(--app-panel-raised); color: var(--app-text); box-shadow: inset 0 -2px var(--app-lime); }
+.libraryEntries { display: grid; gap: 18px 12px; }
+.libraryEntries.is-grid { grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); }
+.libraryEntries.is-list { grid-template-columns: 1fr; gap: 0; }
+.libraryEntries.is-list .libraryCard { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 10px 0; border-bottom-color: var(--app-border); border-radius: 0; }
+.libraryEntries.is-list .libraryCard > a { display: contents; }
+.libraryEntries.is-list .libraryCard .seriesCardCover { width: 76px; height: 102px; }
+.libraryEntries.is-list .libraryCard .seriesCardBody { min-width: 0; }
+.libraryEntries.is-list .libraryCard .seriesCardMeta { display: block; }
+.historySectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.historyEntries.is-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.historyEntries.is-grid .historyLink { display: grid; }
+@media (max-width: 720px) {
+  .viewModeToggle button span { display: none; }
+  .libraryEntries.is-list .libraryCard { grid-template-columns: 60px minmax(0, 1fr) auto; gap: 10px; }
+  .libraryEntries.is-list .libraryCard .seriesCardCover { width: 60px; height: 80px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .viewModeToggle *, .libraryEntries *, .historyEntries * { transition: none !important; animation: none !important; }
+}
