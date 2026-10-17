@@ -4485,3 +4485,190 @@ main > section > [role="alert"] {
     padding: 0 8px;
   }
 }
+
+/* Settings presentation pass: navigation, section rhythm, status feedback, and danger zones. */
+.settingsPagePanel {
+  --settings-control-height: 44px;
+}
+
+.settingsPagePanel > .settingsSectionNav {
+  position: sticky;
+  z-index: 3;
+  top: var(--settings-nav-top, 66px);
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 28px), transparent 100%);
+}
+
+.settingsPagePanel > .settingsSectionNav::-webkit-scrollbar {
+  display: none;
+}
+
+.settingsPagePanel > .settingsSectionNav .settingsTab {
+  min-width: max-content;
+  min-height: var(--settings-control-height);
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--app-muted);
+  transition: color 180ms ease, opacity 180ms ease, transform 180ms ease;
+}
+
+.settingsPagePanel > .settingsSectionNav .settingsTab:hover {
+  color: var(--app-text);
+  background: color-mix(in srgb, var(--app-panel) 72%, transparent);
+}
+
+.settingsPagePanel > .settingsSectionNav .settingsTab[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--app-lime) 60%, var(--app-border));
+  background: color-mix(in srgb, var(--app-lime) 14%, var(--app-panel));
+  color: var(--app-text);
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--app-lime);
+}
+
+.settingsPagePanel > .settingsSection {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+}
+
+.settingsPagePanel > .settingsSection > div:first-child {
+  display: grid;
+  gap: 7px;
+}
+
+.settingsPagePanel > .settingsSection h2 {
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.settingsPagePanel > .settingsSection label,
+.settingsPagePanel > .settingsSection button,
+.settingsPagePanel > .settingsSection select,
+.settingsPagePanel > .settingsSection input:not([type="range"]):not([type="checkbox"]) {
+  min-height: var(--settings-control-height);
+}
+
+.settingsPagePanel > .settingsSection > label,
+.settingsPagePanel > .settingsSection .toggleRow,
+.settingsPagePanel > .settingsSection .field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.settingsPagePanel > .settingsSection .description {
+  line-height: 1.55;
+}
+
+.settingsPagePanel > .settingsSection .storageGrid {
+  gap: 10px;
+}
+
+.settingsPagePanel > .settingsSection .storageGrid > div {
+  min-height: 76px;
+  padding: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-panel) 80%, transparent);
+}
+
+.settingsPagePanel > .settingsSection .storageValue {
+  margin-top: 8px;
+  color: var(--app-text);
+  font-weight: 700;
+}
+
+.settingsPagePanel > .settingsSection [role="status"] {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--app-lime) 34%, var(--app-border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--app-lime) 8%, var(--app-panel));
+}
+
+.settingsPagePanel > .settingsSection[aria-labelledby="backup-heading"] > div:first-child > p[role="status"] {
+  border-color: color-mix(in srgb, var(--app-danger) 36%, var(--app-border));
+  background: color-mix(in srgb, var(--app-danger) 9%, var(--app-panel));
+}
+
+.settingsPagePanel > .settingsSection[aria-labelledby="backup-heading"] .backupActions,
+.settingsPagePanel > .settingsSection[aria-labelledby="adult-access-heading"] .backupActions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 18px;
+}
+
+.settingsPagePanel > .settingsSection[aria-labelledby="backup-heading"] .backupActions::before,
+.settingsPagePanel > .settingsSection[aria-labelledby="adult-access-heading"] .backupActions::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--app-danger);
+  content: "Danger zone";
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settingsPagePanel > .settingsSection[aria-labelledby="backup-heading"] .backupActions button:last-child,
+.settingsPagePanel > .settingsSection[aria-labelledby="adult-access-heading"] .backupActions button:last-child {
+  border-color: color-mix(in srgb, var(--app-danger) 64%, var(--app-border)) !important;
+  background: color-mix(in srgb, var(--app-danger) 13%, var(--app-panel)) !important;
+  color: var(--app-danger) !important;
+}
+
+.settingsPagePanel > .settingsSection button,
+.settingsPagePanel > .settingsSection label,
+.settingsPagePanel > .settingsSection select {
+  transition: color 180ms ease, opacity 180ms ease, transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.settingsPagePanel > .settingsSection input[type="range"] {
+  transition: none;
+}
+
+@media (max-width: 680px) {
+  .settingsPagePanel > .settingsSectionNav {
+    width: calc(100vw - 32px);
+    margin-inline: -16px;
+    padding-inline: 12px;
+  }
+
+  .settingsPagePanel > .settingsSectionNav .settingsTab {
+    padding-inline: 12px;
+  }
+
+  .settingsPagePanel > .settingsSection {
+    gap: 16px;
+  }
+
+  .settingsPagePanel > .settingsSection > label,
+  .settingsPagePanel > .settingsSection .field {
+    align-items: flex-start;
+  }
+
+  .settingsPagePanel > .settingsSection .backupActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .settingsPagePanel > .settingsSection .backupActions > * {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settingsPagePanel > .settingsSectionNav .settingsTab,
+  .settingsPagePanel > .settingsSection button,
+  .settingsPagePanel > .settingsSection label,
+  .settingsPagePanel > .settingsSection select {
+    transition: none;
+  }
+}
