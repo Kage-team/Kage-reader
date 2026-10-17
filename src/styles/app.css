@@ -5277,8 +5277,57 @@ main > section > [role="alert"] {
 .settingsPagePanel > .settingsSection .storageValue {
   margin-top: 8px;
   color: var(--app-text);
-  font-weight: 700;
 }
+
+.homePage {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  padding: clamp(20px, 4vw, 48px) 0 64px;
+}
+
+.homeHero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: clamp(24px, 5vw, 52px);
+  border: 1px solid var(--app-border);
+  border-radius: 24px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--app-lime) 10%, var(--app-panel)), var(--app-panel));
+}
+
+.homeHero h1 { margin: 14px 0 8px; font-size: clamp(32px, 6vw, 58px); letter-spacing: -0.05em; }
+.homeHero p { max-width: 520px; margin: 0; color: var(--app-muted); font-size: 16px; }
+.eyebrow { display: inline-flex; align-items: center; gap: 7px; color: var(--app-lime); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
+.homePrimaryAction, .secondaryButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 12px; font-weight: 800; text-decoration: none; }
+.homePrimaryAction { background: var(--app-lime); color: var(--app-ink); }
+.secondaryButton { border: 1px solid var(--app-border-strong); color: var(--app-text); }
+.homeRails { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.homeRailCard { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; min-height: 92px; padding: 16px; border: 1px solid var(--app-border); border-radius: 16px; background: var(--app-panel); color: var(--app-text); text-decoration: none; transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease; }
+.homeRailCard:hover { transform: translateY(-2px); border-color: var(--app-border-strong); background: var(--app-panel-raised); }
+.homeRailIcon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: color-mix(in srgb, var(--app-lime) 12%, var(--app-panel-raised)); color: var(--app-lime); }
+.homeRailCard strong, .homeRailCard small { display: block; }
+.homeRailCard small { margin-top: 4px; color: var(--app-muted); }
+.homeEmptyState { display: flex; align-items: center; gap: 16px; margin-top: 18px; padding: 20px; border: 1px dashed var(--app-border-strong); border-radius: 16px; background: color-mix(in srgb, var(--app-panel) 68%, transparent); }
+.homeEmptyState h2, .homeEmptyState p { margin: 0; }
+.homeEmptyState p { margin-top: 5px; color: var(--app-muted); }
+.homeEmptyIcon { display: grid; flex: none; place-items: center; width: 52px; height: 52px; border-radius: 14px; background: var(--app-panel-raised); color: var(--app-lime); }
+.homeEmptyState .secondaryButton { margin-left: auto; }
+.appMobileAdd { display: grid !important; width: 56px; height: 56px; align-content: center; justify-items: center; gap: 2px; margin: 0 auto; transform: translateY(-10px); border: 3px solid var(--app-bg) !important; border-radius: 50% !important; background: #b8f34a !important; color: #10130f !important; box-shadow: 0 8px 20px rgba(0,0,0,.25); }
+.appMobileAdd span { color: #10130f; font-size: 10px; font-weight: 800; }
+.appMobileAdd svg { color: #10130f; }
+@media (max-width: 720px) {
+  .homePage { padding-top: 14px; }
+  .homeHero { display: grid; gap: 20px; padding: 22px; border-radius: 18px; }
+  .homeHero h1 { font-size: 38px; }
+  .homePrimaryAction { width: 100%; }
+  .homeRails { grid-template-columns: 1fr; gap: 10px; }
+  .homeRailCard { min-height: 76px; }
+  .homeEmptyState { align-items: flex-start; flex-wrap: wrap; }
+  .homeEmptyState .secondaryButton { width: 100%; margin-left: 68px; }
+}
+@media (prefers-reduced-motion: reduce) { .homeRailCard { transition: none; } }
+
 
 .settingsPagePanel > .settingsSection [role="status"] {
   margin: 0;

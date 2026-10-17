@@ -7,6 +7,7 @@ import {
   Clock3,
   FileUp,
   History,
+  Home,
   ListOrdered,
   Settings,
   ShieldCheck,
@@ -17,7 +18,9 @@ export function AppFrame({ children }: PropsWithChildren) {
   const view = new URLSearchParams(search).get("view") ?? "all";
   const isLibraryRoute = pathname === "/";
   const pageName =
-    pathname === "/settings"
+    pathname === "/" && !new URLSearchParams(search).has("view")
+      ? "Home"
+      : pathname === "/settings"
       ? "Settings"
       : pathname.startsWith("/series/")
         ? "Series"
@@ -42,7 +45,11 @@ export function AppFrame({ children }: PropsWithChildren) {
         </NavLink>
 
         <nav className="appNavGroup">
-          <p className="appNavLabel">Your library</p>
+          <p className="appNavLabel">Workspace</p>
+          <NavLink to="/" end className={() => navClass(isLibraryRoute && !new URLSearchParams(search).has("view"))}>
+            <Home size={17} />
+            <span>Home</span>
+          </NavLink>
           <NavLink
             to="/import"
             className={({ isActive }) => navClass(isActive)}
@@ -112,46 +119,25 @@ export function AppFrame({ children }: PropsWithChildren) {
       </aside>
 
       <nav className="appMobileNav" aria-label="Primary navigation">
-        <NavLink
-          to="/"
-          end
-          className={() => navClass(isLibraryRoute && view === "all")}
-          aria-label="All series"
-        >
+        <NavLink to="/" end className={() => navClass(isLibraryRoute && !new URLSearchParams(search).has("view"))} aria-label="Home">
+          <Home size={18} />
+          <span>Home</span>
+        </NavLink>
+        <NavLink to="/?view=all" className={() => navClass(isLibraryRoute && view === "all")} aria-label="Library">
           <BookOpen size={18} />
           <span>Library</span>
         </NavLink>
-        <NavLink
-          to="/?view=continue"
-          className={() => navClass(isLibraryRoute && view === "continue")}
-          aria-label="Continue reading"
-        >
-          <Clock3 size={18} />
-          <span>Continue</span>
+        <NavLink to="/import" className="appMobileAdd" aria-label="Add to library">
+          <FileUp size={18} />
+          <span>Add</span>
         </NavLink>
-        <NavLink
-          to="/?view=favorites"
-          className={() => navClass(isLibraryRoute && view === "favorites")}
-          aria-label="Favorites"
-        >
-          <Bookmark size={18} />
-          <span>Favorites</span>
-        </NavLink>
-        <NavLink
-          to="/?view=queue"
-          className={() => navClass(isLibraryRoute && view === "queue")}
-          aria-label="Reading queue"
-        >
-          <ListOrdered size={18} />
-          <span>Queue</span>
-        </NavLink>
-        <NavLink
-          to="/?view=history"
-          className={() => navClass(isLibraryRoute && view === "history")}
-          aria-label="Reading history"
-        >
+        <NavLink to="/?view=history" className={() => navClass(isLibraryRoute && view === "history")} aria-label="Activity">
           <History size={18} />
-          <span>History</span>
+          <span>Activity</span>
+        </NavLink>
+        <NavLink to="/settings" className={({ isActive }) => navClass(isActive)} aria-label="More">
+          <Settings size={18} />
+          <span>More</span>
         </NavLink>
       </nav>
 
