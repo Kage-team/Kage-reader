@@ -85,8 +85,6 @@ export function LibraryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [selectedType, setSelectedType] = useState<SeriesType | "all">("all");
-  const [selectedTag, setSelectedTag] = useState("");
-  const [selectedCollection, setSelectedCollection] = useState("");
   const [sortBy, setSortBy] = useState("recent");
   const [selectionMode, setSelectionMode] = useState(false);
   const [revealedCardId, setRevealedCardId] = useState<string | null>(null);
@@ -358,8 +356,6 @@ export function LibraryPage() {
   const filteredEntries = filterLibraryEntries(accessibleEntries, {
     query,
     type: selectedType,
-    tag: selectedTag,
-    collection: selectedCollection,
     favoriteOnly: view === "favorites",
     continueOnly: view === "continue",
     queueOnly: view === "queue",
@@ -410,16 +406,10 @@ export function LibraryPage() {
               : view === "insights"
                 ? "Reading insights"
                 : "Your library";
-  const hasActiveFilters =
-    Boolean(query.trim()) ||
-    selectedType !== "all" ||
-    Boolean(selectedTag) ||
-    Boolean(selectedCollection);
+  const hasActiveFilters = Boolean(query.trim()) || selectedType !== "all";
   function clearFilters(): void {
     setQuery("");
     setSelectedType("all");
-    setSelectedTag("");
-    setSelectedCollection("");
   }
 
   return (
