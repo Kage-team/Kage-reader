@@ -701,20 +701,6 @@ export function LibraryPage() {
           </div>
 
           <div className="librarySecondaryControls">
-            <button
-              type="button"
-              className="libraryAdvancedFilters"
-              aria-haspopup="dialog"
-              aria-expanded={isAdvancedFiltersOpen}
-              onClick={() => setIsAdvancedFiltersOpen(true)}
-            >
-              <SlidersHorizontal size={15} />
-              <span>Filters</span>
-              {selectedTag || selectedCollection ? (
-                <i aria-hidden="true" />
-              ) : null}
-            </button>
-
             <div className="libraryFilterRail" aria-label="Library filters">
               <div
                 className="libraryTypeFilters"
@@ -849,80 +835,6 @@ export function LibraryPage() {
             ) : null}
           </div>
           {bulkMessage ? <p role="status">{bulkMessage}</p> : null}
-
-          {isAdvancedFiltersOpen ? (
-            <div
-              className="filterSheetOverlay"
-              role="presentation"
-              onClick={(event) => {
-                if (event.target === event.currentTarget) {
-                  setIsAdvancedFiltersOpen(false);
-                }
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") setIsAdvancedFiltersOpen(false);
-              }}
-            >
-              <section
-                className="filterSheet"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="advanced-filters-title"
-              >
-                <header className="filterSheetHeader">
-                  <h2 id="advanced-filters-title">Advanced filters</h2>
-                  <button
-                    type="button"
-                    aria-label="Close filters"
-                    onClick={() => setIsAdvancedFiltersOpen(false)}
-                  >
-                    <X size={17} />
-                  </button>
-                </header>
-                <label className="libraryFilterSelect">
-                  <span>Topic</span>
-                  <select
-                    aria-label="Filter by topic"
-                    value={selectedTag}
-                    onChange={(event) =>
-                      setSelectedTag(event.currentTarget.value)
-                    }
-                  >
-                    <option value="">All tags</option>
-                    {availableTags.map((tag) => (
-                      <option key={tag} value={tag}>
-                        {tag}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="libraryFilterSelect">
-                  <span>Shelf</span>
-                  <select
-                    aria-label="Filter by shelf"
-                    value={selectedCollection}
-                    onChange={(event) =>
-                      setSelectedCollection(event.currentTarget.value)
-                    }
-                  >
-                    <option value="">All shelves</option>
-                    {availableCollections.map((collection) => (
-                      <option key={collection} value={collection}>
-                        {collection}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  className="filterSheetDone"
-                  onClick={() => setIsAdvancedFiltersOpen(false)}
-                >
-                  Done
-                </button>
-              </section>
-            </div>
-          ) : null}
 
           {isLoading ? (
             <div className="libraryLoadingGrid" aria-label="Loading library" aria-busy="true">
