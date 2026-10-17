@@ -600,6 +600,151 @@ button:disabled {
   min-width: 0;
 }
 
+/* Library presentation */
+.libraryHeader {
+  gap: 12px;
+}
+
+.libraryShelfSection {
+  display: grid;
+  gap: 14px;
+}
+
+.libraryShelfHeader {
+  gap: 10px;
+}
+
+.librarySearchSortRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.32fr);
+  align-items: end;
+  gap: 8px;
+}
+
+.librarySecondaryControls {
+  display: grid;
+  gap: 8px;
+  padding-top: 2px;
+  border-top: 1px solid color-mix(in srgb, var(--app-border) 72%, transparent);
+}
+
+.libraryAdvancedFilters {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid var(--app-border);
+  border-radius: 7px;
+  background: var(--app-panel);
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.libraryAdvancedFilters:hover,
+.libraryAdvancedFilters[aria-expanded="true"] {
+  border-color: var(--app-border-strong);
+  background: var(--app-panel-raised);
+  color: var(--app-text);
+}
+
+.libraryAdvancedFilters i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--app-lime);
+}
+
+.librarySelectionToolbar.is-active {
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--app-lime) 35%, var(--app-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--app-lime) 7%, var(--app-panel));
+}
+
+.librarySelectionToolbar.is-active button {
+  min-height: 40px;
+}
+
+.libraryLoadingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 18px 12px;
+}
+
+.librarySkeletonCard {
+  display: grid;
+  gap: 9px;
+}
+
+.librarySkeletonCover,
+.librarySkeletonLine {
+  border-radius: 7px;
+  background: linear-gradient(100deg, var(--app-panel-raised) 25%, color-mix(in srgb, var(--app-text) 9%, var(--app-panel-raised)) 45%, var(--app-panel-raised) 65%);
+  background-size: 220% 100%;
+  animation: library-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.librarySkeletonCover {
+  aspect-ratio: 2 / 3;
+}
+
+.librarySkeletonLine {
+  width: 58%;
+  height: 11px;
+}
+
+.librarySkeletonLineWide {
+  width: 86%;
+}
+
+.libraryCard {
+  border: 1px solid transparent;
+  border-radius: 9px;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.libraryCard.is-selected {
+  border-color: var(--app-lime);
+  background: color-mix(in srgb, var(--app-lime) 8%, var(--app-panel));
+}
+
+.libraryCard.has-resume .coverProgressOverlay {
+  background: linear-gradient(transparent, color-mix(in srgb, var(--app-lime) 26%, rgba(0, 0, 0, 0.88)));
+}
+
+.libraryCard .seriesCardMenuTrigger,
+.libraryCard .libraryIconAction,
+.libraryCard .librarySelectToggle {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.libraryCard:nth-child(-n + 6) {
+  animation: library-card-in 200ms ease both;
+  animation-delay: calc(min(var(--library-card-index, 0), 5) * 24ms);
+}
+
+.libraryCard[data-card-index="0"] { --library-card-index: 0; }
+.libraryCard[data-card-index="1"] { --library-card-index: 1; }
+.libraryCard[data-card-index="2"] { --library-card-index: 2; }
+.libraryCard[data-card-index="3"] { --library-card-index: 3; }
+.libraryCard[data-card-index="4"] { --library-card-index: 4; }
+.libraryCard[data-card-index="5"] { --library-card-index: 5; }
+
+@keyframes library-card-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes library-skeleton-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
 .libraryImportLink {
   display: inline-flex;
   min-height: 40px;

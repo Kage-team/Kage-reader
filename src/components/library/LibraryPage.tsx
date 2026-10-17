@@ -674,6 +674,9 @@ export function LibraryPage() {
                 </select>
               </span>
             </label>
+          </div>
+
+          <div className="librarySecondaryControls">
             <button
               type="button"
               className="libraryAdvancedFilters"
@@ -687,9 +690,59 @@ export function LibraryPage() {
                 <i aria-hidden="true" />
               ) : null}
             </button>
+
+            <div className="libraryFilterRail" aria-label="Library filters">
+              <div
+                className="libraryTypeFilters"
+                role="group"
+                aria-label="Content type"
+              >
+                <button
+                  type="button"
+                  aria-pressed={selectedType === "all"}
+                  onClick={() => setSelectedType("all")}
+                  style={{
+                    ...styles.categoryChip,
+                    ...(selectedType === "all" ? styles.categoryChipActive : {}),
+                  }}
+                >
+                  All types <span>{accessibleEntries.length}</span>
+                </button>
+                {SERIES_TYPES.map((type) => {
+                  const count = accessibleEntries.filter((entry) =>
+                    type === "manga"
+                      ? entry.type === "manga" || entry.type === "manhwa"
+                      : entry.type === type,
+                  ).length;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      aria-pressed={selectedType === type}
+                      onClick={() => setSelectedType(type)}
+                      style={{
+                        ...styles.categoryChip,
+                        ...(selectedType === type
+                          ? styles.categoryChipActive
+                          : {}),
+                      }}
+                    >
+                      <span
+                        style={{
+                          ...styles.categoryDot,
+                          background: SERIES_TYPE_COLORS[type],
+                        }}
+                      />
+                      {SERIES_TYPE_LABELS[type]}
+                      <span>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
-          <div className="librarySelectionToolbar">
+          <div className={`librarySelectionToolbar${selectionMode ? " is-active" : ""}`}>
             {selectionMode ? (
               <>
                 <button
@@ -756,56 +809,6 @@ export function LibraryPage() {
             ) : null}
           </div>
           {bulkMessage ? <p role="status">{bulkMessage}</p> : null}
-
-          <div className="libraryFilterRail" aria-label="Library filters">
-            <div
-              className="libraryTypeFilters"
-              role="group"
-              aria-label="Content type"
-            >
-              <button
-                type="button"
-                aria-pressed={selectedType === "all"}
-                onClick={() => setSelectedType("all")}
-                style={{
-                  ...styles.categoryChip,
-                  ...(selectedType === "all" ? styles.categoryChipActive : {}),
-                }}
-              >
-                All types <span>{accessibleEntries.length}</span>
-              </button>
-              {SERIES_TYPES.map((type) => {
-                const count = accessibleEntries.filter((entry) =>
-                  type === "manga"
-                    ? entry.type === "manga" || entry.type === "manhwa"
-                    : entry.type === type,
-                ).length;
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    aria-pressed={selectedType === type}
-                    onClick={() => setSelectedType(type)}
-                    style={{
-                      ...styles.categoryChip,
-                      ...(selectedType === type
-                        ? styles.categoryChipActive
-                        : {}),
-                    }}
-                  >
-                    <span
-                      style={{
-                        ...styles.categoryDot,
-                        background: SERIES_TYPE_COLORS[type],
-                      }}
-                    />
-                    {SERIES_TYPE_LABELS[type]}
-                    <span>{count}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           {isAdvancedFiltersOpen ? (
             <div
@@ -882,7 +885,15 @@ export function LibraryPage() {
           ) : null}
 
           {isLoading ? (
-            <p style={styles.emptyText}>Loading series...</p>
+            <div className="libraryLoadingGrid" aria-label="Loading library" aria-busy="true">
+              {Array.from({ length: 6 }, (_, index) => (
+                <div className="librarySkeletonCard" key={index}>
+                  <div className="librarySkeletonCover" />
+                  <div className="librarySkeletonLine librarySkeletonLineWide" />
+                  <div className="librarySkeletonLine" />
+                </div>
+              ))}
+            </div>
           ) : entries.length === 0 ? (
             <div style={styles.emptyCard}>
               <BookOpen size={25} />
@@ -926,7 +937,9 @@ export function LibraryPage() {
               {visibleEntries.map((entry) => (
                 <article
                   key={entry.id}
+                  className={`libraryCard${selectedSeriesIds.has(entry.id) ? " is-selected" : ""}${entry.resume ? " has-resume" : ""}`}
                   style={styles.cardShell}
+                  data-card-index={visibleEntries.indexOf(entry)}
                   data-revealed={
                     revealedCardId === entry.id ? "true" : undefined
                   }
