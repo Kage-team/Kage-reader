@@ -1514,6 +1514,279 @@ button:disabled {
   text-transform: capitalize;
 }
 
+/* Import screen presentation: keep queue semantics and controls unchanged. */
+.importPage {
+  --import-motion: 190ms ease;
+}
+
+.importDropZone,
+.importQueue,
+.importProgressModal {
+  transition:
+    transform var(--import-motion),
+    opacity var(--import-motion),
+    border-color var(--import-motion),
+    background-color var(--import-motion);
+}
+
+.importDropZone {
+  position: relative;
+}
+
+.importDropZoneActive {
+  transform: translateY(-2px);
+}
+
+.importPrimaryButton,
+.importSecondaryButton,
+.importLibraryLink,
+.importQueueLink {
+  min-height: 44px;
+}
+
+.importPrimaryButton,
+.importSecondaryButton {
+  transition:
+    transform var(--import-motion),
+    opacity var(--import-motion),
+    border-color var(--import-motion),
+    background-color var(--import-motion);
+}
+
+.importPrimaryButton:active,
+.importSecondaryButton:active,
+.importLibraryLink:active,
+.importQueueLink:active {
+  transform: translateY(1px);
+}
+
+.importProgressBackdrop {
+  animation: import-overlay-in var(--import-motion) both;
+}
+
+.importProgressModal {
+  animation: import-modal-in var(--import-motion) both;
+}
+
+.importProgressItems {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-border-strong) transparent;
+}
+
+.importProgressItem {
+  min-height: 38px;
+  padding-block: 7px;
+}
+
+.importProgressItemState {
+  display: inline-flex;
+  min-width: 58px;
+  justify-content: flex-end;
+  font-weight: 700;
+}
+
+.importProgressItemState::after {
+  content: none;
+}
+
+.importProgressItemState[data-state="working"] {
+  color: var(--app-lime);
+}
+
+.importProgressItemState[data-state="working"]::after {
+  content: "reading";
+}
+
+.importProgressItemState[data-state="saved"]::after {
+  content: "done";
+}
+
+.importProgressItemState[data-state="cancelled"]::after {
+  content: "queued";
+}
+
+.importProgressItemState[data-state="duplicate"]::after {
+  content: "duplicate";
+}
+
+.importProgressItemState[data-state="error"]::after {
+  content: "error";
+}
+
+.importProgressItemState[data-state="working"],
+.importProgressItemState[data-state="saved"],
+.importProgressItemState[data-state="cancelled"],
+.importProgressItemState[data-state="duplicate"],
+.importProgressItemState[data-state="error"] {
+  font-size: 0;
+}
+
+.importProgressItemState[data-state="working"]::after,
+.importProgressItemState[data-state="saved"]::after,
+.importProgressItemState[data-state="cancelled"]::after,
+.importProgressItemState[data-state="duplicate"]::after,
+.importProgressItemState[data-state="error"]::after {
+  font-size: 10px;
+}
+
+.importProgressActions .importSecondaryButton {
+  min-width: 112px;
+}
+
+@keyframes import-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes import-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .importDropZone > p {
+    display: none;
+  }
+
+  .importDropZone {
+    min-height: 0;
+    padding: 24px 16px;
+  }
+
+  .importDropMark {
+    width: 46px;
+  }
+}
+
+@media (max-width: 560px) {
+  .importPage {
+    gap: 18px;
+    min-height: calc(100dvh - 52px);
+    padding: 20px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .importHeader {
+    align-items: start;
+    gap: 12px;
+  }
+
+  .importHeader h1 {
+    font-size: 22px;
+  }
+
+  .importSubtitle {
+    max-width: 28ch;
+  }
+
+  .importLibraryLink {
+    min-height: 44px;
+    margin-top: -8px;
+  }
+
+  .importDropZone {
+    gap: 10px;
+    border-radius: 12px;
+  }
+
+  .importDropZone h2 {
+    font-size: 18px;
+  }
+
+  .importActions {
+    width: 100%;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 5px;
+  }
+
+  .importActions > button {
+    width: 100%;
+  }
+
+  .importPrimaryButton {
+    min-height: 52px;
+    font-size: 13px;
+  }
+
+  .importSecondaryButton {
+    min-height: 44px;
+  }
+
+  .importProgressBackdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .importProgressModal {
+    gap: 12px;
+    width: 100%;
+    max-height: min(620px, calc(100dvh - 12px));
+    padding: 18px 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 16px 16px 0 0;
+  }
+
+  .importProgressItems {
+    max-height: min(230px, 30dvh);
+  }
+
+  .importProgressMeta,
+  .importProgressActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .importProgressActions .importSecondaryButton {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .importQueueHeader {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .importQueueHeader .importActions {
+    margin-top: 0;
+  }
+
+  .importQueueItem {
+    grid-template-columns: 8px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .importQueueState {
+    grid-column: 2;
+    justify-self: start;
+    font-size: 10px;
+  }
+
+  .importQueueItem .importSecondaryButton {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .importDropZone,
+  .importQueue,
+  .importProgressModal,
+  .importPrimaryButton,
+  .importSecondaryButton,
+  .importLibraryLink,
+  .importQueueLink,
+  .importProgressBackdrop {
+    animation: none;
+    transition: none;
+  }
+}
+
 .novelTextContent p {
   margin-block: 0 var(--novel-paragraph-gap, 16px);
   text-indent: var(--novel-paragraph-indent, 0);
