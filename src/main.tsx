@@ -10,7 +10,6 @@ import "@fontsource/space-grotesk/700.css";
 import { App } from "./App";
 import "./styles/app.css";
 import "./components/library/viewMode.css";
-import "./components/experimental/experimental.css";
 
 const rootElement = document.getElementById("root");
 
