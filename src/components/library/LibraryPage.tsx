@@ -39,6 +39,7 @@ import {
 import type { Series, SeriesType } from "../../lib/storage/types";
 import { hasAdultAccess } from "../../lib/security/adultPin";
 import { useViewMode } from "./useViewMode";
+import { ViewModeToggle } from "./ViewModeToggle";
 
 const SERIES_TYPES: SeriesType[] = ["manga", "manhua", "oel", "novel"];
 const SERIES_TYPE_COLORS: Record<SeriesType, string> = {
@@ -636,26 +637,11 @@ export function LibraryPage() {
               <span className="librarySeriesCount">
                 {visibleEntries.length} series
               </span>
-              <div className="viewModeToggle" role="group" aria-label="Library view">
-                <button
-                  type="button"
-                  className={libraryViewMode === "grid" ? "is-active" : ""}
-                  aria-label="Grid view"
-                  aria-pressed={libraryViewMode === "grid"}
-                  onClick={() => setLibraryViewMode("grid")}
-                >
-                  <Grid2X2 size={15} /> <span>Grid</span>
-                </button>
-                <button
-                  type="button"
-                  className={libraryViewMode === "list" ? "is-active" : ""}
-                  aria-label="List view"
-                  aria-pressed={libraryViewMode === "list"}
-                  onClick={() => setLibraryViewMode("list")}
-                >
-                  <List size={15} /> <span>List</span>
-                </button>
-              </div>
+              <ViewModeToggle
+                value={libraryViewMode}
+                onChange={setLibraryViewMode}
+                label="Library view"
+              />
               <button
                 type="button"
                 className="librarySelectToggle"

@@ -986,6 +986,166 @@ button:disabled {
   }
 }
 
+/* Shared library/history view controls and content rhythm. */
+.historySectionHeader,
+.libraryShelfSection,
+.libraryShelfSection > .librarySearchSortRow,
+.libraryShelfSection > .librarySecondaryControls,
+.libraryShelfSection > .librarySelectionToolbar,
+.libraryShelfSection > .libraryEntries,
+.libraryShelfSection > .libraryLoadingGrid,
+.libraryShelfSection > .libraryEmptyCard {
+  width: min(100%, 960px);
+  margin-inline: auto;
+}
+
+.historySectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.historySectionHeader .sectionTitle {
+  margin: 0;
+}
+
+.viewModeToggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-md);
+  background: var(--app-panel-raised);
+}
+
+.viewModeToggle button {
+  display: inline-flex;
+  min-block-size: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--app-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  transition: transform var(--motion-fast) var(--ease-standard), opacity var(--motion-fast) var(--ease-standard), background-color var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard);
+}
+
+.viewModeToggle button:hover {
+  background: var(--app-hover);
+  color: var(--app-text);
+}
+
+.viewModeToggle button:active {
+  transform: scale(0.97);
+}
+
+.viewModeToggle button.is-active {
+  border-color: color-mix(in srgb, var(--app-lime) 55%, var(--app-border));
+  background: color-mix(in srgb, var(--app-lime) 16%, var(--app-panel));
+  color: var(--app-lime);
+}
+
+.libraryShelfTools {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.libraryShelfTools .viewModeToggle {
+  order: 2;
+}
+
+.libraryShelfTools .librarySelectToggle {
+  order: 3;
+}
+
+.librarySearchSortRow {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.librarySearchFilter {
+  min-width: 0;
+}
+
+.librarySortFilter {
+  min-width: 0;
+  width: min(100%, 220px);
+}
+
+.librarySecondaryControls {
+  padding-block: var(--space-2) 0;
+}
+
+.libraryTypeFilters {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-block: var(--space-1);
+  scrollbar-width: thin;
+}
+
+.libraryTypeFilters > button {
+  flex: 0 0 auto;
+  min-block-size: var(--touch-target);
+}
+
+.libraryEntries,
+.libraryLoadingGrid {
+  padding-bottom: var(--space-4);
+}
+
+@media (max-width: 720px) {
+  .historySectionHeader,
+  .libraryShelfHeader {
+    align-items: flex-start;
+  }
+
+  .historySectionHeader {
+    gap: var(--space-3);
+  }
+
+  .historySectionHeader .viewModeToggle button span,
+  .libraryShelfTools .viewModeToggle button span {
+    display: none;
+  }
+
+  .libraryShelfTools {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .librarySearchSortRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .librarySortFilter {
+    width: auto;
+  }
+
+  .librarySortFilter select {
+    max-width: 44px;
+    color: transparent;
+  }
+
+  .libraryShelfSection > .libraryEntries,
+  .libraryShelfSection > .libraryLoadingGrid {
+    padding-bottom: var(--space-6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewModeToggle button {
+    transition: none;
+  }
+}
+
 .libraryImportLink {
   display: inline-flex;
   min-height: 40px;
