@@ -2165,9 +2165,9 @@ button:disabled {
 .readerHudBack,
 .readerHudIconButton {
   display: grid;
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   place-items: center;
   border: 1px solid transparent;
   border-radius: 7px;
@@ -2287,9 +2287,18 @@ button:disabled {
 }
 
 .readerBottomHud .readerHudIconButton {
-  width: 34px;
-  height: 34px;
-  flex-basis: 34px;
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+}
+
+.readerBottomHud {
+  bottom: calc(env(safe-area-inset-bottom) + 56px);
+  padding: 6px 8px;
+}
+
+.readerBottomHud input[type="range"] {
+  min-height: 44px;
 }
 
 .readerNovelBottomActions {
@@ -2310,9 +2319,14 @@ button:disabled {
 }
 
 .readerNovelBottomActions .readerHudIconButton {
-  width: 34px;
-  height: 34px;
-  flex-basis: 34px;
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+}
+
+.readerNovelBottomActions {
+  bottom: calc(env(safe-area-inset-bottom) + 112px);
+  padding: 6px 8px;
 }
 
 .readerBottomMode {
@@ -2384,9 +2398,9 @@ button:disabled {
 .readerSettingsBack,
 .readerSettingsClose {
   display: grid;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   place-items: center;
   border: 1px solid var(--app-border);
   border-radius: 50%;
@@ -2510,6 +2524,35 @@ button:disabled {
 .novelChapterBlock {
   content-visibility: auto;
   contain-intrinsic-size: auto 1200px;
+}
+
+.readerChrome,
+.readerToolbar {
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
+}
+
+.readerHudHeader,
+.readerHudRail,
+.readerNovelBottomActions {
+  will-change: opacity, transform;
+}
+
+.readerHudHeader.readerChromeHidden {
+  transform: translateY(-12px) !important;
+}
+
+.readerHudRailLeft.readerChromeHidden {
+  transform: translate(-8px, -50%) !important;
+}
+
+.readerHudRailRight.readerChromeHidden {
+  transform: translate(8px, -50%) !important;
+}
+
+.readerNovelBottomActions.readerChromeHidden {
+  transform: translate(-50%, 12px) !important;
 }
 
 .readerChromeHidden {
@@ -2649,6 +2692,17 @@ button:disabled {
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .readerChrome,
+  .readerToolbar,
+  .readerHudHeader,
+  .readerHudRail,
+  .readerNovelBottomActions {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 @media (max-width: 700px) {
