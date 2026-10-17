@@ -306,21 +306,48 @@ button:disabled {
 }
 
 .appMobileNav .appNavLink {
+  position: relative;
   display: grid;
   min-width: 0;
-  min-height: 48px;
+  min-height: 52px;
   align-content: center;
   justify-items: center;
   gap: 3px;
-  padding: 3px 2px;
+  padding: 5px 2px;
   border-color: transparent;
   border-radius: var(--app-radius-control);
+  color: var(--app-muted);
   font-size: 10px;
   line-height: 1.1;
+  opacity: 0.78;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+.appMobileNav .appNavLink::before {
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  width: 22px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--app-lime);
+  content: "";
+  opacity: 0;
+  transform: translateX(-50%) scaleX(0.55);
 }
 
 .appMobileNav .appNavLinkActive {
   background: var(--app-selected);
+  color: var(--app-text);
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.appMobileNav .appNavLinkActive::before {
+  opacity: 1;
+  transform: translateX(-50%) scaleX(1);
 }
 
 .appTopbarUtilities {
@@ -1393,8 +1420,8 @@ button:disabled {
     position: sticky;
     z-index: 10;
     top: 0;
-    height: 56px;
-    flex: 0 0 56px;
+    height: 52px;
+    flex: 0 0 52px;
     flex-direction: row;
     align-items: center;
     min-width: 0;
@@ -1466,13 +1493,13 @@ button:disabled {
   }
 
   .appTopbar {
-    top: 56px;
-    min-height: 50px;
-    padding: 0 18px;
+    top: 52px;
+    min-height: 46px;
+    padding: 0 14px;
   }
 
   :root {
-    --settings-nav-top: 106px;
+    --settings-nav-top: 98px;
   }
 
   .appStatusText {
