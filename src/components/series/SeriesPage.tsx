@@ -341,7 +341,7 @@ export function SeriesPage() {
 
   if (!series) {
     return (
-      <main style={styles.page}>
+      <main className="seriesPage" style={styles.page}>
         <section style={styles.panel}>
           <p style={styles.emptyText}>Series not found.</p>
           <Link to="/" style={styles.linkButton}>
@@ -362,7 +362,7 @@ export function SeriesPage() {
   const featuredChapter = mostRecentChapter ?? chapters[0];
 
   return (
-    <main style={styles.page}>
+    <main className="seriesPage" style={styles.page}>
       <section style={styles.panel}>
         <header style={styles.headerRow}>
           <Link to="/" style={styles.backLink}>

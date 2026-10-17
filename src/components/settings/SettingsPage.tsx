@@ -425,7 +425,7 @@ export function SettingsPage({
   }
 
   return (
-    <main style={styles.page}>
+    <main className="settingsPage" style={styles.page}>
       <section className="settingsPagePanel" style={styles.panel}>
         <header style={styles.header}>
           <div>

@@ -1929,7 +1929,7 @@ export function ReaderPage() {
 
   if (!chapter) {
     return (
-      <main style={styles.page}>
+      <main className="readerPage" style={styles.page}>
         <section style={styles.panel}>
           <p style={styles.emptyText}>Chapter not found.</p>
           <Link to="/" style={styles.linkButton}>
