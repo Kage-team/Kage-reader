@@ -1,0 +1,69 @@
+/* Quiet graphite foundation tokens. Screen-specific styling stays in app.css. */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+
+  --motion-fast: 160ms;
+  --motion-standard: 200ms;
+  --motion-slow: 220ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+
+  --touch-target: 44px;
+  --app-muted: #a3aaa8;
+}
+
+:root[data-theme="midnight"] {
+  --app-muted: #aab6c9;
+}
+
+:root[data-theme="parchment"] {
+  --app-muted: #65645d;
+}
+
+:root[data-theme="forest"] {
+  --app-muted: #a8c1b1;
+}
+
+:root[data-theme="cyber"] {
+  --app-muted: #a8a5ba;
+}
+
+:where(button, [role="button"], input[type="button"], input[type="submit"], input[type="reset"], select, summary) {
+  min-block-size: var(--touch-target);
+}
+
+:where(button, [role="button"], input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--app-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+}
