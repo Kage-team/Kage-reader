@@ -55,6 +55,16 @@ const SERIES_TYPE_LABELS: Record<SeriesType, string> = {
   novel: "Novel",
 };
 
+function formatHistoryAge(timestamp: number): string {
+  const elapsedMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
+  if (elapsedMinutes < 1) return "Just now";
+  if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) return `${elapsedHours}h ago`;
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  return `${elapsedDays}d ago`;
+}
+
 export function LibraryPage() {
   const [searchParams] = useSearchParams();
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
@@ -556,23 +566,34 @@ export function LibraryPage() {
                       to={`/read/${encodeURIComponent(item.id)}`}
                       style={styles.historyLink}
                     >
+                      <span className="historyThumb" aria-hidden="true">
+                        {coverUrls[item.seriesId] ? (
+                          <img src={coverUrls[item.seriesId]} alt="" />
+                        ) : (
+                          <BookOpen size={18} />
+                        )}
+                      </span>
                       <span className="historyCopy">
-                        <strong>
-                          {item.seriesTitle} —{" "}
+                        <strong>{item.seriesTitle}</strong>
+                        <span className="historyMeta">
                           {item.number !== undefined
                             ? `Chapter ${item.number}`
-                            : item.title}
-                        </strong>
-                        <span className="historyMeta">
-                          Page {Math.min(item.pageIndex + 1, item.pageCount)} of{" "}
+                            : item.title} · Page {Math.min(item.pageIndex + 1, item.pageCount)} of{" "}
                           {item.pageCount}
+                        </span>
+                        <span className="historyProgress" aria-hidden="true">
+                          <span
+                            style={{
+                              width: `${item.pageCount > 0 ? Math.min(100, ((item.pageIndex + 1) / item.pageCount) * 100) : 0}%`,
+                            }}
+                          />
                         </span>
                       </span>
                       <time
                         className="historyDate"
                         dateTime={new Date(item.updatedAt).toISOString()}
                       >
-                        {new Date(item.updatedAt).toLocaleString()}
+                        {formatHistoryAge(item.updatedAt)}
                       </time>
                     </Link>
                   </li>
@@ -637,6 +658,9 @@ export function LibraryPage() {
                 }}
               >
                 <ListChecks size={16} />
+                <span className="librarySelectToggleLabel">
+                  {selectionMode ? "Done" : "Select"}
+                </span>
               </button>
             </div>
           </header>
@@ -745,51 +769,67 @@ export function LibraryPage() {
           <div className={`librarySelectionToolbar${selectionMode ? " is-active" : ""}`}>
             {selectionMode ? (
               <>
+                <span className="librarySelectionCount" aria-live="polite">
+                  {selectedSeriesIds.size} selected
+                </span>
+                <div className="librarySelectionPrimaryActions">
+                  <button
+                    type="button"
+                    className="libraryBulkAction libraryBulkActionPrimary"
+                    style={styles.secondaryButton}
+                    onClick={() =>
+                      setSelectedSeriesIds(
+                        new Set(visibleEntries.map((entry) => entry.id)),
+                      )
+                    }
+                  >
+                    Select visible
+                  </button>
+                  <button
+                    type="button"
+                    className="libraryBulkAction"
+                    style={styles.secondaryButton}
+                    disabled={selectedSeriesIds.size === 0}
+                    onClick={() => void bulkAddTag()}
+                  >
+                    Add tag
+                  </button>
+                  <button
+                    type="button"
+                    className="libraryBulkAction"
+                    style={styles.secondaryButton}
+                    onClick={() => setSelectedSeriesIds(new Set())}
+                    disabled={selectedSeriesIds.size === 0}
+                  >
+                    Clear selection
+                  </button>
+                </div>
+                <details className="libraryBulkMore">
+                  <summary>More</summary>
+                  <div className="libraryBulkMoreMenu">
+                    <button
+                      type="button"
+                      className="libraryBulkAction"
+                      style={styles.secondaryButton}
+                      disabled={selectedSeriesIds.size === 0}
+                      onClick={() => void bulkToggleFavorite()}
+                    >
+                      Toggle favorites ({selectedSeriesIds.size})
+                    </button>
+                    <button
+                      type="button"
+                      className="libraryBulkAction"
+                      style={styles.secondaryButton}
+                      disabled={selectedSeriesIds.size === 0}
+                      onClick={() => void bulkAddCollection()}
+                    >
+                      Add to shelf
+                    </button>
+                  </div>
+                </details>
                 <button
                   type="button"
-                  style={styles.secondaryButton}
-                  onClick={() =>
-                    setSelectedSeriesIds(
-                      new Set(visibleEntries.map((entry) => entry.id)),
-                    )
-                  }
-                >
-                  Select visible
-                </button>
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  onClick={() => setSelectedSeriesIds(new Set())}
-                  disabled={selectedSeriesIds.size === 0}
-                >
-                  Clear selection
-                </button>
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  disabled={selectedSeriesIds.size === 0}
-                  onClick={() => void bulkToggleFavorite()}
-                >
-                  Toggle favorites ({selectedSeriesIds.size})
-                </button>
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  disabled={selectedSeriesIds.size === 0}
-                  onClick={() => void bulkAddTag()}
-                >
-                  Add tag
-                </button>
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  disabled={selectedSeriesIds.size === 0}
-                  onClick={() => void bulkAddCollection()}
-                >
-                  Add to shelf
-                </button>
-                <button
-                  type="button"
+                  className="libraryBulkAction libraryBulkActionDanger"
                   style={styles.dangerButton}
                   disabled={selectedSeriesIds.size === 0}
                   onClick={() => void bulkDelete()}

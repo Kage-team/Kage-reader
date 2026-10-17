@@ -745,6 +745,247 @@ button:disabled {
   to { background-position: -100% 0; }
 }
 
+.librarySelectionToolbar {
+  position: sticky;
+  z-index: 4;
+  top: 78px;
+  min-height: 44px;
+  padding: 4px 0;
+  background: color-mix(in srgb, var(--app-panel) 94%, transparent);
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+
+.librarySelectionToolbar:not(.is-active) {
+  min-height: 0;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+}
+
+.librarySelectionToolbar.is-active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.librarySelectionCount {
+  flex: 0 0 auto;
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.librarySelectionPrimaryActions,
+.libraryBulkMoreMenu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.libraryBulkAction,
+.libraryBulkMore summary {
+  min-height: 44px !important;
+  padding-inline: 11px !important;
+  border-radius: 7px !important;
+  font-size: 11px !important;
+  white-space: nowrap;
+}
+
+.libraryBulkMore {
+  position: relative;
+}
+
+.libraryBulkMore summary {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+  border: 1px solid var(--app-border);
+  background: var(--app-panel);
+  color: var(--app-text);
+  font-weight: 700;
+}
+
+.libraryBulkMore summary::-webkit-details-marker {
+  display: none;
+}
+
+.libraryBulkMoreMenu {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 170px;
+  padding: 6px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 8px;
+  background: var(--app-panel-raised);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.libraryBulkActionDanger {
+  margin-left: auto;
+  border-color: color-mix(in srgb, var(--app-danger) 52%, var(--app-border)) !important;
+  color: var(--app-danger) !important;
+}
+
+.librarySelectToggleLabel {
+  display: none;
+}
+
+.historyLink {
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 76px;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.historyLink:hover,
+.historyLink:focus-visible {
+  border-color: var(--app-border-strong);
+  background: var(--app-hover);
+}
+
+.historyThumb {
+  display: grid;
+  width: 48px;
+  height: 64px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--app-panel-raised);
+  color: var(--app-muted);
+}
+
+.historyThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.historyCopy {
+  gap: 5px;
+}
+
+.historyProgress {
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--app-border-strong);
+}
+
+.historyProgress > span {
+  display: block;
+  height: 100%;
+  background: var(--app-lime);
+}
+
+@media (max-width: 720px) {
+  .librarySelectionToolbar {
+    position: fixed;
+    z-index: 55;
+    right: 8px;
+    bottom: calc(70px + env(safe-area-inset-bottom));
+    left: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    max-height: min(42dvh, 260px);
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid var(--app-border-strong);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--app-panel) 97%, transparent);
+    box-shadow: var(--app-shadow-soft);
+  }
+
+  .librarySelectionToolbar:not(.is-active) {
+    display: flex;
+    max-height: 0;
+    border-width: 0;
+    transform: translateY(10px);
+  }
+
+  .librarySelectionToolbar.is-active {
+    gap: 7px;
+  }
+
+  .librarySelectionCount {
+    width: 100%;
+  }
+
+  .librarySelectionPrimaryActions,
+  .libraryBulkMore,
+  .libraryBulkActionDanger {
+    flex: 1 1 auto;
+  }
+
+  .librarySelectionPrimaryActions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .libraryBulkAction,
+  .libraryBulkMore summary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .libraryBulkMoreMenu {
+    right: 0;
+    bottom: calc(100% + 6px);
+    top: auto;
+    left: auto;
+  }
+
+  .libraryBulkActionDanger {
+    margin-left: 0;
+  }
+
+  .librarySelectToggle {
+    width: auto;
+    padding-inline: 10px;
+    gap: 6px;
+  }
+
+  .librarySelectToggleLabel {
+    display: inline;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .historyLink {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .historyThumb {
+    width: 44px;
+    height: 60px;
+  }
+
+  .historyDate {
+    grid-column: 2;
+    justify-self: start;
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .librarySelectionToolbar,
+  .historyLink {
+    transition: none;
+  }
+}
+
 .libraryImportLink {
   display: inline-flex;
   min-height: 40px;
