@@ -904,7 +904,7 @@ export function SeriesPage() {
                     aria-pressed={chapterSortMode === "oldest"}
                     onClick={() => setChapterSortMode("oldest")}
                   >
-                    Oldest
+                    Ascending
                   </button>
                   <button
                     type="button"
@@ -912,20 +912,24 @@ export function SeriesPage() {
                     aria-pressed={chapterSortMode === "newest"}
                     onClick={() => setChapterSortMode("newest")}
                   >
-                    Newest
+                    Descending
                   </button>
-                  <select
-                    className="seriesChapterSortMore"
-                    value={chapterSortMode === "oldest" || chapterSortMode === "newest" ? "order" : chapterSortMode}
-                    onChange={(event) => {
-                      if (event.currentTarget.value !== "order") setChapterSortMode(event.currentTarget.value as ChapterSortMode);
-                    }}
-                    aria-label="More chapter filters"
+                  <button
+                    type="button"
+                    className={chapterSortMode === "unread" ? "is-active" : ""}
+                    aria-pressed={chapterSortMode === "unread"}
+                    onClick={() => setChapterSortMode("unread")}
                   >
-                    <option value="order">More</option>
-                    <option value="unread">Unread first</option>
-                    <option value="completed">Completed first</option>
-                  </select>
+                    Unread
+                  </button>
+                  <button
+                    type="button"
+                    className={chapterSortMode === "completed" ? "is-active" : ""}
+                    aria-pressed={chapterSortMode === "completed"}
+                    onClick={() => setChapterSortMode("completed")}
+                  >
+                    Completed
+                  </button>
                 </div>
               </div>
               {visibleChapters.length === 0 ? <p style={styles.emptyText}>No chapters match your search.</p> : null}
