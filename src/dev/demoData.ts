@@ -34,16 +34,87 @@ const demoTitles = [
   ["Forty Steps to Winter", "manga"],
 ] as const;
 
-function svgBlob(title: string, index: number): Blob {
-  const hue = (index * 37) % 360;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1020" viewBox="0 0 720 1020"><rect width="720" height="1020" fill="hsl(${hue} 24% 13%)"/><circle cx="580" cy="160" r="230" fill="hsl(${(hue + 55) % 360} 70% 58%)" opacity=".78"/><path d="M0 760C180 620 300 860 720 570V1020H0Z" fill="hsl(${(hue + 170) % 360} 46% 30%)"/><text x="54" y="850" fill="#f4f5f4" font-family="sans-serif" font-size="42" font-weight="700">${title.slice(0, 24)}</text><text x="54" y="910" fill="#b8f34a" font-family="sans-serif" font-size="24">KAGE DEMO ${index + 1}</text></svg>`;
-  return new Blob([svg], { type: "image/svg+xml" });
+function canvasBlob(draw: (context: CanvasRenderingContext2D) => void, width: number, height: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      reject(new Error("Canvas is unavailable in the demo environment."));
+      return;
+    }
+    context.scale(0.5, 0.5);
+    draw(context);
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Could not rasterize demo artwork."));
+    }, "image/webp", 0.78);
+  });
 }
 
-function pageSvg(title: string, chapter: number, page: number, index: number): Blob {
+function coverBlob(title: string, index: number): Promise<Blob> {
+  const hue = (index * 37) % 360;
+  return canvasBlob((context) => {
+    context.fillStyle = `hsl(${hue} 24% 13%)`;
+    context.fillRect(0, 0, 720, 1020);
+    context.globalAlpha = 0.78;
+    context.fillStyle = `hsl(${(hue + 55) % 360} 70% 58%)`;
+    context.beginPath();
+    context.arc(580, 160, 230, 0, Math.PI * 2);
+    context.fill();
+    context.globalAlpha = 1;
+    context.fillStyle = `hsl(${(hue + 170) % 360} 46% 30%)`;
+    context.beginPath();
+    context.moveTo(0, 760);
+    context.bezierCurveTo(180, 620, 300, 860, 720, 570);
+    context.lineTo(720, 1020);
+    context.lineTo(0, 1020);
+    context.fill();
+    context.fillStyle = "#f4f5f4";
+    context.font = "700 42px sans-serif";
+    context.fillText(title.slice(0, 24), 54, 850);
+    context.fillStyle = "#b8f34a";
+    context.font = "24px sans-serif";
+    context.fillText(`KAGE DEMO ${index + 1}`, 54, 910);
+  }, 360, 510);
+}
+
+function pageBlob(title: string, chapter: number, page: number, index: number): Promise<Blob> {
   const hue = (index * 29 + page * 17) % 360;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600"><rect width="1200" height="1600" fill="hsl(${hue} 18% 9%)"/><rect x="70" y="80" width="1060" height="1440" rx="24" fill="hsl(${hue} 22% 15%)" stroke="#b8f34a" stroke-opacity=".35"/><circle cx="850" cy="480" r="260" fill="hsl(${(hue + 70) % 360} 62% 55%)" opacity=".45"/><path d="M110 1120 Q 560 820 1090 1150 L1090 1450 L110 1450Z" fill="hsl(${(hue + 180) % 360} 38% 28%)"/><text x="130" y="230" fill="#b8f34a" font-family="sans-serif" font-size="30">${title.slice(0, 34)}</text><text x="130" y="300" fill="#f4f5f4" font-family="sans-serif" font-size="54" font-weight="700">Chapter ${chapter}</text><text x="130" y="1370" fill="#929a99" font-family="sans-serif" font-size="26">Demo page ${page + 1} · local preview data</text></svg>`;
-  return new Blob([svg], { type: "image/svg+xml" });
+  return canvasBlob((context) => {
+    context.fillStyle = `hsl(${hue} 18% 9%)`;
+    context.fillRect(0, 0, 1200, 1600);
+    context.fillStyle = `hsl(${hue} 22% 15%)`;
+    context.strokeStyle = "rgba(184, 243, 74, .35)";
+    context.lineWidth = 2;
+    context.beginPath();
+    context.roundRect(70, 80, 1060, 1440, 24);
+    context.fill();
+    context.stroke();
+    context.globalAlpha = 0.45;
+    context.fillStyle = `hsl(${(hue + 70) % 360} 62% 55%)`;
+    context.beginPath();
+    context.arc(850, 480, 260, 0, Math.PI * 2);
+    context.fill();
+    context.globalAlpha = 1;
+    context.fillStyle = `hsl(${(hue + 180) % 360} 38% 28%)`;
+    context.beginPath();
+    context.moveTo(110, 1120);
+    context.quadraticCurveTo(560, 820, 1090, 1150);
+    context.lineTo(1090, 1450);
+    context.lineTo(110, 1450);
+    context.fill();
+    context.fillStyle = "#b8f34a";
+    context.font = "30px sans-serif";
+    context.fillText(title.slice(0, 34), 130, 230);
+    context.fillStyle = "#f4f5f4";
+    context.font = "700 54px sans-serif";
+    context.fillText(`Chapter ${chapter}`, 130, 300);
+    context.fillStyle = "#929a99";
+    context.font = "26px sans-serif";
+    context.fillText(`Demo page ${page + 1} · local preview data`, 130, 1370);
+  }, 1200, 1600);
 }
 
 function chapterCount(index: number): number {
@@ -78,7 +149,7 @@ export async function loadDemoLibrary(): Promise<DemoReport> {
     const seriesId = `${DEMO_SERIES_PREFIX}${seriesIndex + 1}`;
     const coverKey = `${DEMO_BLOB_PREFIX}cover-${seriesIndex + 1}`;
     const series: Series = { schemaVersion: SCHEMA_VERSION, id: seriesId, title, type, coverPageKey: coverKey, ageRating: seriesIndex % 5 === 2 ? "18+" : "Teen", writer: "Kage demo studio", summary: "Fictional local preview data for testing Kage Reader layouts and reading flows.", tags: ["demo", type], isFavorite: [0, 3, 7].includes(seriesIndex), queueOrder: [1, 5, 10].includes(seriesIndex) ? seriesIndex + 1 : undefined, addedAt: now - seriesIndex * 86400000, updatedAt: now - seriesIndex * 3600000 };
-    await saveBlob(coverKey, svgBlob(title, seriesIndex));
+    await saveBlob(coverKey, await coverBlob(title, seriesIndex));
     await putSeries(series);
     blobTotal += 1;
 
@@ -91,8 +162,8 @@ export async function loadDemoLibrary(): Promise<DemoReport> {
       chapterTotal += 1;
       for (let pageIndex = 0; pageIndex < chapter.pageCount; pageIndex += 1) {
         const storageKey = `${DEMO_PAGE_PREFIX}${seriesIndex + 1}-${chapterNumber}-${pageIndex + 1}`;
-        await saveBlob(storageKey, pageSvg(title, chapterNumber, pageIndex, seriesIndex));
-        await putPage({ schemaVersion: SCHEMA_VERSION, id: `${DEMO_PREFIX}page-${seriesIndex + 1}-${chapterNumber}-${pageIndex + 1}`, chapterId, index: pageIndex, storageKey, mime: "image/svg+xml" });
+        await saveBlob(storageKey, await pageBlob(title, chapterNumber, pageIndex, seriesIndex));
+        await putPage({ schemaVersion: SCHEMA_VERSION, id: `${DEMO_PREFIX}page-${seriesIndex + 1}-${chapterNumber}-${pageIndex + 1}`, chapterId, index: pageIndex, storageKey, mime: "image/png" });
         pageTotal += 1;
         blobTotal += 1;
       }
