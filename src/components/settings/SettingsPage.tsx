@@ -402,9 +402,9 @@ export function SettingsPage({
   }
 
   async function clearLibrary(): Promise<void> {
-    const confirmed = window.confirm(
-      "Delete every imported series, page, bookmark, and reading position from this device? This cannot be undone.",
-    );
+  const confirmed = window.confirm(
+  "Clear all books and local data? This permanently removes every imported series, chapter, page, reading position, bookmark, linked folder, and cached file from this device. This cannot be undone.",
+  );
     if (!confirmed) {
       return;
     }
@@ -1096,6 +1096,10 @@ export function SettingsPage({
               and preferences. Restoring merges records and replaces matching
               IDs.
             </p>
+            <div className="settingsDangerNotice" role="note">
+              <strong>Clear all books and local data</strong>
+              <span>This removes imported books, pages, chapters, progress, bookmarks, linked folders, and cached files from this device. Create a backup first if you may need to restore them.</span>
+            </div>
             <p
               role="status"
               style={{
@@ -1147,7 +1151,7 @@ export function SettingsPage({
               disabled={isBackingUp || isRestoring || isClearing}
               style={styles.dangerButton}
             >
-              {isClearing ? "Clearing..." : "Clear local library"}
+              {isClearing ? "Clearing all books..." : "Clear all books"}
             </button>
           </div>
           {backupMessage ? (
