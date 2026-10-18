@@ -15,10 +15,14 @@ import {
 
 export function AppFrame({ children }: PropsWithChildren) {
   const { pathname, search } = useLocation();
-  const view = new URLSearchParams(search).get("view") ?? "all";
+  const searchParams = new URLSearchParams(search);
+  const requestedView = searchParams.get("view");
+  const view = requestedView ?? "all";
   const isLibraryRoute = pathname === "/";
+  const isHomeRoute = isLibraryRoute && !searchParams.has("view");
+  const isLibraryHome = isLibraryRoute && requestedView === "all";
   const pageName =
-    pathname === "/" && !new URLSearchParams(search).has("view")
+    isHomeRoute
       ? "Home"
       : pathname === "/settings"
       ? "Settings"
@@ -47,7 +51,7 @@ export function AppFrame({ children }: PropsWithChildren) {
 
         <nav className="appNavGroup">
           <p className="appNavLabel">Workspace</p>
-          <NavLink to="/" end className={() => navClass(isLibraryRoute && !new URLSearchParams(search).has("view"))}>
+          <NavLink to="/" end className={() => navClass(isHomeRoute)}>
             <Home size={17} />
             <span>Home</span>
           </NavLink>
@@ -61,7 +65,7 @@ export function AppFrame({ children }: PropsWithChildren) {
           <NavLink
             to="/"
             end
-            className={() => navClass(isLibraryRoute && view === "all")}
+            className={() => navClass(isLibraryHome)}
           >
             <BookOpen size={17} />
             <span>All series</span>
@@ -120,11 +124,11 @@ export function AppFrame({ children }: PropsWithChildren) {
       </aside>
 
       <nav className="appMobileNav" aria-label="Primary navigation">
-        <NavLink to="/" end className={() => navClass(isLibraryRoute && !new URLSearchParams(search).has("view"))} aria-label="Home">
+        <NavLink to="/" end className={() => navClass(isHomeRoute)} aria-label="Home">
           <Home size={18} />
           <span>Home</span>
         </NavLink>
-        <NavLink to="/?view=all" className={() => navClass(isLibraryRoute && view === "all")} aria-label="Library">
+        <NavLink to="/?view=all" className={() => navClass(isLibraryHome)} aria-label="Library">
           <BookOpen size={18} />
           <span>Library</span>
         </NavLink>

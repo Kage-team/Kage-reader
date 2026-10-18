@@ -426,7 +426,7 @@ export function LibraryPage() {
               <h1 style={styles.title}>{pageTitle}</h1>
             </div>
           ) : null}
-          <div className="libraryHeaderActions" style={styles.headerActions}>
+          <div className="libraryHeaderActions libraryContextActions" style={styles.headerActions}>
             <span className="libraryControlsLabel">View options</span>
             <div
               className="librarySafeModeToggle"

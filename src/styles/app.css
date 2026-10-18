@@ -5399,6 +5399,87 @@ main > section > [role="alert"] {
   }
 }
 
+/* Contextual navigation and reading focus refinements. */
+.appNavLinkActive {
+  position: relative;
+  box-shadow: inset 3px 0 0 var(--app-lime);
+}
+
+.appMobileNav .appNavLinkActive {
+  box-shadow: inset 0 2px 0 var(--app-lime);
+}
+
+.libraryHeader {
+  align-items: flex-start;
+}
+
+.libraryHeaderCopy {
+  min-width: 0;
+}
+
+.libraryContextActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.libraryContextActions .libraryControlsLabel {
+  margin-right: 2px;
+}
+
+.libraryContextActions .libraryIconAction {
+  min-width: 82px;
+  min-height: 40px;
+  padding-inline: 10px;
+}
+
+.libraryContextActions .librarySafeModeToggle {
+  min-height: 40px;
+}
+
+.libraryContextActions .librarySafeModeToggle button {
+  min-height: 36px;
+}
+
+.readerPage {
+  background: var(--app-bg);
+}
+
+.readerPage :where(button, a, select, input):focus-visible,
+.libraryPage :where(button, a, select, input):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-lime) 72%, white);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .libraryContextActions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .libraryContextActions .libraryControlsLabel {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .libraryContextActions .librarySafeModeToggle {
+    justify-self: start;
+  }
+
+  .libraryContextActions .libraryIconAction {
+    justify-self: stretch;
+  }
+
+  .readerPage {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 /* Shared Kage workspace framing across every screen. */
 .appView > main,
 .appView > .seriesPage,
