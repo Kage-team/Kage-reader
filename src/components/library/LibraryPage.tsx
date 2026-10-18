@@ -13,7 +13,6 @@ import {
   Plus,
   Search,
 } from "lucide-react";
-import { AdultAccessPrompt } from "../security/AdultAccessPrompt";
 import {
   getPreferences,
   savePreferences,
@@ -34,7 +33,6 @@ import {
   putSeries,
 } from "../../lib/storage/db";
 import type { Series, SeriesType } from "../../lib/storage/types";
-import { hasAdultAccess } from "../../lib/security/adultPin";
 import { useViewMode } from "./useViewMode";
 import { ViewModeToggle } from "./ViewModeToggle";
 
@@ -92,12 +90,7 @@ export function LibraryPage() {
   );
   const [bulkMessage, setBulkMessage] = useState("");
   const [favoriteError, setFavoriteError] = useState("");
-  const [adultAccessUnlocked, setAdultAccessUnlocked] = useState(() =>
-    hasAdultAccess(getPreferences().adultPinHash),
-  );
-  const [isAdultPromptOpen, setIsAdultPromptOpen] = useState(false);
-  const [disableSafeModeAfterUnlock, setDisableSafeModeAfterUnlock] =
-    useState(false);
+  const adultAccessUnlocked = true;
   const [preferences, setPreferences] = useState<Preferences>(getPreferences);
   const [libraryViewMode, setLibraryViewMode] = useViewMode("kage-library-view-mode");
   const [historyViewMode, setHistoryViewMode] = useViewMode("kage-history-view-mode");
@@ -153,10 +146,6 @@ export function LibraryPage() {
   useEffect(() => {
     void loadEntries();
   }, []);
-
-  useEffect(() => {
-    setAdultAccessUnlocked(hasAdultAccess(preferences.adultPinHash));
-  }, [preferences.adultPinHash]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -324,15 +313,6 @@ export function LibraryPage() {
     setPreferences(next);
   }
 
-  function finishAdultUnlock(): void {
-    setAdultAccessUnlocked(true);
-    setIsAdultPromptOpen(false);
-    if (disableSafeModeAfterUnlock) {
-      setPreferences(savePreferences({ ...getPreferences(), safeMode: false }));
-      setDisableSafeModeAfterUnlock(false);
-    }
-  }
-
   const accessibleEntries = entries.filter(
     (entry) =>
       adultAccessUnlocked ||
@@ -438,10 +418,6 @@ export function LibraryPage() {
 
           </div>
         </header>
-
-        {isAdultPromptOpen || (view === "adult" && !adultAccessUnlocked) ? (
-          <AdultAccessPrompt onUnlocked={finishAdultUnlock} />
-        ) : null}
 
         {view === "all" && !isLoading ? (
           <section className="libraryLanding" aria-label="Library overview">
