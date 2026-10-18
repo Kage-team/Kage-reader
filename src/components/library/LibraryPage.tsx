@@ -106,14 +106,15 @@ export function LibraryPage() {
   const [libraryViewMode, setLibraryViewMode] = useViewMode("kage-library-view-mode");
   const [historyViewMode, setHistoryViewMode] = useViewMode("kage-history-view-mode");
   const requestedView = searchParams.get("view");
+  const normalizedView = requestedView === "saved" ? "favorites" : requestedView;
   const view =
-    requestedView === "favorites" ||
-    requestedView === "continue" ||
-    requestedView === "adult" ||
-    requestedView === "queue" ||
-    requestedView === "history" ||
-    requestedView === "insights"
-      ? requestedView
+    normalizedView === "favorites" ||
+    normalizedView === "continue" ||
+    normalizedView === "adult" ||
+    normalizedView === "queue" ||
+    normalizedView === "history" ||
+    normalizedView === "insights"
+      ? normalizedView
       : "all";
 
   async function loadEntries(): Promise<void> {
@@ -439,7 +440,12 @@ export function LibraryPage() {
             </div>
           ) : null}
           <div className="libraryHeaderActions libraryContextActions" style={styles.headerActions}>
-            <span className="libraryControlsLabel">View options</span>
+            {view === "all" || view === "favorites" || view === "queue" ? (
+              <div className="librarySavedSegmented" aria-label="Saved library views">
+                <Link className={view === "favorites" || view === "all" ? "is-active" : ""} to="/?view=favorites">Favorites</Link>
+                <Link className={view === "queue" ? "is-active" : ""} to="/?view=queue">Queue</Link>
+              </div>
+            ) : null}
             <div
               className="librarySafeModeToggle"
               role="group"
@@ -501,13 +507,6 @@ export function LibraryPage() {
 
         {view === "all" && !isLoading ? (
           <section className="libraryLanding" aria-label="Library overview">
-            <nav className="libraryViewSwitcher" aria-label="Library views">
-              <Link className="is-active" to="/?view=all">Library <span>{accessibleEntries.length}</span></Link>
-              <Link to="/?view=continue">Continue <span>{landingContinueEntries.length}</span></Link>
-              <Link to="/?view=queue">Queue <span>{landingQueueEntries.length}</span></Link>
-              <Link to="/?view=favorites">Favorites <span>{landingFavoriteEntries.length}</span></Link>
-              <Link to="/?view=history">Activity</Link>
-            </nav>
             {landingContinueEntries.length > 0 ? (
               <section className="libraryLandingSection" aria-labelledby="continue-reading-title">
                 <div className="libraryLandingHeader">

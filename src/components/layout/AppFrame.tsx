@@ -7,6 +7,7 @@ import {
   BookOpenCheck,
   FileUp,
   History,
+  Heart,
   Settings,
   ShieldCheck,
 } from "lucide-react";
@@ -39,6 +40,10 @@ export function AppFrame({ children }: PropsWithChildren) {
             <FileUp size={17} />
             <span>Add</span>
           </Link>
+          <Link to="/?view=saved" className={navClass(activeTab === "saved")} data-active={activeTab === "saved"}>
+            <Heart size={17} />
+            <span>Saved</span>
+          </Link>
           <Link to="/?view=history" className={navClass(activeTab === "activity")} data-active={activeTab === "activity"}>
             <History size={17} />
             <span>Activity</span>
@@ -69,6 +74,10 @@ export function AppFrame({ children }: PropsWithChildren) {
         <Link to="/?view=all" className={navClass(activeTab === "library")} aria-current={activeTab === "library" ? "page" : undefined} aria-label="Library">
           <BookOpen size={18} />
           <span>Library</span>
+        </Link>
+        <Link to="/?view=saved" className={navClass(activeTab === "saved")} aria-current={activeTab === "saved" ? "page" : undefined} aria-label="Saved">
+          <Heart size={18} />
+          <span>Saved</span>
         </Link>
         <Link to="/import" className={`appMobileAdd${activeTab === "add" ? " appNavLinkActive" : ""}`} aria-current={activeTab === "add" ? "page" : undefined} aria-label="Add to library">
           <FileUp size={18} />
