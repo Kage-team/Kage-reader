@@ -5014,19 +5014,21 @@ button:disabled {
 .seriesChapterTools {
   display: flex;
   width: 100%;
-  max-width: 410px;
-  align-items: center;
+  max-width: none;
+  align-items: stretch;
   gap: 0;
-  margin: 12px 0 16px;
+  margin: 12px 0 18px;
 }
 
 .seriesChapterSearch {
+  flex: 1 1 auto;
   min-width: 0;
   border-radius: 7px 0 0 7px;
 }
 
 .seriesChapterSort {
-  flex: 0 0 auto;
+  flex: 0 0 124px;
+  min-width: 124px;
   border-radius: 0 7px 7px 0;
 }
 
@@ -5865,12 +5867,13 @@ main > section > [role="alert"] {
     right: 0;
   }
 
-.seriesChapterTools {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 12px 0;
-}
+  .seriesChapterTools {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+    gap: 0;
+    margin: 12px 0;
+  }
 
 .seriesChapterSearch {
   display: flex;
@@ -5894,16 +5897,18 @@ main > section > [role="alert"] {
   color: var(--app-text);
 }
 
-.seriesChapterSort {
-  min-height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--app-border);
-  border-radius: 10px;
-  background: var(--app-panel);
-  color: var(--app-text);
-  font-size: 12px;
-  font-weight: 700;
-}
+  .seriesChapterSort {
+    flex: 0 0 124px;
+    min-width: 124px;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--app-border);
+    border-radius: 0 7px 7px 0;
+    background: var(--app-panel);
+    color: var(--app-text);
+    font-size: 12px;
+    font-weight: 700;
+  }
 
 .seriesChapterActions {
     gap: 7px;
