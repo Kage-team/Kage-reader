@@ -17,6 +17,7 @@ import {
 import { importArchiveSources } from "../../lib/import/importer";
 import { UndoToast } from "../ui/UndoToast";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { StatusBadge } from "../ui/StatusBadge";
 import type { ImportProgressEvent } from "../../lib/import/types";
 import {
   SCHEMA_VERSION,
@@ -1065,7 +1066,7 @@ export function SeriesPage() {
                             <span className="chapterTitleLine">
                               <strong>
                                 <span className="chapterTitleText" title={titleLabel}>{titleLabel}</span>
-                                {progress?.completedAt ? <span className="chapterStatusBadge">Completed</span> : mostRecentChapter?.id === chapter.id ? <span className="chapterStatusBadge">Last read</span> : null}
+                                {progress?.completedAt ? <StatusBadge status="completed" /> : progress?.pageIndex ? <StatusBadge status="in-progress" /> : mostRecentChapter?.id === chapter.id ? <StatusBadge status="in-progress" /> : <StatusBadge status="unread" />}
                                 {chapter.volume !== undefined
                                   ? ` · Vol. ${chapter.volume}`
                                   : ""}

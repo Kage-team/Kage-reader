@@ -5377,17 +5377,40 @@ button:disabled {
   white-space: nowrap;
 }
 
-.chapterStatusBadge {
-  display: inline-block;
+.semanticStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-left: 8px;
-  padding: 2px 6px;
+  padding: 3px 7px;
   border: 1px solid var(--app-border);
   border-radius: 999px;
   color: var(--app-muted);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 750;
+  line-height: 1;
   vertical-align: middle;
 }
+
+.semanticStatusBadge svg {
+  width: 11px;
+  height: 11px;
+}
+
+.semanticStatusBadge--completed { color: var(--app-success, #72d6a2); }
+.semanticStatusBadge--in-progress { color: var(--app-accent-glow); }
+.semanticStatusBadge--failed,
+.semanticStatusBadge--cancelled { color: var(--app-danger); }
+.semanticStatusBadge--importing { color: var(--app-info, #78c7ff); }
+.semanticStatusBadge--queued,
+.semanticStatusBadge--cached { color: var(--app-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .semanticStatusBadge--importing svg { animation: none; }
+}
+
+.semanticStatusBadge--importing svg { animation: spin 1.2s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .chapterTitleLine strong {
   font-size: 16px;
