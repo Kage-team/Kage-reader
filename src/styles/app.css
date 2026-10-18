@@ -6027,6 +6027,55 @@ a {
   min-width: 0;
 }
 
+.activitySegmented {
+  display: inline-flex;
+  min-height: 40px;
+  padding: 3px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-panel);
+}
+
+.activitySegmented a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 11px;
+  border-radius: 7px;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.activitySegmented a.is-active {
+  background: var(--app-panel-raised);
+  color: var(--app-text);
+}
+
+.appTopbarBrandGroup,
+.appTopbarSafety {
+  display: flex;
+  align-items: center;
+}
+
+.appTopbarBrandGroup { gap: 18px; }
+.appTopbarSafety { gap: 6px; }
+.appTopbarSafety a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.appTopbarSafety a:hover { color: var(--app-text); border-color: var(--app-border-strong); }
+
 .librarySavedSegmented {
   display: inline-flex;
   min-height: 40px;

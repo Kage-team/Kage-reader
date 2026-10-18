@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  Activity,
   ArrowDownWideNarrow,
   ArrowDown,
   ArrowUp,
@@ -13,9 +12,7 @@ import {
   MoreHorizontal,
   Plus,
   Search,
-  ShieldAlert,
   ShieldCheck,
-  SlidersHorizontal,
 } from "lucide-react";
 import { AdultAccessPrompt } from "../security/AdultAccessPrompt";
 import {
@@ -446,58 +443,16 @@ export function LibraryPage() {
                 <Link className={view === "queue" ? "is-active" : ""} to="/?view=queue">Queue</Link>
               </div>
             ) : null}
-            <div
-              className="librarySafeModeToggle"
-              role="group"
-              aria-label="Content safety"
-            >
-              <button
-                type="button"
-                aria-pressed={preferences.safeMode}
-                onClick={() => {
-                  if (!preferences.safeMode) toggleSafeMode();
-                }}
-                title="Hide series rated 18+"
-              >
-                <ShieldCheck size={14} /> Safe
-              </button>
-              <button
-                type="button"
-                aria-pressed={!preferences.safeMode}
-                onClick={() => {
-                  if (preferences.safeMode) toggleSafeMode();
-                }}
-                title="Show mature titles in the library"
-              >
-                18+
-              </button>
+            {view === "history" || view === "insights" ? (
+              <nav className="activitySegmented" aria-label="Activity views">
+                <Link className={view === "history" ? "is-active" : ""} to="/?view=history">History</Link>
+                <Link className={view === "insights" ? "is-active" : ""} to="/?view=insights">Insights</Link>
+              </nav>
+            ) : null}
+            <div className="librarySafeModeToggle" role="group" aria-label="Content safety">
+              <button type="button" aria-pressed={preferences.safeMode} onClick={() => { if (!preferences.safeMode) toggleSafeMode(); }} title="Hide series rated 18+"><ShieldCheck size={14} /> Safe</button>
+              <button type="button" aria-pressed={!preferences.safeMode} onClick={() => { if (preferences.safeMode) toggleSafeMode(); }} title="Show mature titles in the library">18+</button>
             </div>
-            <details className="libraryViewOptions">
-              <summary aria-label="More library view options">
-                <SlidersHorizontal size={16} />
-                <span>More</span>
-              </summary>
-              <div className="libraryViewOptionsMenu">
-                <Link
-                  to="/?view=adult"
-                  className="libraryIconAction"
-                  aria-label="18+ Vault"
-                  title="18+ Vault"
-                >
-                  <ShieldAlert size={16} />
-                  <span>Vault</span>
-                </Link>
-                <Link
-                  to="/?view=insights"
-                  className="libraryIconAction"
-                  aria-label="Insights"
-                  title="Insights"
-                >
-                  <Activity size={16} />
-                  <span>Insights</span>
-                </Link>
-              </div>
-            </details>
           </div>
         </header>
 

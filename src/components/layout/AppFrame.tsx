@@ -9,6 +9,7 @@ import {
   History,
   Heart,
   Settings,
+  ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
 
@@ -17,9 +18,11 @@ export function AppFrame({ children }: PropsWithChildren) {
   const searchParams = new URLSearchParams(search);
   const requestedView = searchParams.get("view");
   const activeTab = pathname === "/"
-    ? requestedView === "history"
+    ? requestedView === "history" || requestedView === "insights"
       ? "activity"
-      : "library"
+      : requestedView === "saved" || requestedView === "favorites" || requestedView === "queue"
+        ? "saved"
+        : "library"
     : getActiveTab(pathname, search);
   const demoEnabled = searchParams.get("demo") === "1" && !pathname.startsWith("/read/");
   function navClass(active: boolean): string {
@@ -95,10 +98,16 @@ export function AppFrame({ children }: PropsWithChildren) {
 
       <div className="appMainShell">
         <header className="appTopbar">
-          <Link to="/?view=all" className="appTopbarBrand" aria-label="Kage Reader home">
-            <span className="appBrandMark"><BookOpenCheck size={18} /></span>
-            <strong>Kage</strong>
-          </Link>
+          <div className="appTopbarBrandGroup">
+            <Link to="/?view=all" className="appTopbarBrand" aria-label="Kage Reader home">
+              <span className="appBrandMark"><BookOpenCheck size={18} /></span>
+              <strong>Kage</strong>
+            </Link>
+            <nav className="appTopbarSafety" aria-label="Content safety">
+              <Link to="/?view=all" title="Safe mode"><ShieldCheck size={14} /> Safe</Link>
+              <Link to="/?view=adult" title="18+ Vault"><ShieldAlert size={14} /> Vault</Link>
+            </nav>
+          </div>
           <div className="appTopbarStatus">
             <div className="appTopbarUtilities">
               <Link
