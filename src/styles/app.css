@@ -5589,6 +5589,63 @@ a {
     display: none;
   }
 
+  .libraryViewOptions {
+    position: relative;
+  }
+
+  .libraryViewOptions summary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 44px;
+    min-height: 40px;
+    padding: 6px;
+    border: 1px solid var(--app-border);
+    border-radius: 8px;
+    color: var(--app-text-muted);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .libraryViewOptions summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .libraryViewOptions summary span {
+    display: none;
+  }
+
+  .libraryViewOptions[open] summary {
+    border-color: var(--app-accent);
+    color: var(--app-text);
+  }
+
+  .libraryViewOptionsMenu {
+    position: absolute;
+    z-index: 4;
+    top: calc(100% + 6px);
+    right: 0;
+    display: grid;
+    gap: 4px;
+    min-width: 132px;
+    padding: 6px;
+    border: 1px solid var(--app-border-strong);
+    border-radius: 10px;
+    background: var(--app-panel);
+    box-shadow: var(--app-shadow-soft);
+  }
+
+  .libraryViewOptionsMenu .libraryIconAction {
+    justify-content: flex-start;
+    min-height: 44px;
+    padding-inline: 10px;
+  }
+
+  .libraryViewOptionsMenu .libraryIconAction span {
+    display: inline;
+  }
+
   .librarySelectionToolbar.is-active {
     top: 8px;
     align-items: flex-start;

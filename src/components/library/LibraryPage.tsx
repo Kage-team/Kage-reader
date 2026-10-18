@@ -15,6 +15,7 @@ import {
   Search,
   ShieldAlert,
   ShieldCheck,
+  SlidersHorizontal,
 } from "lucide-react";
 import { AdultAccessPrompt } from "../security/AdultAccessPrompt";
 import {
@@ -454,24 +455,32 @@ export function LibraryPage() {
                 18+
               </button>
             </div>
-            <Link
-              to="/?view=adult"
-              className="libraryIconAction"
-              aria-label="18+ Vault"
-              title="18+ Vault"
-            >
-              <ShieldAlert size={16} />
-              <span>Vault</span>
-            </Link>
-            <Link
-              to="/?view=insights"
-              className="libraryIconAction"
-              aria-label="Insights"
-              title="Insights"
-            >
-              <Activity size={16} />
-              <span>Insights</span>
-            </Link>
+            <details className="libraryViewOptions">
+              <summary aria-label="More library view options">
+                <SlidersHorizontal size={16} />
+                <span>More</span>
+              </summary>
+              <div className="libraryViewOptionsMenu">
+                <Link
+                  to="/?view=adult"
+                  className="libraryIconAction"
+                  aria-label="18+ Vault"
+                  title="18+ Vault"
+                >
+                  <ShieldAlert size={16} />
+                  <span>Vault</span>
+                </Link>
+                <Link
+                  to="/?view=insights"
+                  className="libraryIconAction"
+                  aria-label="Insights"
+                  title="Insights"
+                >
+                  <Activity size={16} />
+                  <span>Insights</span>
+                </Link>
+              </div>
+            </details>
           </div>
         </header>
 
