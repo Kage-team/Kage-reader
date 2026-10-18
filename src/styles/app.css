@@ -3119,6 +3119,11 @@ button:disabled {
   .settingsPagePanel > header,
   .settingsPagePanel > .settingsSection {
     grid-column: 1;
+    padding-inline: 16px !important;
+  }
+
+  .settingsPagePanel > header {
+    padding-block: 18px;
   }
 
   .settingsPagePanel > .settingsSectionNav {
@@ -3138,7 +3143,17 @@ button:disabled {
   }
 
   .settingsPagePanel > .settingsSection {
-    padding: 18px 0;
+    padding: 18px 16px !important;
+  }
+
+  .settingsPagePanel > .settingsSectionNav {
+    padding-inline: 16px !important;
+  }
+
+  .settingsPagePanel > header a {
+    color: var(--app-text) !important;
+    background: var(--app-panel) !important;
+    border-color: var(--app-border-strong) !important;
   }
 
   .appTopbar {
