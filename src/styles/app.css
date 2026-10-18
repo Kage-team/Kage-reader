@@ -5067,6 +5067,53 @@ button:disabled {
   box-sizing: border-box;
 }
 
+.seriesImportProgress {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-panel);
+}
+
+.seriesImportProgressHeader,
+.seriesImportProgressMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
+.seriesImportProgressHeader strong {
+  color: var(--app-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.seriesImportProgressTrack {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--app-border);
+}
+
+.seriesImportProgressTrack span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--app-text);
+  transition: width 180ms ease;
+}
+
+.seriesImportProgressMeta span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .seriesNotes {
   max-width: 70ch;
   margin: 14px 0 0;

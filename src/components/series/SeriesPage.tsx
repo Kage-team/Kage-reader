@@ -15,6 +15,7 @@ import {
   Upload,
 } from "lucide-react";
 import { importArchiveSources } from "../../lib/import/importer";
+import type { ImportProgressEvent } from "../../lib/import/types";
 import {
   SCHEMA_VERSION,
   type Chapter,
@@ -94,6 +95,7 @@ export function SeriesPage() {
   >("");
   const [actionError, setActionError] = useState("");
   const [appendMessage, setAppendMessage] = useState("");
+  const [appendProgress, setAppendProgress] = useState<ImportProgressEvent | null>(null);
   const [exportMessage, setExportMessage] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [chapterQuery, setChapterQuery] = useState("");
@@ -239,10 +241,18 @@ export function SeriesPage() {
     if (sources.length === 0) return;
 
     setIsAppending(true);
-    setAppendMessage("Importing chapters...");
+    setAppendMessage("");
+    setAppendProgress(null);
     setActionError("");
     try {
-      const result = await importArchiveSources(sources, undefined, series.id);
+      const result = await importArchiveSources(
+        sources,
+        (event) => {
+          setAppendProgress(event);
+          setAppendMessage(event.message ?? "Importing chapters...");
+        },
+        series.id,
+      );
       const [chapterRows, progressRows] = await Promise.all([
         listChapters(series.id),
         listProgress(),
@@ -256,6 +266,14 @@ export function SeriesPage() {
             .map((progress) => [progress.chapterId, progress]),
         ),
       );
+      setAppendProgress({
+        fileName: result.imported.at(-1)?.sourceName ?? "",
+        index: sources.length,
+        total: sources.length,
+        state: result.errors.length > 0 ? "error" : "saved",
+        progress: 100,
+        message: result.errors.length > 0 ? "Import finished with errors" : "Import complete",
+      });
       setAppendMessage(
         result.errors.length > 0
           ? `${result.imported.length} chapter(s) added. ${result.errors.join(" ")}`
@@ -271,6 +289,7 @@ export function SeriesPage() {
       );
     } finally {
       setIsAppending(false);
+      window.setTimeout(() => setAppendProgress(null), 1800);
     }
   }
 
@@ -848,11 +867,25 @@ export function SeriesPage() {
             }
           }}
         >
-          {appendMessage ? (
-            <p role="status" style={styles.appendMessage}>
-              {appendMessage}
-            </p>
-          ) : null}
+      {appendProgress ? (
+        <div className="seriesImportProgress" role="status" aria-live="polite">
+          <div className="seriesImportProgressHeader">
+            <span>{appendProgress.message ?? "Importing chapters..."}</span>
+            <strong>{appendProgress.index} of {appendProgress.total}</strong>
+          </div>
+          <div className="seriesImportProgressTrack" aria-hidden="true">
+            <span style={{ width: `${Math.max(4, appendProgress.progress ?? 0)}%` }} />
+          </div>
+          <div className="seriesImportProgressMeta">
+            <span>{appendProgress.fileName || "Preparing chapter files"}</span>
+            <span>{Math.round(appendProgress.progress ?? 0)}%</span>
+          </div>
+        </div>
+      ) : appendMessage ? (
+        <p role="status" style={styles.appendMessage}>
+          {appendMessage}
+        </p>
+      ) : null}
           {exportMessage ? <p role="status">{exportMessage}</p> : null}
           <header className="seriesChapterHeader" style={styles.chapterHeader}>
             <h2 style={styles.chapterHeading}>Chapters · {chapters.length}</h2>
