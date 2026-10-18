@@ -18,6 +18,7 @@ export type Series = {
   ageRating?: string;
   writer?: string;
   summary?: string;
+  notes?: string;
   tags?: string[];
   collections?: string[];
   isFavorite?: boolean;

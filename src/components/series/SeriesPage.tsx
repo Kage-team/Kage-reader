@@ -84,6 +84,7 @@ export function SeriesPage() {
   const [draftWriter, setDraftWriter] = useState("");
   const [draftAgeRating, setDraftAgeRating] = useState("");
   const [draftSummary, setDraftSummary] = useState("");
+  const [draftNotes, setDraftNotes] = useState("");
   const [draftTags, setDraftTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -109,6 +110,7 @@ export function SeriesPage() {
     setDraftWriter(record.writer ?? "");
     setDraftAgeRating(record.ageRating ?? "");
     setDraftSummary(record.summary ?? "");
+    setDraftNotes(record.notes ?? "");
     setDraftTags(record.tags ?? []);
     setTagInput("");
     setDraftPreferredMode(record.preferredMode ?? "");
@@ -200,6 +202,7 @@ export function SeriesPage() {
         writer: draftWriter.trim() || undefined,
         ageRating: draftAgeRating || undefined,
         summary: draftSummary.trim() || undefined,
+        notes: draftNotes.trim() || undefined,
         coverPageKey,
         tags: draftTags.length > 0 ? draftTags : undefined,
         preferredMode: draftPreferredMode || undefined,
@@ -516,6 +519,7 @@ export function SeriesPage() {
                 pages
               </span>
             </div>
+            {series.notes ? <p className="seriesNotes" title={series.notes}>{series.notes}</p> : null}
             {series.tags?.length ? (
               <ul style={styles.tagList} aria-label="Series tags">
                 {series.tags.map((tag) => (
@@ -663,6 +667,16 @@ export function SeriesPage() {
                             setDraftSummary(event.currentTarget.value)
                           }
                           placeholder="Brief description or blurb"
+                          rows={3}
+                          style={styles.textarea}
+                        />
+                      </label>
+                      <label style={styles.field}>
+                        <span style={styles.fieldLabel}>Private notes</span>
+                        <textarea
+                          value={draftNotes}
+                          onChange={(event) => setDraftNotes(event.currentTarget.value)}
+                          placeholder="Add reading notes, reminders, or a favorite arc"
                           rows={3}
                           style={styles.textarea}
                         />
@@ -899,10 +913,13 @@ export function SeriesPage() {
               </div>
               {visibleChapters.length === 0 ? <p style={styles.emptyText}>No chapters match your search.</p> : null}
               <ul style={styles.list}>
-              {visibleChapters.map((chapter, chapterIndex) => (
-                <li key={chapter.id} style={styles.listItem}>
-                  {(() => {
-                    const progress = progressByChapter[chapter.id];
+{visibleChapters.map((chapter, chapterIndex) => (
+              <li key={chapter.id} style={styles.listItem}>
+                {(() => {
+                  const progress = progressByChapter[chapter.id];
+                  const previousChapter = visibleChapters[chapterIndex - 1];
+                  const startsVolumeGroup = chapterIndex === 0 || previousChapter?.volume !== chapter.volume;
+                  const volumeLabel = chapter.volume !== undefined ? `Volume ${chapter.volume}` : "Other chapters";
                     const chapterTitle = chapter.title.trim();
                     const titleLabel =
                       chapterTitle ||
@@ -918,6 +935,8 @@ export function SeriesPage() {
                           )
                       : 0;
                     return (
+                      <>
+                        {startsVolumeGroup ? <div className="chapterVolumeGroup" aria-label={volumeLabel}>{volumeLabel}</div> : null}
                       <div className={`seriesChapterItem${mostRecentChapter?.id === chapter.id ? " is-resume" : ""}`}>
                         <div className="seriesChapterRow">
                           <input
@@ -965,11 +984,9 @@ export function SeriesPage() {
                               void toggleChapterCompletion(chapter)
                             }
                           >
-                            {progress?.completedAt ? (
-                              <Check size={14} />
-                            ) : (
-                              <Circle size={14} />
-                            )}
+                            <span className="chapterStatusActionText">
+                              {progress?.completedAt ? "Read" : "Mark read"}
+                            </span>
                           </button>
                         </div>
                         {progress ? (
@@ -985,6 +1002,7 @@ export function SeriesPage() {
                           </div>
                         ) : null}
                       </div>
+                      </>
                     );
                   })()}
                 </li>
