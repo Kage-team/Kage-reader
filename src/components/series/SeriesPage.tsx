@@ -27,6 +27,7 @@ import {
 } from "../../lib/storage/types";
 import {
   deleteSeriesWithContents,
+  removeSeriesPageCache,
   getBlob,
   getSeries,
   listChapters,
@@ -78,6 +79,7 @@ export function SeriesPage() {
   const [isSeriesActionsOpen, setIsSeriesActionsOpen] = useState(false);
   const [isAppending, setIsAppending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isClearingCache, setIsClearingCache] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftType, setDraftType] = useState<SeriesType>("manga");
   const [draftWriter, setDraftWriter] = useState("");
@@ -94,6 +96,7 @@ export function SeriesPage() {
     ReadingDirection | ""
   >("");
   const [actionError, setActionError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
   const [appendMessage, setAppendMessage] = useState("");
   const [appendProgress, setAppendProgress] = useState<ImportProgressEvent | null>(null);
   const [exportMessage, setExportMessage] = useState("");
@@ -293,6 +296,22 @@ export function SeriesPage() {
     }
   }
 
+  async function clearSeriesCache(): Promise<void> {
+    if (!series || isClearingCache) return;
+    setIsClearingCache(true);
+    setActionError("");
+    try {
+      await removeSeriesPageCache(series.id);
+      setCoverUrl("");
+      setCoverPreviewUrl("");
+      setActionMessage("Page images removed. Metadata and reading progress were kept.");
+    } catch {
+      setActionError("Could not remove this series' page cache.");
+    } finally {
+      setIsClearingCache(false);
+    }
+  }
+
   async function removeSeries(): Promise<void> {
     if (!series || isDeleting) {
       return;
@@ -461,6 +480,18 @@ export function SeriesPage() {
               </button>
               {isSeriesActionsOpen ? (
                 <div className="seriesActionsPopover" role="menu">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={isClearingCache || chapters.length === 0}
+                    onClick={() => {
+                      void clearSeriesCache();
+                      setIsSeriesActionsOpen(false);
+                    }}
+                  >
+                    <Trash2 size={15} />
+                    {isClearingCache ? "Removing page cache..." : "Remove page images"}
+                  </button>
                   <button
                     type="button"
                     role="menuitem"
@@ -850,11 +881,12 @@ export function SeriesPage() {
             )
           : null}
 
-        {actionError ? (
-          <p role="alert" style={styles.errorText}>
-            {actionError}
-          </p>
-        ) : null}
+      {actionMessage ? <p className="seriesActionMessage" role="status">{actionMessage}</p> : null}
+      {actionError ? (
+        <p role="alert" style={styles.errorText}>
+          {actionError}
+        </p>
+      ) : null}
 
         <section
           className="seriesChapterSection"

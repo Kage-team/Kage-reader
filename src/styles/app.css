@@ -6267,6 +6267,34 @@ main > section > [role="alert"] {
   gap: 8px;
 }
 
+.storageBreakdown {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.storageBreakdown div {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  color: var(--app-muted);
+  font-size: 11px;
+}
+
+.storageBreakdown strong {
+  color: var(--app-text);
+  font-size: 12px;
+}
+
+.seriesActionMessage {
+  margin: 10px 0;
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
 .settingsDangerNotice {
   display: grid;
   gap: 4px;
