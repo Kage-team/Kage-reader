@@ -2151,6 +2151,123 @@ button:disabled {
   }
 }
 
+.seriesEditorDialog {
+  padding: 0;
+}
+
+.seriesEditorDialog > .seriesEditorHeader {
+  padding: 20px 24px;
+}
+
+.seriesEditorDialog > .seriesEditorHeader h2 {
+  margin: 0;
+  font-size: clamp(18px, 2vw, 22px);
+}
+
+.seriesEditorDialog > .seriesEditorHeader button,
+.seriesEditorDialog button {
+  min-height: 44px;
+}
+
+.seriesEditorDialog > .seriesEditorDetails,
+.seriesEditorDialog > .seriesEditorSection,
+.seriesEditorDialog > .seriesEditorActions {
+  margin-inline: 24px;
+}
+
+.seriesEditorDetails {
+  padding: 20px 0 4px;
+}
+
+.seriesEditorSection {
+  gap: 16px !important;
+  padding: 18px !important;
+  border-radius: 14px !important;
+  background: var(--app-bg) !important;
+}
+
+.seriesEditorDialog .metadataFields {
+  gap: 16px !important;
+}
+
+.seriesEditorDialog input,
+.seriesEditorDialog select,
+.seriesEditorDialog textarea {
+  min-height: 46px;
+  border-radius: 10px !important;
+  background: var(--app-panel) !important;
+}
+
+.seriesEditorDialog textarea {
+  min-height: 112px;
+  line-height: 1.5;
+}
+
+.seriesEditorDialog input:focus-visible,
+.seriesEditorDialog select:focus-visible,
+.seriesEditorDialog textarea:focus-visible,
+.seriesEditorDialog button:focus-visible {
+  outline: 2px solid var(--app-lime);
+  outline-offset: 3px;
+}
+
+.seriesEditorDialog .coverEditor {
+  align-content: start;
+  gap: 14px;
+}
+
+.seriesEditorDialog .editorCover,
+.seriesEditorDialog .editorCoverFallback {
+  max-width: 188px;
+  border-radius: 12px;
+  background: var(--app-panel-raised);
+}
+
+.seriesEditorDialog .tagInputRow {
+  align-items: stretch;
+}
+
+.seriesEditorDialog .popularTag,
+.seriesEditorDialog .draftTag {
+  min-height: 38px;
+  border-radius: 999px;
+}
+
+.seriesEditorDialog .seriesEditorActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 4px 0 24px;
+}
+
+.seriesEditorDialog .seriesEditorActions button[type="submit"] {
+  order: -1;
+  min-width: 132px;
+  border-radius: 10px;
+  background: var(--app-lime);
+  color: #0d110d;
+  font-weight: 800;
+}
+
+@media (max-width: 680px) {
+  .seriesEditorDialog > .seriesEditorHeader,
+  .seriesEditorDialog > .seriesEditorDetails,
+  .seriesEditorDialog > .seriesEditorSection,
+  .seriesEditorDialog > .seriesEditorActions {
+    margin-inline: 16px;
+  }
+
+  .seriesEditorDialog > .seriesEditorHeader { padding: 18px 0; }
+  .seriesEditorDetails { grid-template-columns: 1fr !important; padding-top: 16px; }
+  .seriesEditorDialog .coverEditor { grid-template-columns: 104px minmax(0, 1fr); justify-items: stretch; align-items: center; }
+  .seriesEditorDialog .editorCover,
+  .seriesEditorDialog .editorCoverFallback { grid-row: span 2; width: 104px; }
+  .seriesEditorDialog .coverEditor > button { width: 100%; }
+  .seriesEditorDialog .overrideGrid { grid-template-columns: 1fr; }
+  .seriesEditorDialog .seriesEditorActions { padding-bottom: 18px; }
+  .seriesEditorDialog .seriesEditorActions button { flex: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .seriesEditorBackdrop,
   .importProgressBackdrop,

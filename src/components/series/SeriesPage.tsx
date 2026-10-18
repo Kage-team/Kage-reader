@@ -529,8 +529,8 @@ export function SeriesPage() {
                       Close
                     </button>
                   </header>
-                  <section style={styles.detailsGrid}>
-                    <div style={styles.coverEditor}>
+                  <section className="seriesEditorDetails" style={styles.detailsGrid}>
+                    <div className="coverEditor" style={styles.coverEditor}>
                       {coverPreviewUrl || coverUrl ? (
                         <img
                           src={coverPreviewUrl || coverUrl}
@@ -559,7 +559,7 @@ export function SeriesPage() {
                         <Upload size={14} /> Upload custom cover
                       </button>
                     </div>
-                    <div style={styles.metadataFields}>
+                    <div className="metadataFields" style={styles.metadataFields}>
                       <label style={styles.field}>
                         <span style={styles.fieldLabel}>
                           Display title / series name
@@ -641,7 +641,7 @@ export function SeriesPage() {
                       </label>
                     </div>
                   </section>
-                  <section style={styles.tagEditor}>
+                  <section className="seriesEditorSection" style={styles.tagEditor}>
                     <div>
                       <strong>Tags &amp; organization</strong>
                       <p style={styles.overrideDescription}>
@@ -706,7 +706,7 @@ export function SeriesPage() {
                       ))}
                     </div>
                   </section>
-                  <section style={styles.overrideSection}>
+                  <section className="seriesEditorSection" style={styles.overrideSection}>
                     <div>
                       <strong>Custom Reading Overrides</strong>
                       <p style={styles.overrideDescription}>
@@ -752,7 +752,7 @@ export function SeriesPage() {
                       </label>
                     </div>
                   </section>
-                  <div style={styles.editorActions}>
+                  <div className="seriesEditorActions" style={styles.editorActions}>
                     <button type="submit" style={styles.linkButton}>
                       Save details
                     </button>
