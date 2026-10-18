@@ -29,15 +29,6 @@ export function AppFrame({ children }: PropsWithChildren) {
     <div className="appShell">
       <a className="skipLink" href="#main-content">Skip to content</a>
       <aside className="appSidebar" aria-label="Primary navigation">
-        <Link to="/" className="appBrand" aria-label="Kage Reader home">
-          <span className="appBrandMark">
-            <BookOpenCheck size={20} />
-          </span>
-          <span className="appBrandName">
-            Kage<span>Local reader</span>
-          </span>
-        </Link>
-
         <nav className="appNavGroup" aria-label="Workspace">
           <p className="appNavLabel">Workspace</p>
           <Link to="/?view=all" className={navClass(false)} data-active={activeTab === "library"}>
