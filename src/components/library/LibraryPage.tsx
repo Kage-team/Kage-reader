@@ -12,7 +12,6 @@ import {
   MoreHorizontal,
   Plus,
   Search,
-  ShieldCheck,
 } from "lucide-react";
 import { AdultAccessPrompt } from "../security/AdultAccessPrompt";
 import {
@@ -325,19 +324,6 @@ export function LibraryPage() {
     setPreferences(next);
   }
 
-  function toggleSafeMode(): void {
-    if (preferences.safeMode && !adultAccessUnlocked) {
-      setDisableSafeModeAfterUnlock(true);
-      setIsAdultPromptOpen(true);
-      return;
-    }
-    const nextPreferences = savePreferences({
-      ...preferences,
-      safeMode: !preferences.safeMode,
-    });
-    setPreferences(nextPreferences);
-  }
-
   function finishAdultUnlock(): void {
     setAdultAccessUnlocked(true);
     setIsAdultPromptOpen(false);
@@ -437,9 +423,9 @@ export function LibraryPage() {
             </div>
           ) : null}
           <div className="libraryHeaderActions libraryContextActions" style={styles.headerActions}>
-            {view === "all" || view === "favorites" || view === "queue" ? (
+            {view === "favorites" || view === "queue" ? (
               <div className="librarySavedSegmented" aria-label="Saved library views">
-                <Link className={view === "favorites" || view === "all" ? "is-active" : ""} to="/?view=favorites">Favorites</Link>
+                <Link className={view === "favorites" ? "is-active" : ""} to="/?view=favorites">Favorites</Link>
                 <Link className={view === "queue" ? "is-active" : ""} to="/?view=queue">Queue</Link>
               </div>
             ) : null}
@@ -449,10 +435,7 @@ export function LibraryPage() {
                 <Link className={view === "insights" ? "is-active" : ""} to="/?view=insights">Insights</Link>
               </nav>
             ) : null}
-            <div className="librarySafeModeToggle" role="group" aria-label="Content safety">
-              <button type="button" aria-pressed={preferences.safeMode} onClick={() => { if (!preferences.safeMode) toggleSafeMode(); }} title="Hide series rated 18+"><ShieldCheck size={14} /> Safe</button>
-              <button type="button" aria-pressed={!preferences.safeMode} onClick={() => { if (preferences.safeMode) toggleSafeMode(); }} title="Show mature titles in the library">18+</button>
-            </div>
+
           </div>
         </header>
 

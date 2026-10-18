@@ -6061,7 +6061,8 @@ a {
 
 .appTopbarBrandGroup { gap: 18px; }
 .appTopbarSafety { gap: 6px; }
-.appTopbarSafety a {
+.appTopbarSafety a,
+.appTopbarSafetyButton {
   display: inline-flex;
   align-items: center;
   gap: 5px;
