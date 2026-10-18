@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { DemoDataPanel } from "../../dev/DemoDataPanel";
 import {
   Bookmark,
@@ -44,56 +44,56 @@ export function AppFrame({ children }: PropsWithChildren) {
     <div className="appShell">
       <a className="skipLink" href="#main-content">Skip to content</a>
       <aside className="appSidebar" aria-label="Primary navigation">
-        <NavLink to="/" className="appBrand" aria-label="Kage Reader home">
+        <Link to="/" className="appBrand" aria-label="Kage Reader home">
           <span className="appBrandMark">
             <BookOpenCheck size={20} />
           </span>
           <span className="appBrandName">
             Kage<span>Local reader</span>
           </span>
-        </NavLink>
+        </Link>
 
         <nav className="appNavGroup">
           <p className="appNavLabel">Workspace</p>
-          <NavLink to="/" end className={() => navClass(isHomeRoute)}>
+          <Link to="/" className={navClass(isHomeRoute)}>
             <Home size={17} />
             <span>Home</span>
-          </NavLink>
-          <NavLink
+          </Link>
+          <Link
             to="/import"
-            className={({ isActive }) => navClass(isActive)}
+            className={navClass(pathname === "/import")} aria-current={pathname === "/import" ? "page" : undefined}
           >
             <FileUp size={17} />
             <span>Import</span>
-          </NavLink>
-          <NavLink
+          </Link>
+          <Link
 to="/?view=all"
-          className={() => navClass(isLibraryHome)}
+          className={navClass(isLibraryHome)}
           >
             <BookOpen size={17} />
             <span>All series</span>
-          </NavLink>
-          <NavLink
+          </Link>
+          <Link
             to="/?view=continue"
-            className={() => navClass(isLibraryRoute && view === "continue")}
+            className={navClass(isLibraryRoute && view === "continue")}
           >
             <Clock3 size={17} />
             <span>Continue</span>
-          </NavLink>
-          <NavLink
+          </Link>
+          <Link
             to="/?view=favorites"
-            className={() => navClass(isLibraryRoute && view === "favorites")}
+            className={navClass(isLibraryRoute && view === "favorites")}
           >
             <Bookmark size={17} />
             <span>Favorites</span>
-          </NavLink>
-          <NavLink
+          </Link>
+          <Link
             to="/?view=queue"
-            className={() => navClass(isLibraryRoute && view === "queue")}
+            className={navClass(isLibraryRoute && view === "queue")}
           >
             <ListOrdered size={17} />
             <span>Queue</span>
-          </NavLink>
+          </Link>
           <Link
             to="/?view=history"
             className={navClass(isLibraryRoute && view === "history")}
@@ -105,13 +105,13 @@ to="/?view=all"
 
         <nav className="appNavGroup">
           <p className="appNavLabel">Application</p>
-          <NavLink
+          <Link
             to="/settings"
-            className={({ isActive }) => navClass(isActive)}
+            className={navClass(pathname === "/settings")} aria-current={pathname === "/settings" ? "page" : undefined}
           >
             <Settings size={17} />
             <span>Settings</span>
-          </NavLink>
+          </Link>
         </nav>
 
         <div className="appSidebarFooter">
@@ -127,26 +127,26 @@ to="/?view=all"
       </aside>
 
       <nav className="appMobileNav" aria-label="Primary navigation">
-        <NavLink to="/" end className={() => navClass(isHomeRoute)} aria-label="Home">
+        <Link to="/" className={navClass(isHomeRoute)} aria-current={isHomeRoute ? "page" : undefined} aria-label="Home">
           <Home size={18} />
           <span>Home</span>
-        </NavLink>
-        <NavLink to="/?view=all" className={() => navClass(isLibraryHome)} aria-label="Library">
+        </Link>
+        <Link to="/?view=all" className={navClass(isLibraryHome)} aria-current={isLibraryHome ? "page" : undefined} aria-label="Library">
           <BookOpen size={18} />
           <span>Library</span>
-        </NavLink>
-        <NavLink to="/import" className="appMobileAdd" aria-label="Add to library">
+        </Link>
+        <Link to="/import" className="appMobileAdd" aria-label="Add to library">
           <FileUp size={18} />
           <span>Add</span>
-        </NavLink>
-        <NavLink to="/?view=history" className={() => navClass(isLibraryRoute && view === "history")} aria-label="Activity">
+        </Link>
+        <Link to="/?view=history" className={navClass(isLibraryRoute && view === "history")} aria-current={isLibraryRoute && view === "history" ? "page" : undefined} aria-label="Activity">
           <History size={18} />
           <span>Activity</span>
-        </NavLink>
-        <NavLink to="/settings" className={({ isActive }) => navClass(isActive)} aria-label="More">
+        </Link>
+        <Link to="/settings" className={navClass(pathname === "/settings")} aria-current={pathname === "/settings" ? "page" : undefined} aria-label="More">
           <Settings size={18} />
           <span>More</span>
-        </NavLink>
+        </Link>
       </nav>
 
       <div className="appMainShell">
@@ -158,22 +158,22 @@ to="/?view=all"
           </div>
           <div className="appTopbarStatus">
             <div className="appTopbarUtilities">
-              <NavLink
+              <Link
                 to="/import"
                 className="appTopbarUtility"
                 aria-label="Import books"
                 title="Import books"
               >
                 <FileUp size={17} />
-              </NavLink>
-              <NavLink
+              </Link>
+              <Link
                 to="/settings"
                 className="appTopbarUtility"
                 aria-label="Settings"
                 title="Settings"
               >
                 <Settings size={17} />
-              </NavLink>
+              </Link>
             </div>
             <span className="appStatusText">
               <span className="appLocalDot" /> Offline-ready library
