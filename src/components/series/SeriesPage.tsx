@@ -9,6 +9,7 @@ import {
   Circle,
   Download,
   MoreVertical,
+  Search,
   Play,
   Plus,
   Settings2,
@@ -36,6 +37,7 @@ import {
   putProgress,
 } from "../../lib/storage/db";
 import { createSeriesExport } from "../../lib/storage/export";
+import { filterAndSortChapters, type ChapterSortDirection } from "./chapterList";
 
 const SERIES_TYPES: Array<{ value: SeriesType; label: string }> = [
   { value: "manga", label: "Manga" },
@@ -95,6 +97,8 @@ export function SeriesPage() {
   const [appendMessage, setAppendMessage] = useState("");
   const [exportMessage, setExportMessage] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [chapterQuery, setChapterQuery] = useState("");
+  const [chapterSortDirection, setChapterSortDirection] = useState<ChapterSortDirection>("ascending");
   const archiveInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -360,6 +364,7 @@ export function SeriesPage() {
         (right.progress?.updatedAt ?? 0) - (left.progress?.updatedAt ?? 0),
     )[0]?.chapter;
   const featuredChapter = mostRecentChapter ?? chapters[0];
+  const visibleChapters = filterAndSortChapters(chapters, chapterQuery, chapterSortDirection);
 
   return (
     <main className="seriesPage" style={styles.page}>
@@ -799,7 +804,7 @@ export function SeriesPage() {
           <header style={styles.chapterHeader}>
             <h2 style={styles.chapterHeading}>Chapters · {chapters.length}</h2>
             <div className="seriesChapterActions">
-              <span style={styles.chapterCount}>{chapters.length}</span>
+              <span style={styles.chapterCount}>{visibleChapters.length} of {chapters.length}</span>
               <button
                 type="button"
                 className="seriesAddChapters"
@@ -818,8 +823,20 @@ export function SeriesPage() {
               No chapters available for this series.
             </p>
           ) : (
-            <ul style={styles.list}>
-              {chapters.map((chapter, chapterIndex) => (
+            <>
+              <div className="seriesChapterTools">
+                <label className="seriesChapterSearch">
+                  <Search size={15} aria-hidden="true" />
+                  <span className="sr-only">Search chapters</span>
+                  <input value={chapterQuery} onChange={(event) => setChapterQuery(event.currentTarget.value)} placeholder="Search chapters" />
+                </label>
+                <button type="button" className="seriesChapterSort" onClick={() => setChapterSortDirection((current) => current === "ascending" ? "descending" : "ascending")} aria-label={`Sort chapters ${chapterSortDirection === "ascending" ? "descending" : "ascending"}`}>
+                  {chapterSortDirection === "ascending" ? "Ascending" : "Descending"}
+                </button>
+              </div>
+              {visibleChapters.length === 0 ? <p style={styles.emptyText}>No chapters match your search.</p> : null}
+              <ul style={styles.list}>
+              {visibleChapters.map((chapter, chapterIndex) => (
                 <li key={chapter.id} style={styles.listItem}>
                   {(() => {
                     const progress = progressByChapter[chapter.id];
@@ -897,7 +914,8 @@ export function SeriesPage() {
                   })()}
                 </li>
               ))}
-            </ul>
+              </ul>
+            </>
           )}
         </section>
       </section>
