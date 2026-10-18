@@ -434,8 +434,8 @@ export function LibraryPage() {
           style={styles.headerRow}
         >
           {!["favorites", "continue", "queue"].includes(view) ? (
-            <div className="libraryHeaderCopy">
-              <h1 style={styles.title}>{pageTitle}</h1>
+              <div className="libraryHeaderCopy">
+              <h1 className={view === "all" ? "sr-only" : undefined} style={styles.title}>{pageTitle}</h1>
             </div>
           ) : null}
           <div className="libraryHeaderActions libraryContextActions" style={styles.headerActions}>

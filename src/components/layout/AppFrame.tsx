@@ -15,25 +15,12 @@ export function AppFrame({ children }: PropsWithChildren) {
   const { pathname, search } = useLocation();
   const searchParams = new URLSearchParams(search);
   const requestedView = searchParams.get("view");
-  const view = requestedView ?? "all";
   const activeTab = pathname === "/"
     ? requestedView === "history"
       ? "activity"
       : "library"
     : getActiveTab(pathname, search);
-  const isLibraryRoute = pathname === "/";
   const demoEnabled = searchParams.get("demo") === "1" && !pathname.startsWith("/read/");
-  const pageName =
-    pathname === "/settings"
-      ? "Settings"
-      : pathname.startsWith("/series/")
-        ? "Series"
-        : pathname === "/import"
-          ? "Import"
-          : isLibraryRoute && view === "history"
-            ? "Activity"
-            : "Library";
-
   function navClass(active: boolean): string {
     return `appNavLink${active ? " appNavLinkActive" : ""}`;
   }
@@ -108,11 +95,10 @@ export function AppFrame({ children }: PropsWithChildren) {
 
       <div className="appMainShell">
         <header className="appTopbar">
-          <div className="appBreadcrumb">
-            <span>Kage Reader</span>
-            <span aria-hidden="true">/</span>
-            <strong>{pageName}</strong>
-          </div>
+          <Link to="/?view=all" className="appTopbarBrand" aria-label="Kage Reader home">
+            <span className="appBrandMark"><BookOpenCheck size={18} /></span>
+            <strong>Kage</strong>
+          </Link>
           <div className="appTopbarStatus">
             <div className="appTopbarUtilities">
               <Link

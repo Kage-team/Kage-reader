@@ -522,6 +522,19 @@ button:disabled {
   min-width: 0;
 }
 
+.appTopbarBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--app-text);
+  text-decoration: none;
+}
+
+.appTopbarBrand .appBrandMark {
+  width: 28px;
+  height: 28px;
+}
+
 .appTopbar {
   position: sticky;
   z-index: 5;
@@ -6271,8 +6284,12 @@ a {
 
 @media (max-width: 720px) {
   .appTopbar {
-    min-height: 58px;
-    padding-inline: 16px;
+  min-height: 58px;
+  padding-inline: 16px;
+}
+
+  .appTopbarUtilities {
+    display: none;
   }
 
   .appBreadcrumb {
