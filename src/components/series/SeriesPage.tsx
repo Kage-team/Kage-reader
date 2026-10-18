@@ -373,7 +373,7 @@ export function SeriesPage() {
           <Link to="/?view=all" style={styles.backLink}>
             <ArrowLeft size={15} /> Library
           </Link>
-          <div style={styles.headerActions}>
+          <div className="seriesMaintenanceActions" style={styles.headerActions}>
             <button
               type="button"
               className="seriesEditButton"
@@ -465,12 +465,6 @@ export function SeriesPage() {
               chapters
             </p>
             <h1 style={styles.title} title={series.title}>{series.title}</h1>
-            {series.summary ? (
-              <details className="seriesSynopsis">
-                <summary><span className="seriesSynopsisPreview">{series.summary}</span><span className="seriesSynopsisReadMore" aria-hidden="true"> · Read more</span></summary>
-                <p style={styles.seriesSummary}>{series.summary}</p>
-              </details>
-            ) : null}
             <div style={styles.heroFacts}>
               {series.writer ? <span>{series.writer}</span> : null}
               {series.ageRating ? <span>{series.ageRating}</span> : null}
@@ -490,6 +484,12 @@ export function SeriesPage() {
                   </li>
                 ))}
               </ul>
+            ) : null}
+            {series.summary ? (
+              <details className="seriesSynopsis">
+                <summary><span className="seriesSynopsisPreview">{series.summary}</span><span className="seriesSynopsisReadMore" aria-hidden="true"> · Read more</span></summary>
+                <p style={styles.seriesSummary}>{series.summary}</p>
+              </details>
             ) : null}
             {featuredChapter ? (
               <Link
@@ -786,6 +786,7 @@ export function SeriesPage() {
         ) : null}
 
         <section
+          className="seriesChapterSection"
           style={styles.chapterSection}
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => {
@@ -801,7 +802,7 @@ export function SeriesPage() {
             </p>
           ) : null}
           {exportMessage ? <p role="status">{exportMessage}</p> : null}
-          <header style={styles.chapterHeader}>
+          <header className="seriesChapterHeader" style={styles.chapterHeader}>
             <h2 style={styles.chapterHeading}>Chapters · {chapters.length}</h2>
             <div className="seriesChapterActions">
               <span style={styles.chapterCount}>{visibleChapters.length} of {chapters.length}</span>

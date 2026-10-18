@@ -5279,8 +5279,47 @@ main > section > [role="alert"] {
 }
 
 @media (max-width: 640px) {
+  .seriesPage > section {
+    padding: 12px !important;
+  }
+
+  .seriesPage .seriesMaintenanceActions {
+    gap: 4px;
+  }
+
+  .seriesPage .seriesEditButton {
+    min-width: 44px;
+    overflow: hidden;
+    padding-inline: 10px;
+    text-indent: -999px;
+  }
+
+  .seriesPage .seriesEditButton svg {
+    flex: 0 0 auto;
+    text-indent: 0;
+  }
+
+  .seriesPage .seriesChapterSection {
+    margin-top: 10px;
+  }
+
+  .seriesPage .seriesChapterHeader {
+    position: sticky;
+    z-index: 4;
+    top: var(--app-topbar-height, 58px);
+    min-height: 52px;
+    margin-inline: -12px;
+    padding: 8px 12px;
+    background: color-mix(in srgb, var(--app-panel) 96%, transparent);
+    backdrop-filter: blur(12px);
+  }
+
+  .seriesPage .seriesChapterItem {
+    min-height: 44px;
+  }
+
   .chapterSection > .chapterHeader {
-    top: var(--app-topbar-height, 66px);
+    top: var(--app-topbar-height, 58px);
     padding-top: 8px;
     padding-bottom: 8px;
   }
