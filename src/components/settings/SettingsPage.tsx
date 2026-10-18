@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   applyPreferencesToDocument,
+  DEFAULT_PREFERENCES,
   getPreferences,
   savePreferences,
   type Preferences,
@@ -194,7 +195,8 @@ export function SettingsPage({
   isInstalled,
   onInstallPromptConsumed,
 }: SettingsPageProps) {
-  const [preferences, setPreferences] = useState<Preferences>(getPreferences);
+ const [preferences, setPreferences] = useState<Preferences>(getPreferences);
+ const [previewTheme, setPreviewTheme] = useState<ColorTheme | null>(null);
   const [activeSettingsTab, setActiveSettingsTab] =
     useState<(typeof SETTINGS_TABS)[number]["id"]>("appearance");
   const [storageStatus, setStorageStatus] = useState<StorageStatus>({});
@@ -241,10 +243,23 @@ export function SettingsPage({
   }, []);
 
   function updatePreferences(update: Partial<Preferences>): void {
-    const nextPreferences = savePreferences({ ...preferences, ...update });
-    setPreferences(nextPreferences);
-    applyPreferencesToDocument(nextPreferences);
-    applyStealthMode(nextPreferences.stealthMode);
+  const nextPreferences = savePreferences({ ...preferences, ...update });
+  setPreferences(nextPreferences);
+  applyPreferencesToDocument(nextPreferences);
+  applyStealthMode(nextPreferences.stealthMode);
+  }
+
+  function resetActiveSection(): void {
+    const resets: Record<string, Partial<Preferences>> = {
+      appearance: { theme: DEFAULT_PREFERENCES.theme, accent: DEFAULT_PREFERENCES.accent, highContrast: DEFAULT_PREFERENCES.highContrast },
+      reading: { defaultReaderMode: DEFAULT_PREFERENCES.defaultReaderMode, defaultReadingDirection: DEFAULT_PREFERENCES.defaultReadingDirection, textScale: DEFAULT_PREFERENCES.textScale },
+      content: { safeMode: DEFAULT_PREFERENCES.safeMode, adultPinSalt: DEFAULT_PREFERENCES.adultPinSalt, adultPinHash: DEFAULT_PREFERENCES.adultPinHash },
+      privacy: { stealthMode: DEFAULT_PREFERENCES.stealthMode },
+      storage: { lastBackupAt: DEFAULT_PREFERENCES.lastBackupAt },
+      backup: { lastBackupAt: DEFAULT_PREFERENCES.lastBackupAt },
+    };
+    setPreviewTheme(null);
+    updatePreferences(resets[activeSettingsTab] ?? {});
   }
 
   async function saveAdultPin(): Promise<void> {
@@ -467,6 +482,9 @@ export function SettingsPage({
               {tab.label}
             </button>
           ))}
+          <button type="button" className="settingsResetButton" onClick={resetActiveSection}>
+            Reset {SETTINGS_TABS.find((tab) => tab.id === activeSettingsTab)?.label ?? "section"}
+          </button>
         </nav>
 
         <section
@@ -489,8 +507,8 @@ export function SettingsPage({
                 key={theme.id}
                 type="button"
                 className="settingsThemeOption"
-                aria-pressed={preferences.theme === theme.id}
-                onClick={() => updatePreferences({ theme: theme.id })}
+  aria-pressed={(previewTheme ?? preferences.theme) === theme.id}
+  onClick={() => setPreviewTheme(theme.id) }
                 style={{
                   ...styles.themeOption,
                   ...(preferences.theme === theme.id
@@ -543,17 +561,23 @@ export function SettingsPage({
               ))}
             </div>
           </div>
-          <div className="settingsPreviewBand" style={styles.themePreviewBand}>
-            <span style={styles.themePreviewLabel}>
-              <Sparkles size={15} /> Preview
-            </span>
-            <span style={styles.themePreviewSample}>
-              A quiet reading surface
-            </span>
-            <button type="button" style={styles.themePreviewButton}>
-              Accent
-            </button>
-          </div>
+          {(() => {
+            const selectedTheme = COLOR_THEMES.find((theme) => theme.id === (previewTheme ?? preferences.theme)) ?? COLOR_THEMES[0];
+            return (
+              <div className="settingsPreviewBand" style={{ ...styles.themePreviewBand, background: selectedTheme.panel, color: selectedTheme.text }}>
+                <span style={styles.themePreviewLabel}>
+                  <Sparkles size={15} /> Contrast preview
+                </span>
+                <span style={styles.themePreviewSample}>Readable body text · Aa 123</span>
+                <span className="settingsContrastSample">Icon and label</span>
+                {previewTheme && previewTheme !== preferences.theme ? (
+                  <button type="button" style={styles.themePreviewButton} onClick={() => { updatePreferences({ theme: previewTheme }); setPreviewTheme(null); }}>
+                    Apply theme
+                  </button>
+                ) : null}
+              </div>
+            );
+          })()}
           <label style={styles.toggleRow}>
             <span>
               <span style={styles.fieldLabel}>High contrast</span>

@@ -131,9 +131,24 @@
 }
 
 :root[data-accent="jade"] {
-  --app-lime: var(--app-text);
-  --app-accent-glow: var(--app-text);
-}
+  --app-lime: #00a982;
+  --app-accent-glow: #00a982;
+  }
+
+:root[data-accent="cyber"] {
+  --app-lime: #00c6f2;
+  --app-accent-glow: #00c6f2;
+  }
+
+:root[data-accent="electric"] {
+  --app-lime: #ad79ff;
+  --app-accent-glow: #ad79ff;
+  }
+
+:root[data-accent="cobalt"] {
+  --app-lime: #528bff;
+  --app-accent-glow: #528bff;
+  }
 :root[data-accent="cyber"] {
   --app-lime: var(--app-text);
   --app-accent-glow: var(--app-text);
@@ -6222,6 +6237,33 @@ main > section > [role="alert"] {
 
 .settingsPagePanel > .settingsSectionNav {
   margin-inline: 0;
+  gap: 8px;
+}
+
+.settingsResetButton {
+  margin-left: auto;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.settingsResetButton:hover {
+  border-color: var(--app-border-strong);
+  color: var(--app-text);
+}
+
+.settingsContrastSample {
+  padding: 5px 8px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .settingsPagePanel > .settingsSectionNav { 
