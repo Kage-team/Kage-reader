@@ -1275,8 +1275,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "0 11px",
     border: 0,
     borderRadius: 5,
-    background: "var(--app-lime)",
-    color: "var(--app-bg)",
+    background: "var(--app-text)",
+    color: "var(--app-panel)",
     fontSize: 10,
     fontWeight: 700,
   },
@@ -1288,7 +1288,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   kicker: {
     margin: 0,
-    color: "var(--app-lime)",
+    color: "var(--app-text)",
     fontSize: 10,
     fontWeight: 700,
     letterSpacing: "0.12em",
@@ -1325,7 +1325,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
   selectedThemeOption: {
-    outline: "2px solid var(--app-lime)",
+    outline: "2px solid var(--app-text)",
     outlineOffset: 1,
   },
   themePreview: {

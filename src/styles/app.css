@@ -3146,7 +3146,8 @@ button:disabled {
   .settingsPagePanel > header,
   .settingsPagePanel > .settingsSection {
     grid-column: 1;
-    padding-inline: 16px !important;
+    box-sizing: border-box;
+    padding-inline: 20px !important;
   }
 
   .settingsPagePanel > header {
@@ -6024,7 +6025,12 @@ main > section > [role="alert"] {
 .settingsPagePanel > header,
 .settingsPagePanel > .settingsSectionNav,
 .settingsPagePanel > .settingsSection {
-  padding-inline: clamp(16px, 2.5vw, 28px);
+  box-sizing: border-box;
+  padding-inline: clamp(20px, 3vw, 32px);
+}
+
+.settingsPagePanel > .settingsSectionNav {
+  margin-inline: 0;
 }
 
 .settingsPagePanel > .settingsSectionNav { 
