@@ -394,6 +394,8 @@ export function LibraryPage() {
   const visibleRecentChapters = recentChapters.filter((item) =>
     filteredEntries.some((entry) => entry.id === item.seriesId),
   );
+  const activityTitleCount = new Set(visibleRecentChapters.map((item) => item.seriesId)).size;
+  const latestActivity = visibleRecentChapters[0];
   const pageTitle =
     view === "adult"
       ? "18+ Vault"
@@ -403,8 +405,8 @@ export function LibraryPage() {
           ? "Continue reading"
           : view === "queue"
             ? "Reading queue"
-            : view === "history"
-              ? "History"
+              : view === "history"
+                ? "Activity"
               : view === "insights"
                 ? "Reading insights"
                 : "Your library";
@@ -557,6 +559,26 @@ export function LibraryPage() {
             style={styles.resumeSection}
             aria-labelledby="recent-chapters-title"
           >
+            {latestActivity ? (
+              <div className="activitySummary" aria-label="Activity summary">
+                <div className="activitySummaryStat">
+                  <strong>{activityTitleCount}</strong>
+                  <span>recently read {activityTitleCount === 1 ? "title" : "titles"}</span>
+                </div>
+                <time
+                  className="activitySummaryTime"
+                  dateTime={new Date(latestActivity.updatedAt).toISOString()}
+                >
+                  Last read {formatHistoryAge(latestActivity.updatedAt)}
+                </time>
+                <Link
+                  className="activitySummaryResume"
+                  to={`/read/${encodeURIComponent(latestActivity.id)}`}
+                >
+                  Continue where you left off
+                </Link>
+              </div>
+            ) : null}
             <div className="historySectionHeader">
               <h2 style={styles.sectionTitle}>Recently read</h2>
               <div className="viewModeToggle" role="group" aria-label="History view">

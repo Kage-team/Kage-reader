@@ -32,8 +32,8 @@ export function AppFrame({ children }: PropsWithChildren) {
         ? "Series"
           : pathname === "/import"
             ? "Import"
-            : isLibraryRoute && view === "history"
-              ? "History"
+              : isLibraryRoute && view === "history"
+                ? "Activity"
               : "Library";
 
   function navClass(active: boolean): string {
