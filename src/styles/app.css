@@ -149,19 +149,6 @@
   --app-lime: #528bff;
   --app-accent-glow: #528bff;
   }
-:root[data-accent="cyber"] {
-  --app-lime: var(--app-text);
-  --app-accent-glow: var(--app-text);
-}
-:root[data-accent="electric"] {
-  --app-lime: var(--app-text);
-  --app-accent-glow: var(--app-text);
-}
-:root[data-accent="cobalt"] {
-  --app-lime: var(--app-text);
-  --app-accent-glow: var(--app-text);
-}
-
 * {
   box-sizing: border-box;
 }
