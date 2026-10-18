@@ -1,7 +1,6 @@
-import { useState, type PropsWithChildren } from "react";
+import { type PropsWithChildren } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getActiveTab } from "./activeTab";
-import { getPreferences, savePreferences } from "../../lib/preferences/preferences";
 import {
   BookOpen,
   BookOpenCheck,
@@ -9,8 +8,6 @@ import {
   History,
   Heart,
   Settings,
-  ShieldAlert,
-  ShieldCheck,
 } from "lucide-react";
 
 export function AppFrame({ children }: PropsWithChildren) {
@@ -24,11 +21,6 @@ export function AppFrame({ children }: PropsWithChildren) {
         ? "saved"
         : "library"
     : getActiveTab(pathname, search);
-  const [safeMode, setSafeMode] = useState(() => getPreferences().safeMode);
-  function toggleSafeMode(): void {
-    const next = savePreferences({ ...getPreferences(), safeMode: !safeMode });
-    setSafeMode(next.safeMode);
-  }
   function navClass(active: boolean): string {
     return `appNavLink${active ? " appNavLinkActive" : ""}`;
   }
@@ -70,10 +62,6 @@ export function AppFrame({ children }: PropsWithChildren) {
             <span className="appLocalDot" />
             Stored on this device
           </span>
-          <span>
-            <ShieldCheck size={13} style={{ verticalAlign: "-2px" }} /> Private
-            by default
-          </span>
         </div>
       </aside>
 
@@ -107,10 +95,6 @@ export function AppFrame({ children }: PropsWithChildren) {
               <span className="appBrandMark"><BookOpenCheck size={18} /></span>
               <strong>Kage</strong>
             </Link>
-            <nav className="appTopbarSafety" aria-label="Content safety">
-              <button type="button" className="appTopbarSafetyButton" onClick={toggleSafeMode} aria-pressed={safeMode} title={safeMode ? "Show mature titles" : "Hide mature titles"}><ShieldCheck size={14} /> {safeMode ? "Safe" : "18+"}</button>
-              <Link to="/?view=adult" title="18+ Vault"><ShieldAlert size={14} /> Vault</Link>
-            </nav>
           </div>
           <div className="appTopbarStatus">
             <div className="appTopbarUtilities">

@@ -124,6 +124,10 @@
   box-sizing: border-box;
 }
 
+a {
+  text-decoration: none;
+}
+
 :where(button, a, input, select, textarea, summary) {
   min-height: 44px;
 }
