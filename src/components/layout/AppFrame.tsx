@@ -1,6 +1,5 @@
 import { useState, type PropsWithChildren } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { DemoDataPanel } from "../../dev/DemoDataPanel";
 import { getActiveTab } from "./activeTab";
 import { getPreferences, savePreferences } from "../../lib/preferences/preferences";
 import {
@@ -26,7 +25,6 @@ export function AppFrame({ children }: PropsWithChildren) {
         : "library"
     : getActiveTab(pathname, search);
   const [safeMode, setSafeMode] = useState(() => getPreferences().safeMode);
-  const demoEnabled = searchParams.get("demo") === "1" && !pathname.startsWith("/read/");
   function toggleSafeMode(): void {
     const next = savePreferences({ ...getPreferences(), safeMode: !safeMode });
     setSafeMode(next.safeMode);
@@ -139,8 +137,7 @@ export function AppFrame({ children }: PropsWithChildren) {
           </div>
         </header>
         <div className="appView" id="main-content">{children}</div>
-        {demoEnabled && <DemoDataPanel />}
-      </div>
+        </div>
     </div>
   );
 }
