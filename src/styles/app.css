@@ -5016,8 +5016,23 @@ button:disabled {
   width: 100%;
   max-width: none;
   align-items: stretch;
+  justify-content: flex-start;
   gap: 0;
   margin: 12px 0 18px;
+  box-sizing: border-box;
+}
+
+.seriesChapterTools > .seriesChapterSearch {
+  flex: 1 1 auto;
+  width: auto;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.seriesChapterTools > .seriesChapterSort {
+  flex: 0 0 124px;
+  width: 124px;
+  box-sizing: border-box;
 }
 
 .seriesChapterSearch {
@@ -5875,18 +5890,20 @@ main > section > [role="alert"] {
     margin: 12px 0;
   }
 
-.seriesChapterSearch {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--app-border);
-  border-radius: 10px;
-  background: var(--app-panel);
-  color: var(--app-muted);
-}
+  .seriesChapterSearch {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    width: auto;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--app-border);
+    border-radius: 7px 0 0 7px;
+    background: var(--app-panel);
+    color: var(--app-muted);
+    box-sizing: border-box;
+  }
 
 .seriesChapterSearch input {
   width: 100%;

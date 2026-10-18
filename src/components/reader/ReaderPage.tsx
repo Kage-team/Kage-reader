@@ -4749,7 +4749,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: "block",
     height: "100%",
     borderRadius: 999,
-    background: "var(--app-lime)",
+    background: "var(--app-accent)",
     transition: "width 140ms ease, height 140ms ease",
   },
   toolbar: {
@@ -4817,7 +4817,7 @@ const styles: Record<string, React.CSSProperties> = {
   pageScrubber: {
     width: "clamp(80px, 14vw, 210px)",
     minWidth: 65,
-    accentColor: "var(--app-lime)",
+    accentColor: "var(--app-accent)",
   },
   modeButton: {
     border: "1px solid transparent",
@@ -5284,11 +5284,11 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
   readerModeCardActive: {
-    borderColor: "var(--app-lime)",
+    borderColor: "var(--app-accent)",
     background:
-      "color-mix(in srgb, var(--app-panel-raised) 76%, var(--app-lime) 24%)",
+      "color-mix(in srgb, var(--app-panel-raised) 76%, var(--app-accent) 24%)",
     boxShadow:
-      "inset 0 0 0 1px color-mix(in srgb, var(--app-lime) 25%, transparent)",
+      "inset 0 0 0 1px color-mix(in srgb, var(--app-accent) 25%, transparent)",
   },
   readerModeTitle: {
     fontFamily: "var(--font-display)",
@@ -5321,7 +5321,7 @@ const styles: Record<string, React.CSSProperties> = {
   settingsRange: {
     gridColumn: "1 / -1",
     width: "100%",
-    accentColor: "var(--app-lime)",
+    accentColor: "var(--app-accent)",
     height: 3,
   },
   settingsHint: {
@@ -5364,11 +5364,11 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: "uppercase",
   },
   settingsWidthButtonActive: {
-    borderColor: "var(--app-lime)",
-    background: "color-mix(in srgb, var(--app-lime) 12%, transparent)",
+    borderColor: "var(--app-accent)",
+    background: "color-mix(in srgb, var(--app-accent) 12%, transparent)",
     color: "var(--app-text)",
     boxShadow:
-      "inset 0 0 0 1px color-mix(in srgb, var(--app-lime) 30%, transparent)",
+      "inset 0 0 0 1px color-mix(in srgb, var(--app-accent) 30%, transparent)",
   },
   settingsToggleRow: {
     display: "flex",
@@ -5392,8 +5392,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     padding: "4px 8px",
     borderRadius: 999,
-    background: "color-mix(in srgb, var(--app-lime) 12%, transparent)",
-    color: "var(--app-lime)",
+    background: "color-mix(in srgb, var(--app-accent) 12%, transparent)",
+    color: "var(--app-accent)",
     fontSize: 9,
     letterSpacing: "0.08em",
   },
@@ -5407,7 +5407,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 52,
     height: 30,
     borderRadius: 999,
-    accentColor: "var(--app-lime)",
+    accentColor: "var(--app-accent)",
     transform: "scale(1.08)",
   },
   settingsInfoBar: {
@@ -5557,13 +5557,13 @@ const styles: Record<string, React.CSSProperties> = {
     color: "var(--app-muted)",
     cursor: "pointer",
   },
-  pageGridTileCurrent: { border: "2px solid var(--app-lime)" },
+  pageGridTileCurrent: { border: "2px solid var(--app-accent)" },
   pageGridImage: { width: "100%", height: "100%", objectFit: "cover" },
   pageGridTextPreview: {
     display: "grid",
     justifyItems: "center",
     gap: 5,
-    color: "var(--app-lime)",
+    color: "var(--app-accent)",
     fontSize: 9,
     fontWeight: 700,
   },
@@ -5583,7 +5583,7 @@ const styles: Record<string, React.CSSProperties> = {
     left: 4,
     padding: "2px 5px",
     borderRadius: 4,
-    background: "var(--app-lime)",
+    background: "var(--app-accent)",
     color: "#111",
     fontSize: 8,
     fontWeight: 700,
