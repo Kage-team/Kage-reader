@@ -35,6 +35,7 @@ import {
 import type { Series, SeriesType } from "../../lib/storage/types";
 import { useViewMode } from "./useViewMode";
 import { ViewModeToggle } from "./ViewModeToggle";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 const SERIES_TYPES: SeriesType[] = ["manga", "manhua", "oel", "novel"];
 const SERIES_TYPE_COLORS: Record<SeriesType, string> = {
@@ -89,6 +90,7 @@ export function LibraryPage() {
     () => new Set(),
   );
   const [bulkMessage, setBulkMessage] = useState("");
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [favoriteError, setFavoriteError] = useState("");
   const adultAccessUnlocked = true;
   const [preferences, setPreferences] = useState<Preferences>(getPreferences);
@@ -247,13 +249,7 @@ export function LibraryPage() {
   async function bulkDelete(): Promise<void> {
     const selected = [...selectedSeriesIds];
     if (selected.length === 0) return;
-    if (
-      !window.confirm(
-        `Delete ${selected.length} selected series and all their chapters? This cannot be undone.`,
-      )
-    ) {
-      return;
-    }
+    setIsBulkDeleteDialogOpen(false);
     try {
       await Promise.all(selected.map((id) => deleteSeriesWithContents(id)));
       setSelectedSeriesIds(new Set());
@@ -818,9 +814,9 @@ export function LibraryPage() {
                   className="libraryBulkAction libraryBulkActionDanger"
                   style={styles.dangerButton}
                   disabled={selectedSeriesIds.size === 0}
-                  onClick={() => void bulkDelete()}
-                >
-                  Delete selected
+      onClick={() => setIsBulkDeleteDialogOpen(true)}
+      >
+      Delete selected
                 </button>
               </>
             ) : null}
@@ -1065,6 +1061,15 @@ export function LibraryPage() {
           )}
         </section>
       </section>
+      <ConfirmDialog
+        open={isBulkDeleteDialogOpen}
+        title={`Delete ${selectedSeriesIds.size} selected series?`}
+        description="This removes the selected series, chapters, reading progress, bookmarks, and page files."
+        consequence="This cannot be undone. Export a backup first if you may need to restore these books."
+        confirmLabel="Delete selected"
+        onConfirm={() => void bulkDelete()}
+        onCancel={() => setIsBulkDeleteDialogOpen(false)}
+      />
     </main>
   );
 }

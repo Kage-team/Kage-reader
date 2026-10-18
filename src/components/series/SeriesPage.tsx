@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { importArchiveSources } from "../../lib/import/importer";
 import { UndoToast } from "../ui/UndoToast";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import type { ImportProgressEvent } from "../../lib/import/types";
 import {
   SCHEMA_VERSION,
@@ -80,6 +81,7 @@ export function SeriesPage() {
   const [isSeriesActionsOpen, setIsSeriesActionsOpen] = useState(false);
   const [isAppending, setIsAppending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftType, setDraftType] = useState<SeriesType>("manga");
@@ -319,13 +321,7 @@ export function SeriesPage() {
     if (!series || isDeleting) {
       return;
     }
-    const confirmed = window.confirm(
-      `Delete "${series.title}" and all of its chapters and reading progress? This cannot be undone.`,
-    );
-    if (!confirmed) {
-      return;
-    }
-
+    setIsDeleteDialogOpen(false);
     setIsDeleting(true);
     setActionError("");
     try {
@@ -529,10 +525,10 @@ export function SeriesPage() {
                     role="menuitem"
                     className="seriesDeleteAction"
                     disabled={isDeleting}
-                    onClick={() => {
-                      void removeSeries();
-                      setIsSeriesActionsOpen(false);
-                    }}
+      onClick={() => {
+        setIsDeleteDialogOpen(true);
+        setIsSeriesActionsOpen(false);
+      }}
                   >
                     <Trash2 size={15} />
                     {isDeleting ? "Deleting..." : "Delete series"}
@@ -1124,6 +1120,18 @@ export function SeriesPage() {
           )}
         </section>
       </section>
+      {series ? (
+        <ConfirmDialog
+          open={isDeleteDialogOpen}
+          title={`Delete ${series.title}?`}
+          description="This removes the series, chapters, reading progress, bookmarks, and page files."
+          consequence="This cannot be undone. Use Remove page images instead if you only want to free storage."
+          confirmLabel="Delete series"
+          busy={isDeleting}
+          onConfirm={() => void removeSeries()}
+          onCancel={() => setIsDeleteDialogOpen(false)}
+        />
+      ) : null}
     </main>
   );
 }
