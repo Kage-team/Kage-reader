@@ -5410,7 +5410,17 @@ main > section > [role="alert"] {
 }
 
 .libraryHeader {
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.libraryHeader .libraryContextActions {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  padding-top: 12px;
+  border-top: 1px solid var(--app-border);
 }
 
 .libraryHeaderCopy {
@@ -5444,6 +5454,35 @@ main > section > [role="alert"] {
   min-height: 36px;
 }
 
+.librarySelectionToolbar.is-active {
+  position: sticky;
+  z-index: 4;
+  top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--app-lime) 38%, var(--app-border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--app-panel) 94%, transparent);
+  box-shadow: 0 12px 24px rgba(0,0,0,.18);
+  backdrop-filter: blur(14px);
+}
+
+.librarySelectionDone {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 9px;
+  background: var(--app-panel-raised);
+  color: var(--app-text);
+  font-weight: 800;
+}
+
+.librarySelectionDone:hover { border-color: var(--app-lime); color: var(--app-lime); }
+.librarySelectionCount { font-weight: 800; white-space: nowrap; }
+
+
 .readerPage {
   background: var(--app-bg);
 }
@@ -5473,6 +5512,24 @@ main > section > [role="alert"] {
 
   .libraryContextActions .libraryIconAction {
     justify-self: stretch;
+  }
+
+  .librarySelectionToolbar.is-active {
+    top: 8px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .librarySelectionToolbar.is-active .librarySelectionPrimaryActions {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .librarySelectionToolbar.is-active .libraryBulkMore,
+  .librarySelectionToolbar.is-active .libraryBulkActionDanger {
+    order: 4;
   }
 
   .readerPage {

@@ -758,6 +758,17 @@ export function LibraryPage() {
           <div className={`librarySelectionToolbar${selectionMode ? " is-active" : ""}`}>
             {selectionMode ? (
               <>
+                <button
+                  type="button"
+                  className="librarySelectionDone"
+                  onClick={() => {
+                    setSelectionMode(false);
+                    setSelectedSeriesIds(new Set());
+                    setBulkMessage("");
+                  }}
+                >
+                  Done
+                </button>
                 <span className="librarySelectionCount" aria-live="polite">
                   {selectedSeriesIds.size} selected
                 </span>
