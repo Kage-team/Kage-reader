@@ -6289,6 +6289,45 @@ main > section > [role="alert"] {
   font-size: 12px;
 }
 
+.undoToast {
+  position: sticky;
+  z-index: 4;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 9px;
+  background: var(--app-panel);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 22%);
+  color: var(--app-text);
+  font-size: 12px;
+}
+
+.undoToast button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.undoToast .undoToastDismiss {
+  min-width: 30px;
+  padding: 0;
+  border-color: transparent;
+  color: var(--app-muted);
+  font-size: 18px;
+}
+
 .seriesActionMessage {
   margin: 10px 0;
   color: var(--app-muted);

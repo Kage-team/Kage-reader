@@ -15,6 +15,7 @@ import {
   Upload,
 } from "lucide-react";
 import { importArchiveSources } from "../../lib/import/importer";
+import { UndoToast } from "../ui/UndoToast";
 import type { ImportProgressEvent } from "../../lib/import/types";
 import {
   SCHEMA_VERSION,
@@ -97,6 +98,8 @@ export function SeriesPage() {
   >("");
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const [undoAction, setUndoAction] = useState<(() => void) | null>(null);
+  const [undoMessage, setUndoMessage] = useState("");
   const [appendMessage, setAppendMessage] = useState("");
   const [appendProgress, setAppendProgress] = useState<ImportProgressEvent | null>(null);
   const [exportMessage, setExportMessage] = useState("");
@@ -368,6 +371,8 @@ export function SeriesPage() {
   }
 
   async function markSelectedChapters(completed: boolean): Promise<void> {
+    const previousProgress = new Map<string, Progress | undefined>();
+    for (const chapterId of selectedChapterIds) previousProgress.set(chapterId, progressByChapter[chapterId]);
     await Promise.all(
       chapters
         .filter((chapter) => selectedChapterIds.has(chapter.id))
@@ -394,6 +399,21 @@ export function SeriesPage() {
       return next;
     });
     setSelectedChapterIds(new Set());
+    const selectedCount = previousProgress.size;
+    setUndoMessage(`${selectedCount} chapter${selectedCount === 1 ? "" : "s"} marked ${completed ? "read" : "unread"}.`);
+    setUndoAction(() => () => {
+      void Promise.all([...previousProgress.entries()].map(async ([chapterId, previous]) => {
+        if (previous) await putProgress(previous);
+        setProgressByChapter((current) => {
+          const next = { ...current };
+          if (previous) next[chapterId] = previous;
+          else delete next[chapterId];
+          return next;
+        });
+      }));
+      setUndoAction(null);
+      setUndoMessage("");
+    });
   }
 
   async function toggleChapterCompletion(chapter: Chapter): Promise<void> {
@@ -881,6 +901,9 @@ export function SeriesPage() {
             )
           : null}
 
+      {undoAction && undoMessage ? (
+        <UndoToast message={undoMessage} onUndo={undoAction} onDismiss={() => { setUndoAction(null); setUndoMessage(""); }} />
+      ) : null}
       {actionMessage ? <p className="seriesActionMessage" role="status">{actionMessage}</p> : null}
       {actionError ? (
         <p role="alert" style={styles.errorText}>
