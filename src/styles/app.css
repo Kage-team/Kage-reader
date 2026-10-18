@@ -1625,14 +1625,26 @@ button:disabled {
   }
 
   .libraryShelfHeader {
-    display: grid;
+    display: flex !important;
+    grid-template-columns: none !important;
+    align-items: center;
+    justify-content: space-between;
     gap: 10px;
   }
 
+  .libraryShelfHeaderCopy {
+    min-width: 0;
+    width: auto !important;
+  }
+
+  .libraryShelfHeader > div:first-child {
+    width: auto !important;
+  }
+
   .libraryShelfTools {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    width: 100%;
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: auto !important;
     gap: 6px;
   }
 

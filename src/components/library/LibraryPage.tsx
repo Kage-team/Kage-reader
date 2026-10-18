@@ -402,21 +402,22 @@ export function LibraryPage() {
               <h1 className={view === "all" ? "sr-only" : undefined} style={styles.title}>{pageTitle}</h1>
             </div>
           ) : null}
-          <div className="libraryHeaderActions libraryContextActions" style={styles.headerActions}>
-            {view === "favorites" || view === "queue" ? (
-              <div className="librarySavedSegmented" aria-label="Saved library views">
-                <Link className={view === "favorites" ? "is-active" : ""} to="/?view=favorites">Favorites</Link>
-                <Link className={view === "queue" ? "is-active" : ""} to="/?view=queue">Queue</Link>
-              </div>
-            ) : null}
-            {view === "history" || view === "insights" ? (
-              <nav className="activitySegmented" aria-label="Activity views">
-                <Link className={view === "history" ? "is-active" : ""} to="/?view=history">History</Link>
-                <Link className={view === "insights" ? "is-active" : ""} to="/?view=insights">Insights</Link>
-              </nav>
-            ) : null}
-
-          </div>
+          {view === "favorites" || view === "queue" || view === "history" || view === "insights" ? (
+            <div className="libraryHeaderActions libraryContextActions" style={styles.headerActions}>
+              {view === "favorites" || view === "queue" ? (
+                <div className="librarySavedSegmented" aria-label="Saved library views">
+                  <Link className={view === "favorites" ? "is-active" : ""} to="/?view=favorites">Favorites</Link>
+                  <Link className={view === "queue" ? "is-active" : ""} to="/?view=queue">Queue</Link>
+                </div>
+              ) : null}
+              {view === "history" || view === "insights" ? (
+                <nav className="activitySegmented" aria-label="Activity views">
+                  <Link className={view === "history" ? "is-active" : ""} to="/?view=history">History</Link>
+                  <Link className={view === "insights" ? "is-active" : ""} to="/?view=insights">Insights</Link>
+                </nav>
+              ) : null}
+            </div>
+          ) : null}
         </header>
 
         {view === "all" && !isLoading ? (
