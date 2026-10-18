@@ -5036,9 +5036,35 @@ button:disabled {
 }
 
 .seriesChapterSearch {
+  position: relative;
+  display: flex;
   flex: 1 1 auto;
   min-width: 0;
+  align-items: center;
+  border: 1px solid var(--app-border);
   border-radius: 7px 0 0 7px;
+  background: var(--app-panel);
+  box-sizing: border-box;
+}
+
+.seriesChapterSearch > svg {
+  position: absolute;
+  left: 12px;
+  z-index: 1;
+  color: var(--app-muted);
+  pointer-events: none;
+}
+
+.seriesChapterSearch > input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px 0 34px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--app-text);
+  box-sizing: border-box;
 }
 
 .seriesChapterSort {
