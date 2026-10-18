@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { DemoDataPanel } from "../../dev/DemoDataPanel";
+import { getActiveTab } from "./activeTab";
 import {
   Bookmark,
   BookOpen,
@@ -19,9 +20,9 @@ export function AppFrame({ children }: PropsWithChildren) {
   const searchParams = new URLSearchParams(search);
   const requestedView = searchParams.get("view");
   const view = requestedView ?? "all";
+  const activeTab = getActiveTab(pathname, search);
   const isLibraryRoute = pathname === "/";
-  const isHomeRoute = isLibraryRoute && !searchParams.has("view");
-  const isLibraryHome = isLibraryRoute && requestedView === "all";
+  const isHomeRoute = activeTab === "home";
   const demoEnabled = searchParams.get("demo") === "1" && !pathname.startsWith("/read/");
   const pageName =
     isHomeRoute
@@ -55,48 +56,48 @@ export function AppFrame({ children }: PropsWithChildren) {
 
         <nav className="appNavGroup">
           <p className="appNavLabel">Workspace</p>
-          <Link to="/" className={navClass(isHomeRoute)}>
+          <Link to="/" className={navClass(false)} data-active={activeTab === "home"}>
             <Home size={17} />
             <span>Home</span>
           </Link>
           <Link
             to="/import"
-            className={navClass(pathname === "/import")} aria-current={pathname === "/import" ? "page" : undefined}
+            className={navClass(false)} data-active={activeTab === "add"}
           >
             <FileUp size={17} />
             <span>Import</span>
           </Link>
           <Link
 to="/?view=all"
-          className={navClass(isLibraryHome)}
+          className={navClass(false)} data-active={activeTab === "library"}
           >
             <BookOpen size={17} />
             <span>All series</span>
           </Link>
           <Link
             to="/?view=continue"
-            className={navClass(isLibraryRoute && view === "continue")}
+            className={navClass(false)} data-active={activeTab === "library"}
           >
             <Clock3 size={17} />
             <span>Continue</span>
           </Link>
           <Link
             to="/?view=favorites"
-            className={navClass(isLibraryRoute && view === "favorites")}
+            className={navClass(false)} data-active={activeTab === "library"}
           >
             <Bookmark size={17} />
             <span>Favorites</span>
           </Link>
           <Link
             to="/?view=queue"
-            className={navClass(isLibraryRoute && view === "queue")}
+            className={navClass(false)} data-active={activeTab === "library"}
           >
             <ListOrdered size={17} />
             <span>Queue</span>
           </Link>
           <Link
             to="/?view=history"
-            className={navClass(isLibraryRoute && view === "history")}
+className={navClass(false)} data-active={activeTab === "activity"}
           >
             <History size={17} />
             <span>History</span>
@@ -107,7 +108,7 @@ to="/?view=all"
           <p className="appNavLabel">Application</p>
           <Link
             to="/settings"
-            className={navClass(pathname === "/settings")} aria-current={pathname === "/settings" ? "page" : undefined}
+className={navClass(false)} data-active={activeTab === "more"}
           >
             <Settings size={17} />
             <span>Settings</span>
@@ -127,23 +128,23 @@ to="/?view=all"
       </aside>
 
       <nav className="appMobileNav" aria-label="Primary navigation">
-        <Link to="/" className={navClass(isHomeRoute)} aria-current={isHomeRoute ? "page" : undefined} aria-label="Home">
+        <Link to="/" className={navClass(activeTab === "home")} aria-current={activeTab === "home" ? "page" : undefined} aria-label="Home">
           <Home size={18} />
           <span>Home</span>
         </Link>
-        <Link to="/?view=all" className={navClass(isLibraryHome)} aria-current={isLibraryHome ? "page" : undefined} aria-label="Library">
+        <Link to="/?view=all" className={navClass(activeTab === "library")} aria-current={activeTab === "library" ? "page" : undefined} aria-label="Library">
           <BookOpen size={18} />
           <span>Library</span>
         </Link>
-        <Link to="/import" className="appMobileAdd" aria-label="Add to library">
+        <Link to="/import" className={`appMobileAdd${activeTab === "add" ? " appNavLinkActive" : ""}`} aria-current={activeTab === "add" ? "page" : undefined} aria-label="Add to library">
           <FileUp size={18} />
           <span>Add</span>
         </Link>
-        <Link to="/?view=history" className={navClass(isLibraryRoute && view === "history")} aria-current={isLibraryRoute && view === "history" ? "page" : undefined} aria-label="Activity">
+        <Link to="/?view=history" className={navClass(activeTab === "activity")} aria-current={activeTab === "activity" ? "page" : undefined} aria-label="Activity">
           <History size={18} />
           <span>Activity</span>
         </Link>
-        <Link to="/settings" className={navClass(pathname === "/settings")} aria-current={pathname === "/settings" ? "page" : undefined} aria-label="More">
+        <Link to="/settings" className={navClass(activeTab === "more")} aria-current={activeTab === "more" ? "page" : undefined} aria-label="More">
           <Settings size={18} />
           <span>More</span>
         </Link>
