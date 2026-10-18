@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { DemoDataPanel } from "../../dev/DemoDataPanel";
 import {
   Bookmark,
   BookOpen,
@@ -21,6 +22,7 @@ export function AppFrame({ children }: PropsWithChildren) {
   const isLibraryRoute = pathname === "/";
   const isHomeRoute = isLibraryRoute && !searchParams.has("view");
   const isLibraryHome = isLibraryRoute && requestedView === "all";
+  const demoEnabled = searchParams.get("demo") === "1" && !pathname.startsWith("/read/");
   const pageName =
     isHomeRoute
       ? "Home"
@@ -177,6 +179,7 @@ to="/?view=all"
           </div>
         </header>
         <div className="appView" id="main-content">{children}</div>
+        {demoEnabled && <DemoDataPanel />}
       </div>
     </div>
   );
