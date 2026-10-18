@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { DemoDataPanel } from "../../dev/DemoDataPanel";
 import {
   Bookmark,
@@ -30,9 +30,11 @@ export function AppFrame({ children }: PropsWithChildren) {
       ? "Settings"
       : pathname.startsWith("/series/")
         ? "Series"
-        : pathname === "/import"
-          ? "Import"
-          : "Library";
+          : pathname === "/import"
+            ? "Import"
+            : isLibraryRoute && view === "history"
+              ? "History"
+              : "Library";
 
   function navClass(active: boolean): string {
     return `appNavLink${active ? " appNavLinkActive" : ""}`;
@@ -92,13 +94,13 @@ to="/?view=all"
             <ListOrdered size={17} />
             <span>Queue</span>
           </NavLink>
-          <NavLink
+          <Link
             to="/?view=history"
-            className={() => navClass(isLibraryRoute && view === "history")}
+            className={navClass(isLibraryRoute && view === "history")}
           >
             <History size={17} />
             <span>History</span>
-          </NavLink>
+          </Link>
         </nav>
 
         <nav className="appNavGroup">
