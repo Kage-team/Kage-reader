@@ -60,7 +60,9 @@ export type ColorTheme =
   | "parchment"
   | "forest"
   | "cyber"
-  | "crimson";
+  | "crimson"
+  | "stone"
+  | "ocean";
 export type AccentColor = "pure" | "jade" | "cyber" | "electric" | "cobalt";
 
 const COLOR_THEMES: ColorTheme[] = [
@@ -70,6 +72,8 @@ const COLOR_THEMES: ColorTheme[] = [
   "forest",
   "cyber",
   "crimson",
+  "stone",
+  "ocean",
 ];
 const ACCENT_COLORS: AccentColor[] = [
   "pure",

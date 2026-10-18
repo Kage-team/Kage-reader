@@ -100,6 +100,20 @@ const COLOR_THEMES: Array<{
     panel: "#2b1b21",
     text: "#f8eef0",
   },
+  {
+    id: "stone",
+    label: "Soft Stone",
+    background: "#e6e3de",
+    panel: "#f3f1ed",
+    text: "#2d2c2a",
+  },
+  {
+    id: "ocean",
+    label: "Deep Ocean",
+    background: "#0d1b24",
+    panel: "#1b3845",
+    text: "#e8f2f3",
+  },
 ];
 
 const ACCENT_SWATCHES: Array<{
@@ -1289,8 +1303,9 @@ const styles: Record<string, React.CSSProperties> = {
   section: {
     display: "grid",
     gap: 16,
-    padding: "22px 0",
-    borderTop: "1px solid var(--app-border)",
+    padding: "28px 24px",
+    border: "1px solid var(--app-border)",
+    borderRadius: 14,
     scrollMarginTop: 124,
   },
   themeGrid: {
