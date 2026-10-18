@@ -149,6 +149,46 @@
   --app-lime: #528bff;
   --app-accent-glow: #528bff;
   }
+
+.routeErrorState {
+  display: grid;
+  max-width: 620px;
+  min-height: 60vh;
+  align-content: center;
+  gap: 12px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.routeErrorState h1,
+.routeErrorState p {
+  margin: 0;
+}
+
+.routeErrorState button {
+  width: fit-content;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 8px;
+  background: var(--app-panel);
+  color: var(--app-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.routeErrorState button:focus-visible,
+button:focus-visible,
+a:focus-visible,
+[role="tab"]:focus-visible {
+  outline: 2px solid var(--app-lime);
+  outline-offset: 3px;
+}
+
+.routeErrorRecovery {
+  color: var(--app-muted);
+}
 * {
   box-sizing: border-box;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppFrame } from "./components/layout/AppFrame";
+import { RouteErrorBoundary } from "./components/layout/RouteErrorBoundary";
 import { ImportPage } from "./components/import/ImportPage";
 import { LibraryPage } from "./components/library/LibraryPage";
 import { ReaderPage } from "./components/reader/ReaderPage";
@@ -61,9 +62,11 @@ export function App() {
         <Route
           path="/import"
           element={
-            <AppFrame>
-              <ImportPage />
-            </AppFrame>
+            <RouteErrorBoundary routeName="Import">
+              <AppFrame>
+                <ImportPage />
+              </AppFrame>
+            </RouteErrorBoundary>
           }
         />
         <Route
@@ -81,19 +84,23 @@ export function App() {
         <Route
           path="/series/:id"
           element={
-            <AdultContentGate>
-              <AppFrame>
-                <SeriesPage />
-              </AppFrame>
-            </AdultContentGate>
+            <RouteErrorBoundary routeName="Series">
+              <AdultContentGate>
+                <AppFrame>
+                  <SeriesPage />
+                </AppFrame>
+              </AdultContentGate>
+            </RouteErrorBoundary>
           }
         />
         <Route
           path="/read/:chapterId"
           element={
-            <AdultContentGate>
-              <ReaderPage />
-            </AdultContentGate>
+            <RouteErrorBoundary routeName="Reader">
+              <AdultContentGate>
+                <ReaderPage />
+              </AdultContentGate>
+            </RouteErrorBoundary>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

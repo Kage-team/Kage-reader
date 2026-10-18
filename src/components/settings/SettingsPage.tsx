@@ -18,7 +18,7 @@ import {
   listAllPages,
   listSeries,
 } from "../../lib/storage/db";
-import { Sparkles } from "lucide-react";
+import { BookOpen, Sparkles } from "lucide-react";
 import type { PwaInstallPrompt } from "../../lib/pwa/install";
 import type {
   AccentColor,
@@ -1029,7 +1029,7 @@ export function SettingsPage({
                 {seriesStorage.map((item) => (
                   <div key={item.id} style={styles.storageRow}>
                     <span style={styles.storageBookIcon} aria-hidden="true">
-                      ▤
+                      <BookOpen size={16} strokeWidth={1.8} />
                     </span>
                     <span style={styles.storageBookDetails}>
                       <strong style={styles.storageBookTitle}>
