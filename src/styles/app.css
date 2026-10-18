@@ -1600,12 +1600,11 @@ button:disabled {
   }
 
   .libraryHeaderActions {
-    width: 100%;
-    justify-content: space-between;
-    padding: 4px;
-    border: 1px solid var(--app-border);
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--app-panel) 92%, transparent);
+    width: auto;
+    justify-content: flex-start;
+    padding: 0;
+    border: 0;
+    background: transparent;
   }
 
   .librarySafeModeToggle {
@@ -1626,39 +1625,77 @@ button:disabled {
 
   .libraryShelfHeader {
     display: flex !important;
-    grid-template-columns: none !important;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 8px;
   }
 
   .libraryShelfHeaderCopy {
+    display: flex;
+    align-items: baseline;
     min-width: 0;
     width: auto !important;
+    gap: 8px;
   }
 
-  .libraryShelfHeader > div:first-child {
-    width: auto !important;
+  .libraryShelfHeaderCopy h2,
+  .libraryShelfHeaderCopy .librarySeriesCount {
+    margin: 0;
+  }
+
+  .libraryShelfHeaderCopy .sectionDescription {
+    display: none;
   }
 
   .libraryShelfTools {
-    display: inline-flex;
-    flex: 0 0 auto;
-    width: auto !important;
-    gap: 6px;
+    display: none;
   }
 
   .librarySeriesCount {
-    align-self: center;
-    justify-self: start;
+    align-self: baseline;
+    white-space: nowrap;
   }
 
-  .libraryShelfTools .viewModeToggle,
-  .libraryShelfTools .librarySelectToggle {
+  .librarySearchSortRow {
+    display: grid;
+    grid-template-columns: minmax(44px, 1fr) 44px 44px 44px;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .librarySearchFilter {
+    min-width: 0;
+  }
+
+  .librarySearchFilter .searchField,
+  .librarySortFilter .sortField,
+  .librarySearchSortRow > .viewModeToggle,
+  .librarySearchSortRow > .librarySelectToggle {
     min-height: 44px;
+    height: 44px;
   }
 
-  .libraryShelfTools .librarySelectToggle {
+  .librarySearchSortRow > .viewModeToggle,
+  .librarySearchSortRow > .librarySelectToggle,
+  .librarySearchSortRow > .librarySortFilter {
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    overflow: hidden;
+  }
+
+  .librarySearchSortRow > .viewModeToggle {
+    display: inline-flex;
+    overflow: hidden;
+  }
+
+  .librarySearchSortRow > .viewModeToggle button {
+    width: 44px;
+    min-width: 44px;
+    padding-inline: 0;
+  }
+
+  .librarySearchSortRow .librarySelectToggle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1679,7 +1716,7 @@ button:disabled {
   }
 
   .librarySearchSortRow {
-    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-columns: minmax(44px, 1fr) 44px 44px 44px;
   }
 
   .librarySortFilter {
@@ -1689,6 +1726,10 @@ button:disabled {
   .librarySortFilter .sortField {
     justify-content: center;
     min-height: 44px;
+  }
+
+  .librarySelectToggleLabel {
+    display: none;
   }
 
   .librarySortFilter select {

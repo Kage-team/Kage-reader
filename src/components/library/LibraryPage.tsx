@@ -613,7 +613,7 @@ export function LibraryPage() {
             style={styles.shelfHeader}
             hidden={["favorites", "continue", "queue"].includes(view)}
           >
-            <div>
+            <div className="libraryShelfHeaderCopy">
               <h2 style={styles.sectionTitle}>
                 {view === "favorites"
                   ? "Saved series"
@@ -625,40 +625,12 @@ export function LibraryPage() {
                         ? "Reading queue"
                         : "Series Library"}
               </h2>
+              <span className="librarySeriesCount">{visibleEntries.length} series</span>
               {hasActiveFilters ? (
                 <p style={styles.sectionDescription}>
                   {visibleEntries.length} matching titles
                 </p>
               ) : null}
-            </div>
-            <div className="libraryShelfTools">
-              <span className="librarySeriesCount">
-                {visibleEntries.length} series
-              </span>
-              <ViewModeToggle
-                value={libraryViewMode}
-                onChange={setLibraryViewMode}
-                label="Library view"
-              />
-              <button
-                type="button"
-                className="librarySelectToggle"
-                aria-label={
-                  selectionMode ? "Done selecting series" : "Select series"
-                }
-                aria-pressed={selectionMode}
-                title={selectionMode ? "Done selecting" : "Select series"}
-                onClick={() => {
-                  setSelectionMode((current) => !current);
-                  setSelectedSeriesIds(new Set());
-                  setBulkMessage("");
-                }}
-              >
-                <ListChecks size={16} />
-                <span className="librarySelectToggleLabel">
-                  {selectionMode ? "Done" : "Select"}
-                </span>
-              </button>
             </div>
           </header>
 
@@ -695,6 +667,26 @@ export function LibraryPage() {
                 </select>
               </span>
             </label>
+            <ViewModeToggle
+              value={libraryViewMode}
+              onChange={setLibraryViewMode}
+              label="Library view"
+            />
+            <button
+              type="button"
+              className="librarySelectToggle"
+              aria-label={selectionMode ? "Done selecting series" : "Select series"}
+              aria-pressed={selectionMode}
+              title={selectionMode ? "Done selecting" : "Select series"}
+              onClick={() => {
+                setSelectionMode((current) => !current);
+                setSelectedSeriesIds(new Set());
+                setBulkMessage("");
+              }}
+            >
+              <ListChecks size={16} />
+              <span className="librarySelectToggleLabel">{selectionMode ? "Done" : "Select"}</span>
+            </button>
           </div>
 
           <div className="librarySecondaryControls">
