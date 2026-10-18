@@ -459,9 +459,12 @@ export function SeriesPage() {
               {series.type} <span aria-hidden="true">/</span> {chapters.length}{" "}
               chapters
             </p>
-            <h1 style={styles.title}>{series.title}</h1>
+            <h1 style={styles.title} title={series.title}>{series.title}</h1>
             {series.summary ? (
-              <p style={styles.seriesSummary}>{series.summary}</p>
+              <details className="seriesSynopsis">
+                <summary><span className="seriesSynopsisPreview">{series.summary}</span><span className="seriesSynopsisReadMore" aria-hidden="true"> · Read more</span></summary>
+                <p style={styles.seriesSummary}>{series.summary}</p>
+              </details>
             ) : null}
             <div style={styles.heroFacts}>
               {series.writer ? <span>{series.writer}</span> : null}
@@ -794,7 +797,7 @@ export function SeriesPage() {
           ) : null}
           {exportMessage ? <p role="status">{exportMessage}</p> : null}
           <header style={styles.chapterHeader}>
-            <h2 style={styles.chapterHeading}>Chapters</h2>
+            <h2 style={styles.chapterHeading}>Chapters · {chapters.length}</h2>
             <div className="seriesChapterActions">
               <span style={styles.chapterCount}>{chapters.length}</span>
               <button
@@ -835,7 +838,7 @@ export function SeriesPage() {
                           )
                       : 0;
                     return (
-                      <div className="seriesChapterItem">
+                      <div className={`seriesChapterItem${mostRecentChapter?.id === chapter.id ? " is-resume" : ""}`}>
                         <div className="seriesChapterRow">
                           <Link
                             to={`/read/${encodeURIComponent(chapter.id)}`}
@@ -853,7 +856,7 @@ export function SeriesPage() {
                               </strong>
                             </span>
                             <span className="chapterPageCount">
-                              {chapter.pageCount} pages
+                              {mostRecentChapter?.id === chapter.id ? "Resume · " : ""}{chapter.pageCount} pages
                             </span>
                           </Link>
                           <button

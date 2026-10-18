@@ -4701,6 +4701,16 @@ button:disabled {
   gap: 2px;
 }
 
+.seriesChapterItem.is-resume {
+  border-color: color-mix(in srgb, var(--app-accent) 60%, var(--app-border));
+  box-shadow: inset 3px 0 0 var(--app-accent);
+}
+
+.seriesChapterItem.is-resume .chapterPageCount {
+  color: var(--app-accent);
+  font-weight: 700;
+}
+
 .seriesChapterProgress {
   height: 2px;
   overflow: hidden;
@@ -4730,7 +4740,7 @@ button:disabled {
 .chapterSection > .chapterHeader {
   position: sticky;
   z-index: 4;
-  top: 0;
+  top: var(--app-topbar-height, 66px);
   margin: 0 -4px;
   padding: 10px 4px;
   border-bottom: 1px solid var(--app-border);
@@ -4776,9 +4786,43 @@ main > section > [role="alert"] {
   color: var(--app-danger);
 }
 
+.seriesSynopsis {
+  min-width: 0;
+}
+
+.seriesSynopsis summary {
+  color: var(--app-text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.seriesSynopsisPreview {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.seriesSynopsisReadMore {
+  color: var(--app-accent);
+  font-weight: 500;
+}
+
+.seriesSynopsis[open] .seriesSynopsisReadMore {
+  font-size: 0;
+}
+
+.seriesSynopsis[open] .seriesSynopsisReadMore::after {
+  content: " · Show less";
+  font-size: 12px;
+}
+
 .seriesSummary {
   display: -webkit-box;
   overflow: hidden;
+  margin: 6px 0 0;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
 }
@@ -4855,15 +4899,36 @@ main > section > [role="alert"] {
 
 @media (max-width: 640px) {
   .chapterSection > .chapterHeader {
-    top: -1px;
+    top: var(--app-topbar-height, 66px);
     padding-top: 8px;
     padding-bottom: 8px;
   }
 
   .seriesHero {
-    grid-template-columns: 92px minmax(0, 1fr);
-    gap: 13px;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: stretch;
+  }
+
+  .seriesCover {
+    align-self: center;
+    width: min(190px, 58vw);
+    aspect-ratio: 2 / 3;
+  }
+
+  .seriesHeroContent {
+    width: 100%;
+  }
+
+  .seriesHeroContent h1 {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 0;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow-wrap: anywhere;
+    text-overflow: ellipsis;
   }
 
   .seriesHeroContent {
