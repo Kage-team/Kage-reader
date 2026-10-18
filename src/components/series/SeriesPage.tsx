@@ -5,8 +5,6 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
-  Check,
-  Circle,
   Download,
   MoreVertical,
   Search,
@@ -943,11 +941,14 @@ export function SeriesPage() {
                             type="checkbox"
                             className="seriesChapterCheckbox"
                             checked={selectedChapterIds.has(chapter.id)}
-                            onChange={(event) => setSelectedChapterIds((current) => {
-                              const next = new Set(current);
-                              if (event.currentTarget.checked) next.add(chapter.id); else next.delete(chapter.id);
-                              return next;
-                            })}
+                            onChange={(event) => {
+                              const isChecked = event.currentTarget.checked;
+                              setSelectedChapterIds((current) => {
+                                const next = new Set(current);
+                                if (isChecked) next.add(chapter.id); else next.delete(chapter.id);
+                                return next;
+                              });
+                            }}
                             aria-label={`Select ${titleLabel}`}
                           />
                           <Link
