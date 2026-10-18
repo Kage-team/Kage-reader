@@ -22,10 +22,10 @@
   --app-radius-control: 6px;
   --app-motion-fast: 140ms ease;
   --app-motion-standard: 200ms ease;
-  --app-lime: #b8f34a;
+  --app-lime: var(--app-text);
   --app-coral: #ff9679;
   --app-danger: #ff7770;
-  --app-accent-glow: #b8f34a;
+  --app-accent-glow: var(--app-text);
   --font-body: "DM Sans", sans-serif;
   --font-display: "Space Grotesk", sans-serif;
   font-family: var(--font-body);
@@ -61,7 +61,7 @@
   --app-text: #25241f;
   --app-ink: #ffffff;
   --app-muted: #69675e;
-  --app-lime: #516743;
+  --app-lime: var(--app-text);
   --app-coral: #ae5945;
 }
 
@@ -104,20 +104,20 @@
 }
 
 :root[data-accent="jade"] {
-  --app-lime: #00a982;
-  --app-accent-glow: #00a982;
+  --app-lime: var(--app-text);
+  --app-accent-glow: var(--app-text);
 }
 :root[data-accent="cyber"] {
-  --app-lime: #00c6f2;
-  --app-accent-glow: #00c6f2;
+  --app-lime: var(--app-text);
+  --app-accent-glow: var(--app-text);
 }
 :root[data-accent="electric"] {
-  --app-lime: #ad79ff;
-  --app-accent-glow: #ad79ff;
+  --app-lime: var(--app-text);
+  --app-accent-glow: var(--app-text);
 }
 :root[data-accent="cobalt"] {
-  --app-lime: #528bff;
-  --app-accent-glow: #528bff;
+  --app-lime: var(--app-text);
+  --app-accent-glow: var(--app-text);
 }
 
 * {
@@ -5917,13 +5917,14 @@ main > section > [role="alert"] {
   }
 
   .seriesChapterSearch {
+    position: relative;
     display: flex;
     align-items: center;
     flex: 1 1 auto;
     width: auto;
-    gap: 8px;
+    gap: 0;
     min-height: 40px;
-    padding: 0 12px;
+    padding: 0;
     border: 1px solid var(--app-border);
     border-radius: 7px 0 0 7px;
     background: var(--app-panel);
@@ -5931,14 +5932,24 @@ main > section > [role="alert"] {
     box-sizing: border-box;
   }
 
-.seriesChapterSearch input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--app-text);
-}
+  .seriesChapterSearch > svg {
+    position: absolute;
+    left: 12px;
+    color: var(--app-muted);
+    pointer-events: none;
+  }
+
+  .seriesChapterSearch input {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    padding: 0 12px 0 34px;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--app-text);
+    box-sizing: border-box;
+  }
 
   .seriesChapterSort {
     flex: 0 0 124px;
