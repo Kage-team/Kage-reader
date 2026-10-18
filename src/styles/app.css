@@ -13,6 +13,7 @@
   --app-border: #242727;
   --app-border-strong: #383d3c;
   --app-text: #f2f3f1;
+  --app-ink: #10130f;
   --app-muted: #929a99;
   --app-focus-ring: var(--app-lime);
   --app-hover: #ffffff0a;
@@ -58,6 +59,7 @@
   --app-border: #d4c8b4;
   --app-border-strong: #b8aa94;
   --app-text: #25241f;
+  --app-ink: #ffffff;
   --app-muted: #69675e;
   --app-lime: #516743;
   --app-coral: #ae5945;
@@ -84,6 +86,7 @@
   --app-border: #352842;
   --app-border-strong: #55416b;
   --app-text: #f5f0fb;
+  --app-ink: #10130f;
   --app-muted: #b2a5c0;
 }
 
@@ -96,6 +99,7 @@
   --app-border: #432830;
   --app-border-strong: #67404c;
   --app-text: #f8eef0;
+  --app-ink: #10130f;
   --app-muted: #c1a7ad;
 }
 
@@ -448,10 +452,11 @@ button:disabled {
 }
 
 .settingsPagePanel > .settingsSectionNav .settingsTab:hover,
-.settingsPagePanel > .settingsSectionNav .settingsTab[aria-pressed="true"] {
-  border-bottom-color: var(--app-lime);
+  .settingsPagePanel > .settingsSectionNav .settingsTab[aria-pressed="true"] {
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--app-lime) 12%, var(--app-panel));
   color: var(--app-text);
-}
+  }
 
 .settingsPagePanel > .settingsSection {
   grid-column: 1;
@@ -463,29 +468,36 @@ button:disabled {
 }
 
 .settingsThemeOption {
-  border: 0 !important;
-  border-bottom: 1px solid var(--app-border) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: 12px !important;
+  background: var(--app-panel) !important;
   outline: none !important;
+  transition: border-color var(--app-motion-fast), background-color var(--app-motion-fast), transform var(--app-motion-fast);
+}
+
+.settingsThemeOption:hover {
+  border-color: var(--app-border-strong) !important;
+  transform: translateY(-1px);
 }
 
 .settingsThemeOption[aria-pressed="true"] {
-  border-bottom: 2px solid var(--app-lime) !important;
+  border-color: var(--app-lime) !important;
+  background: color-mix(in srgb, var(--app-lime) 10%, var(--app-panel)) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-lime) 18%, transparent);
 }
 
 .settingsModeOption {
-  min-height: 0 !important;
-  padding: 14px 4px !important;
-  border: 0 !important;
-  border-bottom: 1px solid var(--app-border) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  min-height: 44px !important;
+  padding: 10px 14px !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: 10px !important;
+  background: var(--app-panel) !important;
   box-shadow: none !important;
 }
 
 .settingsModeOption[aria-pressed="true"] {
-  border-bottom: 2px solid var(--app-lime) !important;
+  border-color: var(--app-lime) !important;
+  background: color-mix(in srgb, var(--app-lime) 10%, var(--app-panel)) !important;
 }
 
 .settingsPreviewBand {
@@ -1675,9 +1687,11 @@ button:disabled {
   color: var(--app-text);
 }
 
-.libraryViewLinkActive {
-  border-bottom-color: var(--app-lime);
-}
+  .libraryViewLinkActive {
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--app-lime) 12%, var(--app-panel));
+  border-radius: 8px;
+  }
 
 .libraryViewCount {
   color: var(--app-muted);
@@ -5345,7 +5359,7 @@ main > section > [role="alert"] {
 .homeHero p { max-width: 520px; margin: 0; color: var(--app-muted); font-size: 16px; }
 .eyebrow { display: inline-flex; align-items: center; gap: 7px; color: var(--app-lime); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
 .homePrimaryAction, .secondaryButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 12px; font-weight: 800; text-decoration: none; }
-.homePrimaryAction { background: #b8f34a; color: #10130f !important; }
+.homePrimaryAction { background: var(--app-lime); color: var(--app-ink) !important; }
 .secondaryButton { border: 1px solid var(--app-border-strong); color: var(--app-text); }
 .homeHeroActions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .homeHeroSecondary { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid var(--app-border-strong); border-radius: 12px; color: var(--app-text); font-weight: 800; text-decoration: none; }
@@ -5366,7 +5380,7 @@ main > section > [role="alert"] {
 .homeEmptyState p { margin-top: 5px; color: var(--app-muted); }
 .homeEmptyIcon { display: grid; flex: none; place-items: center; width: 52px; height: 52px; border-radius: 14px; background: var(--app-panel-raised); color: var(--app-lime); }
 .homeEmptyState .secondaryButton { margin-left: auto; }
-.appMobileAdd { display: grid !important; width: 56px; height: 56px; align-content: center; justify-items: center; gap: 2px; margin: 0 auto; transform: translateY(-10px); border: 3px solid var(--app-bg) !important; border-radius: 50% !important; background: #b8f34a !important; color: #10130f !important; box-shadow: 0 8px 20px rgba(0,0,0,.25); }
+.appMobileAdd { display: grid !important; width: 56px; height: 56px; align-content: center; justify-items: center; gap: 2px; margin: 0 auto; transform: translateY(-10px); border: 3px solid var(--app-bg) !important; border-radius: 50% !important; background: var(--app-lime) !important; color: var(--app-ink) !important; box-shadow: 0 8px 20px color-mix(in srgb, var(--app-lime) 18%, transparent); }
 .appMobileAdd span { color: #10130f; font-size: 10px; font-weight: 800; }
 .appMobileAdd svg { color: #10130f; }
 @media (max-width: 720px) {
@@ -5394,9 +5408,10 @@ main > section > [role="alert"] {
   .appNavLink,
   .appMobileNav a,
   button,
-  a {
-    transition: none !important;
-  }
+a {
+  color: inherit;
+  text-decoration: none;
+}
 }
 
 /* Contextual navigation and reading focus refinements. */
