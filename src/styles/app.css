@@ -5529,14 +5529,20 @@ a {
 @media (max-width: 720px) {
   .libraryContextActions {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
     width: 100%;
     justify-content: stretch;
+    gap: 5px;
+    padding: 4px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--app-panel) 92%, transparent);
   }
 
   .libraryContextActions .libraryControlsLabel {
-    grid-column: 1 / -1;
+    grid-column: auto;
     margin: 0;
+    font-size: 10px;
   }
 
   .libraryContextActions .librarySafeModeToggle {
@@ -5545,6 +5551,13 @@ a {
 
   .libraryContextActions .libraryIconAction {
     justify-self: stretch;
+    min-width: 44px;
+    min-height: 40px;
+    padding-inline: 6px;
+  }
+
+  .libraryContextActions .libraryIconAction span {
+    display: none;
   }
 
   .librarySelectionToolbar.is-active {
