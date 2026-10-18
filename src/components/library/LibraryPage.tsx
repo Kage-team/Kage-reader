@@ -403,7 +403,7 @@ export function LibraryPage() {
           : view === "queue"
             ? "Reading queue"
             : view === "history"
-              ? "Reading history"
+              ? "History"
               : view === "insights"
                 ? "Reading insights"
                 : "Your library";
