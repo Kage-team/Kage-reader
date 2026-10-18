@@ -432,7 +432,7 @@ export function SettingsPage({
             <p style={styles.kicker}>Preferences</p>
             <h1 style={styles.title}>Settings</h1>
           </div>
-          <Link to="/" style={styles.linkButton}>
+          <Link to="/?view=all" style={styles.linkButton}>
             Back to library
           </Link>
         </header>

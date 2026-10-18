@@ -283,7 +283,7 @@ export function ImportPage() {
             Add comics and novels to your local shelf.
           </p>
         </div>
-        <Link to="/" className="importLibraryLink" aria-label="Back to library">
+        <Link to="/?view=all" className="importLibraryLink" aria-label="Open library">
           <span>Back to library</span>
           <ArrowRight size={16} />
         </Link>
@@ -540,7 +540,7 @@ export function ImportPage() {
               </div>
             ) : null}
             {!isImporting && completedCount > 0 ? (
-              <Link to="/" className="importQueueLink">
+              <Link to="/?view=all" className="importQueueLink">
                 Open library <ArrowRight size={15} />
               </Link>
             ) : null}

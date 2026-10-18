@@ -893,7 +893,7 @@ export function LibraryPage() {
                 </span>
               ) : null}
               {view === "favorites" ? (
-                <Link to="/" className="libraryEmptyAction">
+                <Link to="/?view=all" className="libraryEmptyAction">
                   Browse library
                 </Link>
               ) : null}

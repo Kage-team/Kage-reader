@@ -1932,7 +1932,7 @@ export function ReaderPage() {
       <main className="readerPage" style={styles.page}>
         <section style={styles.panel}>
           <p style={styles.emptyText}>Chapter not found.</p>
-          <Link to="/" style={styles.linkButton}>
+          <Link to="/?view=all" style={styles.linkButton}>
             Back to library
           </Link>
         </section>

@@ -63,9 +63,8 @@ export function AppFrame({ children }: PropsWithChildren) {
             <span>Import</span>
           </NavLink>
           <NavLink
-            to="/"
-            end
-            className={() => navClass(isLibraryHome)}
+to="/?view=all"
+          className={() => navClass(isLibraryHome)}
           >
             <BookOpen size={17} />
             <span>All series</span>

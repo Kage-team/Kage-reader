@@ -283,7 +283,7 @@ export function SeriesPage() {
     setActionError("");
     try {
       await deleteSeriesWithContents(series.id);
-      navigate("/", { replace: true });
+      navigate("/?view=all", { replace: true });
     } catch {
       setIsDeleting(false);
       setActionError(
@@ -344,7 +344,7 @@ export function SeriesPage() {
       <main className="seriesPage" style={styles.page}>
         <section style={styles.panel}>
           <p style={styles.emptyText}>Series not found.</p>
-          <Link to="/" style={styles.linkButton}>
+          <Link to="/?view=all" style={styles.linkButton}>
             Back to library
           </Link>
         </section>
@@ -365,7 +365,7 @@ export function SeriesPage() {
     <main className="seriesPage" style={styles.page}>
       <section style={styles.panel}>
         <header style={styles.headerRow}>
-          <Link to="/" style={styles.backLink}>
+          <Link to="/?view=all" style={styles.backLink}>
             <ArrowLeft size={15} /> Library
           </Link>
           <div style={styles.headerActions}>
