@@ -899,7 +899,7 @@ export function LibraryPage() {
                 Import a comic archive or EPUB to start reading locally.
               </span>
               <Link to="/import" style={styles.primaryButton}>
-                <Plus size={16} /> Import your first title
+                <Plus size={16} /> Add files
               </Link>
             </div>
           ) : visibleEntries.length === 0 ? (

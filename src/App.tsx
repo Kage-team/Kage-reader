@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppFrame } from "./components/layout/AppFrame";
 import { ImportPage } from "./components/import/ImportPage";
-import { HomePage } from "./components/home/HomePage";
 import { LibraryPage } from "./components/library/LibraryPage";
 import { ReaderPage } from "./components/reader/ReaderPage";
 import { SettingsPage } from "./components/settings/SettingsPage";
@@ -16,8 +15,7 @@ import type { PwaInstallPrompt } from "./lib/pwa/install";
 import { applyStealthMode } from "./lib/security/stealth";
 
 function RootPage() {
-  const [searchParams] = useSearchParams();
-  return searchParams.has("view") ? <LibraryPage /> : <HomePage />;
+  return <LibraryPage />;
 }
 
 export function App() {

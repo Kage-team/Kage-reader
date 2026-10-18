@@ -3,7 +3,7 @@ import { getActiveTab } from "./activeTab";
 
 describe("getActiveTab", () => {
   it.each([
-    ["Home", "/", "", "home"],
+    ["Root library", "/", "", "library"],
     ["Library", "/", "?view=all", "library"],
     ["Continue", "/", "?view=continue", "library"],
     ["Favorites", "/", "?view=favorites", "library"],

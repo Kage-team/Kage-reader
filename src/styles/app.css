@@ -5600,10 +5600,17 @@ a {
   background: var(--app-lime);
 }
 
-.appSidebar .appNavLinkActive::after {
+.appSidebar .appNavLinkActive::after,
+.appSidebar .appNavLink[data-active="true"]::after {
   inset: 8px auto 8px 0;
   width: 3px;
   border-radius: 0 3px 3px 0;
+}
+
+.appSidebar .appNavLink[data-active="true"] {
+  background: transparent;
+  color: var(--app-text);
+  font-weight: 800;
 }
 
 .appMobileNav .appNavLinkActive {
