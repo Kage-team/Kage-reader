@@ -6357,6 +6357,36 @@ main > section > [role="alert"] {
   font-size: 12px;
 }
 
+.routeLoadingFallback {
+  display: grid;
+  gap: 10px;
+  place-items: center;
+  min-height: 45vh;
+  padding: 24px;
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
+.routeLoadingSkeleton {
+  width: min(360px, 70vw);
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--app-panel) 25%, var(--app-border) 50%, var(--app-panel) 75%);
+  background-size: 200% 100%;
+  animation: route-loading 1.4s ease-in-out infinite;
+}
+
+.routeLoadingSkeleton--wide { width: min(520px, 82vw); height: 22px; }
+.routeLoadingSkeleton--short { width: min(220px, 48vw); }
+
+@keyframes route-loading {
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .routeLoadingSkeleton { animation: none; }
+}
+
 .confirmDialogBackdrop{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:rgb(0 0 0 / 68%)}
 .confirmDialog{width:min(100%,480px);padding:20px;border:1px solid var(--app-border-strong);border-radius:12px;background:var(--app-panel);color:var(--app-text);box-shadow:0 18px 60px rgb(0 0 0 / 35%)}
 .confirmDialog h2,.confirmDialog p{margin:0}.confirmDialog h2{font-size:18px}.confirmDialog>p{margin-top:10px;color:var(--app-muted);line-height:1.55}.confirmDialog .confirmDialogConsequence{padding:10px 12px;border-left:3px solid var(--app-danger);background:color-mix(in srgb,var(--app-danger) 8%,transparent);color:var(--app-text);font-size:13px}

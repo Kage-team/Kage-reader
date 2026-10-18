@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppFrame } from "./components/layout/AppFrame";
 import { RouteErrorBoundary } from "./components/layout/RouteErrorBoundary";
-import { ImportPage } from "./components/import/ImportPage";
 import { LibraryPage } from "./components/library/LibraryPage";
-import { ReaderPage } from "./components/reader/ReaderPage";
-import { SettingsPage } from "./components/settings/SettingsPage";
-import { SeriesPage } from "./components/series/SeriesPage";
+const ImportPage = lazy(() => import("./components/import/ImportPage").then((module) => ({ default: module.ImportPage })));
+const ReaderPage = lazy(() => import("./components/reader/ReaderPage").then((module) => ({ default: module.ReaderPage })));
+const SettingsPage = lazy(() => import("./components/settings/SettingsPage").then((module) => ({ default: module.SettingsPage })));
+const SeriesPage = lazy(() => import("./components/series/SeriesPage").then((module) => ({ default: module.SeriesPage })));
 import { AdultContentGate } from "./components/security/AdultContentGate";
 import {
   applyPreferencesToDocument,
@@ -17,6 +17,17 @@ import { applyStealthMode } from "./lib/security/stealth";
 
 function RootPage() {
   return <LibraryPage />;
+}
+
+function RouteLoadingFallback() {
+  return (
+    <div className="routeLoadingFallback" role="status" aria-live="polite">
+      <div className="routeLoadingSkeleton routeLoadingSkeleton--wide" />
+      <div className="routeLoadingSkeleton" />
+      <div className="routeLoadingSkeleton routeLoadingSkeleton--short" />
+      <span>Loading Kage Reader...</span>
+    </div>
+  );
 }
 
 export function App() {
@@ -50,7 +61,8 @@ export function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <Routes>
         <Route
           path="/"
           element={
@@ -103,8 +115,9 @@ export function App() {
             </RouteErrorBoundary>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
