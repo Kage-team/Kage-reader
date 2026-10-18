@@ -21,10 +21,10 @@
   --app-radius-control: 6px;
   --app-motion-fast: 140ms ease;
   --app-motion-standard: 200ms ease;
-  --app-lime: #f4f5f4;
+  --app-lime: #b8f34a;
   --app-coral: #ff9679;
   --app-danger: #ff7770;
-  --app-accent-glow: #f4f5f4;
+  --app-accent-glow: #b8f34a;
   --font-body: "DM Sans", sans-serif;
   --font-display: "Space Grotesk", sans-serif;
   font-family: var(--font-body);
@@ -119,6 +119,29 @@
 * {
   box-sizing: border-box;
 }
+
+:where(button, a, input, select, textarea, summary) {
+  min-height: 44px;
+}
+
+.skipLink {
+  position: fixed;
+  z-index: 100;
+  top: 12px;
+  left: 12px;
+  transform: translateY(-160%);
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--app-lime);
+  color: #10130f;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform var(--app-motion-fast);
+}
+
+.skipLink:focus-visible { transform: translateY(0); }
+
+.appView { min-width: 0; }
 
 html,
 body,
@@ -5327,7 +5350,12 @@ main > section > [role="alert"] {
 .homeHeroActions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .homeHeroSecondary { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid var(--app-border-strong); border-radius: 12px; color: var(--app-text); font-weight: 800; text-decoration: none; }
 .homeHeroSecondary:hover { border-color: var(--app-lime); color: var(--app-lime); }
-.homeRails { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.homeSection { margin-top: 28px; }
+.homeSectionHeader { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.homeSectionHeader h2 { margin: 6px 0 0; font-family: var(--font-display); font-size: clamp(22px, 4vw, 30px); letter-spacing: -0.04em; }
+.homeSectionLink { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; color: var(--app-muted); font-size: 13px; font-weight: 800; text-decoration: none; }
+.homeSectionLink:hover { color: var(--app-lime); }
+.homeRails { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .homeRailCard { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; min-height: 92px; padding: 16px; border: 1px solid var(--app-border); border-radius: 16px; background: var(--app-panel); color: var(--app-text); text-decoration: none; transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease; }
 .homeRailCard:hover { transform: translateY(-2px); border-color: var(--app-border-strong); background: var(--app-panel-raised); }
 .homeRailIcon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: color-mix(in srgb, var(--app-lime) 12%, var(--app-panel-raised)); color: var(--app-lime); }
@@ -5343,6 +5371,12 @@ main > section > [role="alert"] {
 .appMobileAdd svg { color: #10130f; }
 @media (max-width: 720px) {
   .homePage { padding-top: 14px; }
+  .appTopbarUtilities { gap: 4px; }
+  .appTopbarUtility { width: 40px; min-height: 40px; }
+  .appMobileNav a { min-height: 44px; }
+  .homeSectionHeader { align-items: center; }
+  .homeSectionLink { min-height: 44px; }
+
   .homeHero { display: grid; gap: 20px; padding: 22px; border-radius: 18px; }
   .homeHero h1 { font-size: 38px; }
   .homeHeroActions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
@@ -5354,7 +5388,15 @@ main > section > [role="alert"] {
   .homeEmptyState .secondaryButton { width: 100%; margin-left: 68px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .homeRailCard { transition: none; }
+  .homeRailCard,
+  .homeHeroSecondary,
+  .skipLink,
+  .appNavLink,
+  .appMobileNav a,
+  button,
+  a {
+    transition: none !important;
+  }
 }
 
 /* Shared Kage workspace framing across every screen. */

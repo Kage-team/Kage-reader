@@ -34,6 +34,7 @@ export function AppFrame({ children }: PropsWithChildren) {
 
   return (
     <div className="appShell">
+      <a className="skipLink" href="#main-content">Skip to content</a>
       <aside className="appSidebar" aria-label="Primary navigation">
         <NavLink to="/" className="appBrand" aria-label="Kage Reader home">
           <span className="appBrandMark">
@@ -172,7 +173,7 @@ export function AppFrame({ children }: PropsWithChildren) {
             </span>
           </div>
         </header>
-        <div className="appView">{children}</div>
+        <div className="appView" id="main-content">{children}</div>
       </div>
     </div>
   );

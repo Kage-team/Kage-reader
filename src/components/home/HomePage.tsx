@@ -22,7 +22,12 @@ export function HomePage() {
           <Link className="homeHeroSecondary" to="/?view=all">Open library</Link>
         </div>
       </section>
-      <section className="homeRails" aria-label="Library shortcuts">
+      <section className="homeSection" aria-labelledby="home-shortcuts-title">
+        <div className="homeSectionHeader">
+          <div><span className="eyebrow">Your shelves</span><h2 id="home-shortcuts-title">Jump back in</h2></div>
+          <Link className="homeSectionLink" to="/?view=all">View library <ArrowRight size={14} /></Link>
+        </div>
+        <div className="homeRails">
         {rails.map(({ title, description, href, icon: Icon }) => (
           <Link className="homeRailCard" key={title} to={href}>
             <span className="homeRailIcon"><Icon size={18} /></span>
@@ -30,10 +35,11 @@ export function HomePage() {
             <ArrowRight size={16} aria-hidden="true" />
           </Link>
         ))}
+        </div>
       </section>
-      <section className="homeEmptyState">
+      <section className="homeEmptyState" aria-labelledby="home-empty-title">
         <span className="homeEmptyIcon"><BookOpen size={24} /></span>
-        <div><h2>Start with your library</h2><p>Import a local folder or archive to make this space yours.</p></div>
+        <div><h2 id="home-empty-title">Start with your library</h2><p>Import a local folder or archive to make this space yours.</p></div>
         <Link className="secondaryButton" to="/?view=all">Browse library</Link>
       </section>
     </main>
