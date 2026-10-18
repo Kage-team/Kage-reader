@@ -5061,6 +5061,7 @@ button:disabled {
   max-width: none;
   align-items: stretch;
   justify-content: flex-start;
+  gap: 8px;
   gap: 0;
   margin: 12px 0 18px;
   box-sizing: border-box;
@@ -5162,10 +5163,51 @@ button:disabled {
   box-sizing: border-box;
 }
 
-.seriesChapterSort {
-  flex: 0 0 124px;
-  min-width: 124px;
-  border-radius: 0 7px 7px 0;
+.seriesChapterSortControl {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 40px;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--app-border);
+  border-radius: 9px;
+  background: var(--app-panel);
+}
+
+.seriesChapterSortControl button,
+.seriesChapterSortMore {
+  min-height: 40px;
+  border: 0;
+  border-right: 1px solid var(--app-border);
+  background: transparent;
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.seriesChapterSortControl button {
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.seriesChapterSortControl button:hover,
+.seriesChapterSortControl button.is-active {
+  background: var(--app-hover);
+  color: var(--app-text);
+}
+
+.seriesChapterSortMore {
+  min-width: 58px;
+  padding: 0 8px;
+  border-right: 0;
+  outline: 0;
+}
+
+.seriesChapterSortMore:focus-visible,
+.seriesChapterSortControl button:focus-visible {
+  outline: 2px solid var(--app-text);
+  outline-offset: -2px;
 }
 
 .seriesAddChapters {
@@ -5209,7 +5251,16 @@ button:disabled {
   width: 100%;
   min-width: 0;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  padding: 3px 2px;
+  }
+
+.seriesChapterRow > .chapterLink {
+  min-width: 0;
+}
+
+.seriesChapterRow > .chapterLink .chapterTitleLine {
+  min-width: 0;
 }
 
 .chapterTitleLine {
@@ -5268,11 +5319,11 @@ button:disabled {
 
 .chapterStatusToggle {
   display: inline-flex;
-  min-width: 78px;
+  min-width: 86px;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  width: 30px;
+  width: auto;
   height: 30px;
   flex: 0 0 30px;
   place-items: center;
@@ -5284,9 +5335,10 @@ button:disabled {
 }
 
 .chapterStatusToggle[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--app-lime) 55%, var(--app-border));
-  color: var(--app-lime);
-}
+  border-color: var(--app-border-strong);
+  background: var(--app-hover);
+  color: var(--app-text);
+  }
 
 .chapterStatusToggle:hover {
   background: var(--app-hover);
@@ -5458,10 +5510,12 @@ main > section > [role="alert"] {
   padding: 7px 2px;
 }
 
-.chapterStatusToggle {
-  width: 44px;
-  height: 44px;
-  flex-basis: 44px;
+  .chapterStatusToggle {
+  width: auto;
+  min-width: 86px;
+  height: 40px;
+  flex-basis: auto;
+  padding-inline: 10px;
   border-radius: 8px;
   transition: transform 190ms ease, opacity 190ms ease, background-color 190ms ease;
 }

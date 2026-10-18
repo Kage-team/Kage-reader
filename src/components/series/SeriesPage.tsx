@@ -897,17 +897,36 @@ export function SeriesPage() {
                     <button type="button" onClick={() => void markSelectedChapters(false)}>Mark unread</button>
                   </div>
                 ) : null}
-                <select
-                  className="seriesChapterSort"
-                  value={chapterSortMode}
-                  onChange={(event) => setChapterSortMode(event.currentTarget.value as ChapterSortMode)}
-                  aria-label="Sort chapters"
-                >
-                  <option value="oldest">Oldest</option>
-                  <option value="newest">Newest</option>
-                  <option value="unread">Unread first</option>
-                  <option value="completed">Completed first</option>
-                </select>
+                <div className="seriesChapterSortControl" role="group" aria-label="Chapter order">
+                  <button
+                    type="button"
+                    className={chapterSortMode === "oldest" ? "is-active" : ""}
+                    aria-pressed={chapterSortMode === "oldest"}
+                    onClick={() => setChapterSortMode("oldest")}
+                  >
+                    Oldest
+                  </button>
+                  <button
+                    type="button"
+                    className={chapterSortMode === "newest" ? "is-active" : ""}
+                    aria-pressed={chapterSortMode === "newest"}
+                    onClick={() => setChapterSortMode("newest")}
+                  >
+                    Newest
+                  </button>
+                  <select
+                    className="seriesChapterSortMore"
+                    value={chapterSortMode === "oldest" || chapterSortMode === "newest" ? "order" : chapterSortMode}
+                    onChange={(event) => {
+                      if (event.currentTarget.value !== "order") setChapterSortMode(event.currentTarget.value as ChapterSortMode);
+                    }}
+                    aria-label="More chapter filters"
+                  >
+                    <option value="order">More</option>
+                    <option value="unread">Unread first</option>
+                    <option value="completed">Completed first</option>
+                  </select>
+                </div>
               </div>
               {visibleChapters.length === 0 ? <p style={styles.emptyText}>No chapters match your search.</p> : null}
               <ul style={styles.list}>
