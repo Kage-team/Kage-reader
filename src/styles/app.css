@@ -6334,6 +6334,11 @@ main > section > [role="alert"] {
   font-size: 12px;
 }
 
+.confirmDialogBackdrop{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:rgb(0 0 0 / 68%)}
+.confirmDialog{width:min(100%,480px);padding:20px;border:1px solid var(--app-border-strong);border-radius:12px;background:var(--app-panel);color:var(--app-text);box-shadow:0 18px 60px rgb(0 0 0 / 35%)}
+.confirmDialog h2,.confirmDialog p{margin:0}.confirmDialog h2{font-size:18px}.confirmDialog>p{margin-top:10px;color:var(--app-muted);line-height:1.55}.confirmDialog .confirmDialogConsequence{padding:10px 12px;border-left:3px solid var(--app-danger);background:color-mix(in srgb,var(--app-danger) 8%,transparent);color:var(--app-text);font-size:13px}
+.confirmDialogActions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.confirmDialogActions button{min-height:40px;padding:0 13px;border:1px solid var(--app-border-strong);border-radius:7px;background:transparent;color:var(--app-text);font:inherit;font-weight:700;cursor:pointer}.confirmDialogActions .confirmDialogDanger{border-color:var(--app-danger);background:var(--app-danger);color:white}
+
 .settingsDangerNotice {
   display: grid;
   gap: 4px;

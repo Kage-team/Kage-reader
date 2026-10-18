@@ -19,6 +19,7 @@ import {
   listSeries,
 } from "../../lib/storage/db";
 import { BookOpen, Sparkles } from "lucide-react";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import type { PwaInstallPrompt } from "../../lib/pwa/install";
 import type {
   AccentColor,
@@ -209,6 +210,7 @@ export function SettingsPage({
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
   const [installMessage, setInstallMessage] = useState("");
   const [adultPin, setAdultPin] = useState("");
   const [adultPinConfirmation, setAdultPinConfirmation] = useState("");
@@ -402,14 +404,8 @@ export function SettingsPage({
   }
 
   async function clearLibrary(): Promise<void> {
-  const confirmed = window.confirm(
-  "Clear all books and local data? This permanently removes every imported series, chapter, page, reading position, bookmark, linked folder, and cached file from this device. This cannot be undone.",
-  );
-    if (!confirmed) {
-      return;
-    }
-
-    setIsClearing(true);
+  setIsClearDialogOpen(false);
+  setIsClearing(true);
     setBackupMessage("");
     try {
       await clearLibraryData();
@@ -1152,8 +1148,8 @@ export function SettingsPage({
             </label>
             <button
               type="button"
-              onClick={() => void clearLibrary()}
-              disabled={isBackingUp || isRestoring || isClearing}
+  onClick={() => setIsClearDialogOpen(true)}
+  disabled={isBackingUp || isRestoring || isClearing}
               style={styles.dangerButton}
             >
               {isClearing ? "Clearing all books..." : "Clear all books"}
@@ -1243,6 +1239,16 @@ export function SettingsPage({
           ) : null}
         </section>
       </section>
+      <ConfirmDialog
+        open={isClearDialogOpen}
+        title="Clear all books and local data?"
+        description="This action permanently removes every imported series, chapter, page, reading position, bookmark, linked folder, and cached file from this device."
+        consequence="This cannot be undone. Create a backup first if you may need to restore your library."
+        confirmLabel="Clear all books"
+        busy={isClearing}
+        onConfirm={() => void clearLibrary()}
+        onCancel={() => setIsClearDialogOpen(false)}
+      />
     </main>
   );
 }
