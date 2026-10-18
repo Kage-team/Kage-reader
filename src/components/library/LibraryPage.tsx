@@ -394,6 +394,15 @@ export function LibraryPage() {
   const visibleRecentChapters = recentChapters.filter((item) =>
     filteredEntries.some((entry) => entry.id === item.seriesId),
   );
+  const landingContinueEntries = entries
+    .filter((entry) => entry.resume && entry.resume.pageCount > 0)
+    .sort((left, right) => (right.resume?.updatedAt ?? 0) - (left.resume?.updatedAt ?? 0))
+    .slice(0, 3);
+  const landingQueueEntries = entries
+    .filter((entry) => entry.queueOrder !== undefined)
+    .sort((left, right) => (left.queueOrder ?? 0) - (right.queueOrder ?? 0))
+    .slice(0, 6);
+  const landingFavoriteEntries = entries.filter((entry) => entry.isFavorite).slice(0, 6);
   const activityTitleCount = new Set(visibleRecentChapters.map((item) => item.seriesId)).size;
   const latestActivity = visibleRecentChapters[0];
   const pageTitle =
@@ -488,6 +497,46 @@ export function LibraryPage() {
 
         {isAdultPromptOpen || (view === "adult" && !adultAccessUnlocked) ? (
           <AdultAccessPrompt onUnlocked={finishAdultUnlock} />
+        ) : null}
+
+        {view === "all" && !isLoading ? (
+          <section className="libraryLanding" aria-label="Library overview">
+            <nav className="libraryViewSwitcher" aria-label="Library views">
+              <Link className="is-active" to="/?view=all">Library <span>{accessibleEntries.length}</span></Link>
+              <Link to="/?view=continue">Continue <span>{landingContinueEntries.length}</span></Link>
+              <Link to="/?view=queue">Queue <span>{landingQueueEntries.length}</span></Link>
+              <Link to="/?view=favorites">Favorites <span>{landingFavoriteEntries.length}</span></Link>
+              <Link to="/?view=history">Activity</Link>
+            </nav>
+            {landingContinueEntries.length > 0 ? (
+              <section className="libraryLandingSection" aria-labelledby="continue-reading-title">
+                <div className="libraryLandingHeader">
+                  <div><p className="libraryLandingEyebrow">Pick up where you left off</p><h2 id="continue-reading-title">Continue reading</h2></div>
+                  <Link to="/?view=continue">View all</Link>
+                </div>
+                <div className="libraryContinueRail">
+                  {landingContinueEntries.map((entry) => (
+                    <Link className="libraryContinueCard" key={entry.id} to={`/read/${encodeURIComponent(entry.resume!.chapterId)}`}>
+                      <span className="libraryContinueCover">{coverUrls[entry.id] ? <img src={coverUrls[entry.id]} alt="" /> : <BookOpen size={20} />}</span>
+                      <span className="libraryContinueCopy"><strong>{entry.title}</strong><span>{entry.resume!.chapterTitle}</span><span className="libraryRailProgress"><i style={{ width: `${Math.min(100, ((entry.resume!.pageIndex + 1) / entry.resume!.pageCount) * 100)}%` }} /></span><small>Page {Math.min(entry.resume!.pageIndex + 1, entry.resume!.pageCount)} of {entry.resume!.pageCount}</small></span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+            {landingQueueEntries.length > 0 ? (
+              <section className="libraryLandingSection" aria-labelledby="queue-title">
+                <div className="libraryLandingHeader"><h2 id="queue-title">Queue</h2><Link to="/?view=queue">View all</Link></div>
+                <div className="libraryCompactRail">{landingQueueEntries.map((entry) => <Link className="libraryCompactCard" key={entry.id} to={`/series/${encodeURIComponent(entry.id)}`}><span>{coverUrls[entry.id] ? <img src={coverUrls[entry.id]} alt="" /> : <BookOpen size={18} />}</span><strong>{entry.title}</strong></Link>)}</div>
+              </section>
+            ) : null}
+            {landingFavoriteEntries.length > 0 ? (
+              <section className="libraryLandingSection" aria-labelledby="favorites-title">
+                <div className="libraryLandingHeader"><h2 id="favorites-title">Favorites</h2><Link to="/?view=favorites">View all</Link></div>
+                <div className="libraryCompactRail">{landingFavoriteEntries.map((entry) => <Link className="libraryCompactCard" key={entry.id} to={`/series/${encodeURIComponent(entry.id)}`}><span>{coverUrls[entry.id] ? <img src={coverUrls[entry.id]} alt="" /> : <Heart size={18} />}</span><strong>{entry.title}</strong></Link>)}</div>
+              </section>
+            ) : null}
+          </section>
         ) : null}
 
         {view === "insights" ? (
