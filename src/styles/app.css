@@ -1658,7 +1658,7 @@ button:disabled {
 
   .librarySearchSortRow {
     display: grid;
-    grid-template-columns: minmax(44px, 1fr) 44px 44px 44px;
+    grid-template-columns: minmax(120px, 1fr) 44px 88px 44px;
     align-items: center;
     gap: 6px;
   }
@@ -1678,20 +1678,20 @@ button:disabled {
   .librarySearchSortRow > .viewModeToggle,
   .librarySearchSortRow > .librarySelectToggle,
   .librarySearchSortRow > .librarySortFilter {
-    width: 44px !important;
-    min-width: 44px !important;
-    max-width: 44px !important;
-    overflow: hidden;
+    min-height: 40px;
+    height: 40px;
   }
 
   .librarySearchSortRow > .viewModeToggle {
     display: inline-flex;
-    overflow: hidden;
+    width: 88px !important;
+    max-width: 88px !important;
+    overflow: visible;
   }
 
   .librarySearchSortRow > .viewModeToggle button {
-    width: 44px;
-    min-width: 44px;
+    width: 40px;
+    min-width: 40px;
     padding-inline: 0;
   }
 
