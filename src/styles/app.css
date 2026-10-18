@@ -3022,20 +3022,7 @@ button:disabled {
   }
 
   .appSidebar {
-    position: sticky;
-    z-index: 10;
-    top: 0;
-    height: 52px;
-    flex: 0 0 52px;
-    flex-direction: row;
-    align-items: center;
-    min-width: 0;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 0 16px;
-    border-right: 0;
-    border-bottom: 1px solid var(--app-border);
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
+    display: none;
   }
 
   .appBrand {
@@ -3098,8 +3085,8 @@ button:disabled {
   }
 
   .appTopbar {
-    top: 52px;
-    min-height: 46px;
+    top: 0;
+    min-height: 54px;
     padding: 0 14px;
   }
 
@@ -6059,7 +6046,8 @@ a {
   align-items: center;
 }
 
-.appTopbarBrandGroup { gap: 18px; }
+  .appTopbarBrandGroup {
+    min-width: 0; gap: 18px; }
 .appTopbarSafety { gap: 6px; }
 .appTopbarSafety a,
 .appTopbarSafetyButton {
