@@ -5602,6 +5602,11 @@ a {
     padding-bottom: 2px;
   }
 
+  .libraryPage:has(.librarySelectionToolbar.is-active) .libraryEntries,
+  .libraryPage:has(.librarySelectionToolbar.is-active) .libraryEmptyCard {
+    padding-bottom: 180px;
+  }
+
   .librarySelectionToolbar.is-active .libraryBulkMore,
   .librarySelectionToolbar.is-active .libraryBulkActionDanger {
     order: 4;
