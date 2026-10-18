@@ -5979,7 +5979,13 @@ main > section > [role="alert"] {
   --settings-control-height: 44px;
 }
 
-.settingsPagePanel > .settingsSectionNav {
+.settingsPagePanel > header,
+.settingsPagePanel > .settingsSectionNav,
+.settingsPagePanel > .settingsSection {
+  padding-inline: clamp(16px, 2.5vw, 28px);
+}
+
+.settingsPagePanel > .settingsSectionNav { 
   position: sticky;
   z-index: 3;
   top: var(--settings-nav-top, 66px);
