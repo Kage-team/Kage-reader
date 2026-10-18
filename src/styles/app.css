@@ -5057,12 +5057,52 @@ button:disabled {
 .seriesChapterTools {
   display: flex;
   width: 100%;
+  flex-wrap: wrap;
   max-width: none;
   align-items: stretch;
   justify-content: flex-start;
   gap: 0;
   margin: 12px 0 18px;
   box-sizing: border-box;
+}
+
+.seriesChapterBulkActions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.seriesChapterBulkActions button {
+  min-height: 32px;
+  padding: 0 9px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: var(--app-panel);
+  color: var(--app-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.seriesChapterSelectAll {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 7px;
+  color: var(--app-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.seriesChapterSelectAll input,
+.seriesChapterCheckbox {
+  accent-color: var(--app-text);
+}
+
+.seriesChapterCheckbox {
+  flex: 0 0 auto;
+  margin: 0 8px 0 0;
 }
 
 .seriesChapterTools > .seriesChapterSearch {
@@ -5163,9 +5203,27 @@ button:disabled {
 .chapterTitleLine {
   display: block;
   min-width: 0;
+}
+
+.chapterTitleText {
+  display: inline-block;
+  max-width: min(60vw, 520px);
   overflow: hidden;
   text-overflow: ellipsis;
+  vertical-align: bottom;
   white-space: nowrap;
+}
+
+.chapterStatusBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  color: var(--app-muted);
+  font-size: 10px;
+  font-weight: 700;
+  vertical-align: middle;
 }
 
 .chapterTitleLine strong {
@@ -5957,6 +6015,11 @@ main > section > [role="alert"] {
     align-items: stretch;
     gap: 0;
     margin: 12px 0;
+  }
+
+  .seriesChapterSelectAll {
+    order: 3;
+    flex: 0 0 auto;
   }
 
   .seriesChapterSearch {

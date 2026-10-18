@@ -37,7 +37,7 @@ import {
   putProgress,
 } from "../../lib/storage/db";
 import { createSeriesExport } from "../../lib/storage/export";
-import { filterAndSortChapters, type ChapterSortDirection } from "./chapterList";
+import { filterAndSortChapters, type ChapterSortMode } from "./chapterList";
 
 const SERIES_TYPES: Array<{ value: SeriesType; label: string }> = [
   { value: "manga", label: "Manga" },
@@ -98,7 +98,8 @@ export function SeriesPage() {
   const [exportMessage, setExportMessage] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [chapterQuery, setChapterQuery] = useState("");
-  const [chapterSortDirection, setChapterSortDirection] = useState<ChapterSortDirection>("ascending");
+  const [chapterSortMode, setChapterSortMode] = useState<ChapterSortMode>("oldest");
+  const [selectedChapterIds, setSelectedChapterIds] = useState<Set<string>>(new Set());
   const archiveInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -327,6 +328,35 @@ export function SeriesPage() {
     }
   }
 
+  async function markSelectedChapters(completed: boolean): Promise<void> {
+    await Promise.all(
+      chapters
+        .filter((chapter) => selectedChapterIds.has(chapter.id))
+        .map(async (chapter) => {
+          const existing = progressByChapter[chapter.id];
+          const updated: Progress = {
+            ...existing,
+            schemaVersion: SCHEMA_VERSION,
+            chapterId: chapter.id,
+            pageIndex: existing?.pageIndex ?? 0,
+            scrollRatio: existing?.scrollRatio ?? 0,
+            updatedAt: Date.now(),
+            ...(completed ? { completedAt: Date.now() } : { completedAt: undefined }),
+          };
+          await putProgress(updated);
+        }),
+    );
+    setProgressByChapter((current) => {
+      const next = { ...current };
+      for (const chapterId of selectedChapterIds) {
+        const existing = next[chapterId];
+        if (existing) next[chapterId] = completed ? { ...existing, completedAt: Date.now() } : { ...existing, completedAt: undefined };
+      }
+      return next;
+    });
+    setSelectedChapterIds(new Set());
+  }
+
   async function toggleChapterCompletion(chapter: Chapter): Promise<void> {
     const existing = progressByChapter[chapter.id];
     const updated: Progress = {
@@ -364,7 +394,17 @@ export function SeriesPage() {
         (right.progress?.updatedAt ?? 0) - (left.progress?.updatedAt ?? 0),
     )[0]?.chapter;
   const featuredChapter = mostRecentChapter ?? chapters[0];
-  const visibleChapters = filterAndSortChapters(chapters, chapterQuery, chapterSortDirection);
+  const completedChapterIds = new Set(
+    Object.values(progressByChapter)
+      .filter((progress) => Boolean(progress.completedAt))
+      .map((progress) => progress.chapterId),
+  );
+  const visibleChapters = filterAndSortChapters(
+    chapters,
+    chapterQuery,
+    chapterSortMode,
+    completedChapterIds,
+  );
 
   return (
     <main className="seriesPage" style={styles.page}>
@@ -826,14 +866,36 @@ export function SeriesPage() {
           ) : (
             <>
               <div className="seriesChapterTools">
+                <label className="seriesChapterSelectAll">
+                  <input
+                    type="checkbox"
+                    checked={visibleChapters.length > 0 && visibleChapters.every((chapter) => selectedChapterIds.has(chapter.id))}
+                    onChange={(event) => setSelectedChapterIds(event.currentTarget.checked ? new Set(visibleChapters.map((chapter) => chapter.id)) : new Set())}
+                  />
+                  <span>Select</span>
+                </label>
                 <label className="seriesChapterSearch">
                   <Search size={15} aria-hidden="true" />
                   <span className="sr-only">Search chapters</span>
                   <input value={chapterQuery} onChange={(event) => setChapterQuery(event.currentTarget.value)} placeholder="Search chapters" />
                 </label>
-                <button type="button" className="seriesChapterSort" onClick={() => setChapterSortDirection((current) => current === "ascending" ? "descending" : "ascending")} aria-label={`Sort chapters ${chapterSortDirection === "ascending" ? "descending" : "ascending"}`}>
-                  {chapterSortDirection === "ascending" ? "Ascending" : "Descending"}
-                </button>
+                {selectedChapterIds.size > 0 ? (
+                  <div className="seriesChapterBulkActions">
+                    <button type="button" onClick={() => void markSelectedChapters(true)}>Mark read</button>
+                    <button type="button" onClick={() => void markSelectedChapters(false)}>Mark unread</button>
+                  </div>
+                ) : null}
+                <select
+                  className="seriesChapterSort"
+                  value={chapterSortMode}
+                  onChange={(event) => setChapterSortMode(event.currentTarget.value as ChapterSortMode)}
+                  aria-label="Sort chapters"
+                >
+                  <option value="oldest">Oldest</option>
+                  <option value="newest">Newest</option>
+                  <option value="unread">Unread first</option>
+                  <option value="completed">Completed first</option>
+                </select>
               </div>
               {visibleChapters.length === 0 ? <p style={styles.emptyText}>No chapters match your search.</p> : null}
               <ul style={styles.list}>
@@ -858,13 +920,25 @@ export function SeriesPage() {
                     return (
                       <div className={`seriesChapterItem${mostRecentChapter?.id === chapter.id ? " is-resume" : ""}`}>
                         <div className="seriesChapterRow">
+                          <input
+                            type="checkbox"
+                            className="seriesChapterCheckbox"
+                            checked={selectedChapterIds.has(chapter.id)}
+                            onChange={(event) => setSelectedChapterIds((current) => {
+                              const next = new Set(current);
+                              if (event.currentTarget.checked) next.add(chapter.id); else next.delete(chapter.id);
+                              return next;
+                            })}
+                            aria-label={`Select ${titleLabel}`}
+                          />
                           <Link
                             to={`/read/${encodeURIComponent(chapter.id)}`}
                             style={{ ...styles.chapterLink, flex: 1 }}
                           >
                             <span className="chapterTitleLine">
                               <strong>
-                                {titleLabel}
+                                <span className="chapterTitleText" title={titleLabel}>{titleLabel}</span>
+                                {progress?.completedAt ? <span className="chapterStatusBadge">Completed</span> : mostRecentChapter?.id === chapter.id ? <span className="chapterStatusBadge">Last read</span> : null}
                                 {chapter.volume !== undefined
                                   ? ` · Vol. ${chapter.volume}`
                                   : ""}

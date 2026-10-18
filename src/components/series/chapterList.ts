@@ -1,11 +1,18 @@
 import type { Chapter } from "../../lib/storage/types";
 
-export type ChapterSortDirection = "ascending" | "descending";
+export type ChapterSortMode =
+  | "oldest"
+  | "newest"
+  | "unread"
+  | "completed"
+  | "ascending"
+  | "descending";
 
 export function filterAndSortChapters(
   chapters: Chapter[],
   query: string,
-  direction: ChapterSortDirection,
+  mode: ChapterSortMode,
+  completedIds: Set<string> = new Set(),
 ): Chapter[] {
   const normalizedQuery = query.trim().toLocaleLowerCase();
   return chapters
@@ -17,10 +24,20 @@ export function filterAndSortChapters(
     })
     .slice()
     .sort((left, right) => {
+      if (mode === "unread" || mode === "completed") {
+        const leftCompleted = completedIds.has(left.id);
+        const rightCompleted = completedIds.has(right.id);
+        if (leftCompleted !== rightCompleted) {
+          const completedFirst = mode === "completed";
+          return completedFirst
+            ? Number(rightCompleted) - Number(leftCompleted)
+            : Number(leftCompleted) - Number(rightCompleted);
+        }
+      }
       const leftOrder = left.order ?? left.number ?? 0;
       const rightOrder = right.order ?? right.number ?? 0;
-      return direction === "ascending"
-        ? leftOrder - rightOrder
-        : rightOrder - leftOrder;
+      return mode === "newest" || mode === "descending"
+        ? rightOrder - leftOrder
+        : leftOrder - rightOrder;
     });
 }
