@@ -82,6 +82,7 @@ import type {
   SeriesType,
 } from "../../lib/storage/types";
 import { SCHEMA_VERSION } from "../../lib/storage/types";
+import { LoadingSkeleton } from "../ui/LoadingSkeleton";
 
 const NOVEL_THEME_OPTIONS = [
   { value: "oled", label: "OLED", swatch: "#050505", color: "#f2f0eb" },
@@ -4311,7 +4312,7 @@ export function ReaderPage() {
                 ))}
               </div>
             ) : (
-              <div style={styles.emptyViewer}>Loading pages...</div>
+              <LoadingSkeleton label="Loading pages" lines={5} className="readerLoadingSkeleton" />
             )
           ) : pageUrls[currentIndex] && pages[currentIndex] ? (
             renderComicPage(
@@ -4321,7 +4322,7 @@ export function ReaderPage() {
               false,
             )
           ) : (
-            <div style={styles.emptyViewer}>Loading page...</div>
+            <LoadingSkeleton label="Loading page" lines={4} className="readerLoadingSkeleton" />
           )}
         </div>
 

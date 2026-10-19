@@ -6373,6 +6373,26 @@ main > section > [role="alert"] {
   font-size: 12px;
 }
 
+.loadingSkeleton {
+  display: grid;
+  gap: 10px;
+  width: min(460px, 88vw);
+  padding: 18px;
+  color: var(--app-muted);
+}
+
+.loadingSkeletonBlock {
+  height: 12px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, var(--app-panel) 25%, var(--app-border) 50%, var(--app-panel) 75%);
+  background-size: 200% 100%;
+  animation: route-loading 1.4s ease-in-out infinite;
+}
+
+.loadingSkeletonBlock--hero { height: 34vh; min-height: 150px; border-radius: 10px; }
+.loadingSkeletonBlock--short { width: 62%; }
+.readerLoadingSkeleton { margin: 0 auto; }
+
 .routeLoadingFallback {
   display: grid;
   gap: 10px;
@@ -6400,7 +6420,8 @@ main > section > [role="alert"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .routeLoadingSkeleton { animation: none; }
+  .routeLoadingSkeleton,
+  .loadingSkeletonBlock { animation: none; }
 }
 
 .confirmDialogBackdrop{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:rgb(0 0 0 / 68%)}

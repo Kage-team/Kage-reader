@@ -13,6 +13,7 @@ type ConfirmDialogProps = {
 
 export function ConfirmDialog({ open, title, description, consequence, confirmLabel, busy = false, onConfirm, onCancel }: ConfirmDialogProps) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -23,7 +24,13 @@ export function ConfirmDialog({ open, title, description, consequence, confirmLa
       if (event.key === "Escape" && !busy) onCancel();
       if (event.key === "Tab") {
         event.preventDefault();
-        cancelRef.current?.focus();
+        if (event.shiftKey && document.activeElement === cancelRef.current) {
+          confirmRef.current?.focus();
+        } else if (!event.shiftKey && document.activeElement === confirmRef.current) {
+          cancelRef.current?.focus();
+        } else {
+          cancelRef.current?.focus();
+        }
       }
     };
     document.addEventListener("keydown", handleKeyDown);
@@ -42,7 +49,7 @@ export function ConfirmDialog({ open, title, description, consequence, confirmLa
         <p className="confirmDialogConsequence">{consequence}</p>
         <div className="confirmDialogActions">
           <button ref={cancelRef} type="button" onClick={onCancel} disabled={busy}>Cancel</button>
-          <button type="button" className="confirmDialogDanger" onClick={onConfirm} disabled={busy}>{busy ? "Working…" : confirmLabel}</button>
+          <button ref={confirmRef} type="button" className="confirmDialogDanger" onClick={onConfirm} disabled={busy}>{busy ? "Working…" : confirmLabel}</button>
         </div>
       </section>
     </div>
