@@ -20,7 +20,9 @@ import {
 } from "../../lib/storage/db";
 import { BookOpen, Sparkles } from "lucide-react";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { LoadingSkeleton } from "../ui/LoadingSkeleton";
 import type { PwaInstallPrompt } from "../../lib/pwa/install";
+import { measureStorageBreakdown, type StorageBreakdown } from "../../lib/storage/measurement";
 import type {
   AccentColor,
   ColorTheme,
@@ -202,6 +204,7 @@ export function SettingsPage({
     useState<(typeof SETTINGS_TABS)[number]["id"]>("appearance");
   const [storageStatus, setStorageStatus] = useState<StorageStatus>({});
   const [seriesStorage, setSeriesStorage] = useState<SeriesStorageUsage[]>([]);
+  const [storageBreakdown, setStorageBreakdown] = useState<StorageBreakdown | null>(null);
   const [storageMessage, setStorageMessage] = useState("");
   const [isRequestingPersistence, setIsRequestingPersistence] = useState(false);
   const [backupMessage, setBackupMessage] = useState("");
@@ -237,8 +240,8 @@ export function SettingsPage({
   }, []);
 
   useEffect(() => {
-    void readSeriesStorageUsage()
-      .then(setSeriesStorage)
+    void Promise.all([readSeriesStorageUsage(), measureStorageBreakdown()])
+      .then(([bySeries, breakdown]) => { setSeriesStorage(bySeries); setStorageBreakdown(breakdown); })
       .catch(() => {
         setStorageMessage("Could not calculate library storage by series.");
       });
@@ -334,7 +337,8 @@ export function SettingsPage({
       anchor.click();
       window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
       updatePreferences({ lastBackupAt: Date.now() });
-      setBackupMessage("Backup downloaded.");
+      setStorageBreakdown((current) => current ? { ...current, backupBytes: backup.size } : current);
+      setBackupMessage(`Backup downloaded (${formatBytes(backup.size)}).`);
     } catch (error) {
       setBackupMessage(
         error instanceof Error ? error.message : "Could not create backup.",
@@ -988,7 +992,10 @@ export function SettingsPage({
               Your imported files stay on this device.
             </p>
           </div>
-          <dl style={styles.storageGrid}>
+          {storageStatus.usage === undefined ? (
+            <LoadingSkeleton label="Loading storage usage" lines={4} />
+          ) : null}
+          <dl style={styles.storageGrid} aria-busy={storageStatus.usage === undefined}>
             <div>
               <dt style={styles.storageLabel}>In use</dt>
               <dd style={styles.storageValue}>
@@ -1012,10 +1019,13 @@ export function SettingsPage({
               </dd>
             </div>
           </dl>
-          <div className="storageBreakdown" aria-label="Storage breakdown">
-            <div><span>Page images</span><strong>{formatBytes(seriesStorage.reduce((total, item) => total + item.bytes, 0))}</strong></div>
-            <div><span>Metadata and progress</span><strong>Included above</strong></div>
-            <div><span>Backups</span><strong>Not measured</strong></div>
+          <div className="storageBreakdown" aria-label="Measured storage breakdown">
+            <div><span>Page images</span><strong>{formatBytes(storageBreakdown?.pageBytes)}</strong></div>
+            <div><span>Cover images</span><strong>{formatBytes(storageBreakdown?.coverBytes)}</strong></div>
+            <div><span>Metadata</span><strong>{formatBytes(storageBreakdown?.metadataBytes)}</strong></div>
+            <div><span>Bookmarks</span><strong>{formatBytes(storageBreakdown?.bookmarkBytes)}</strong></div>
+            <div><span>Reading progress</span><strong>{formatBytes(storageBreakdown?.progressBytes)}</strong></div>
+            <div><span>Last backup generated</span><strong>{formatBytes(storageBreakdown?.backupBytes)}</strong></div>
           </div>
           <details style={styles.storageDetails}>
             <summary style={styles.storageSummary}>
@@ -1121,6 +1131,13 @@ export function SettingsPage({
                   : `Last backup: ${new Date(preferences.lastBackupAt).toLocaleDateString()}.`}
             </p>
           </div>
+          {isBackingUp || isRestoring ? (
+            <LoadingSkeleton
+              label={isRestoring ? "Restoring backup" : "Creating backup"}
+              lines={3}
+              className="settingsBackupSkeleton"
+            />
+          ) : null}
           <div style={styles.backupActions}>
             <button
               type="button"

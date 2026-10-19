@@ -2807,6 +2807,11 @@ button:disabled {
   font-size: 11px;
 }
 
+.importQueueStatusBadge {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
 .importQueueStatus {
   width: 7px;
   aspect-ratio: 1;
@@ -6392,6 +6397,79 @@ main > section > [role="alert"] {
 .loadingSkeletonBlock--hero { height: 34vh; min-height: 150px; border-radius: 10px; }
 .loadingSkeletonBlock--short { width: 62%; }
 .readerLoadingSkeleton { margin: 0 auto; }
+
+.readerEmptyState {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 18px 12px;
+  text-align: center;
+}
+
+.readerEmptyState p { margin: 0; }
+.readerEmptyState button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 7px;
+  background: var(--app-panel);
+  color: var(--app-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.appTopbarSearch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-panel-muted);
+  color: var(--app-text-muted);
+  cursor: pointer;
+}
+
+.appTopbarSearch:hover { color: var(--app-text); border-color: var(--app-border-strong); }
+.appTopbarSearch kbd, .globalCommandFooter kbd, .globalCommandInputWrap kbd, .globalCommandItem kbd { padding: 2px 6px; border: 1px solid var(--app-border); border-radius: 5px; color: var(--app-text-subtle); font-size: 11px; }
+.globalCommandBackdrop { align-items: start; padding-top: clamp(72px, 12vh, 132px); }
+.globalCommandPanel { width: min(680px, 100%); padding: 0; overflow: hidden; }
+.globalCommandHeader { display: flex; align-items: start; justify-content: space-between; gap: 16px; padding: 22px 24px 14px; }
+.globalCommandHeader h2 { margin: 4px 0 0; font-size: 22px; }
+.globalCommandInputWrap { display: flex; align-items: center; gap: 10px; margin: 0 16px 12px; padding: 0 12px; min-height: 48px; border: 1px solid var(--app-border-strong); border-radius: 8px; background: var(--app-panel-muted); color: var(--app-text-muted); }
+.globalCommandInputWrap input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--app-text); font: inherit; }
+.globalCommandResults { max-height: min(58vh, 520px); overflow: auto; padding: 4px 8px 12px; }
+.globalCommandGroup { margin: 10px 12px 6px; color: var(--app-text-subtle); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.globalCommandItem { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px; border: 0; border-radius: 7px; background: transparent; color: var(--app-text); text-align: left; cursor: pointer; }
+.globalCommandItem:hover, .globalCommandItem:focus-visible { background: var(--app-panel-muted); outline: none; }
+.globalCommandItem span { display: grid; gap: 3px; flex: 1; }
+.globalCommandItem small { color: var(--app-text-muted); }
+.globalCommandEmpty { padding: 34px 16px; color: var(--app-text-muted); text-align: center; }
+.globalCommandFooter { display: flex; flex-wrap: wrap; gap: 16px; padding: 11px 18px; border-top: 1px solid var(--app-border); color: var(--app-text-subtle); font-size: 12px; }
+@media (max-width: 640px) { .appTopbarSearch span, .appTopbarSearch kbd { display: none; } .globalCommandBackdrop { padding: 16px; padding-top: 48px; } .globalCommandPanel { max-height: calc(100vh - 64px); } }
+
+.overlayShellBackdrop {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.overlayShellContent {
+  width: min(420px, 100%);
+  max-height: min(720px, calc(100vh - 40px));
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 10px;
+  background: var(--app-panel);
+  color: var(--app-text);
+}
 
 .routeLoadingFallback {
   display: grid;

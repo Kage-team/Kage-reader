@@ -19,6 +19,9 @@ import {
   putLinkedFolder,
 } from "../../lib/storage/db";
 import type { ArchiveSource } from "../../lib/import/types";
+import { StatusBadge, type StatusBadgeKind } from "../ui/StatusBadge";
+import { OverlayShell } from "../ui/OverlayShell";
+import { LoadingSkeleton } from "../ui/LoadingSkeleton";
 
 type DirectoryPermissionHandle = FileSystemDirectoryHandle & {
   queryPermission(options: { mode: "read" }): Promise<PermissionState>;
@@ -291,14 +294,13 @@ export function ImportPage() {
 
       {isImporting
         ? createPortal(
-            <div className="importProgressBackdrop" role="presentation">
-              <section
-                className="importProgressModal"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="import-progress-title"
-                aria-describedby="import-progress-status"
-              >
+            <OverlayShell
+              labelledBy="import-progress-title"
+              describedBy="import-progress-status"
+              initialFocus="none"
+              className="importProgressBackdrop"
+              contentClassName="importProgressModal"
+            >
                 <header className="importProgressModalHeader">
                   <div>
                     <p className="importKicker">LOCAL IMPORT</p>
@@ -381,8 +383,7 @@ export function ImportPage() {
                     Cancel remaining files
                   </button>
                 </footer>
-              </section>
-            </div>,
+            </OverlayShell>,
             document.body,
           )
         : null}
@@ -499,10 +500,13 @@ export function ImportPage() {
         ) : null}
       </section>
 
+      {isImporting && statusItems.length === 0 ? (
+        <LoadingSkeleton label="Preparing import results" lines={4} className="importResultsSkeleton" />
+      ) : null}
       {statusItems.length > 0 ? (
-        <section
-          className="importQueue"
-          aria-live="polite"
+      <section
+        className="importQueue"
+        aria-live="polite"
           aria-label="Import progress"
         >
           <header className="importQueueHeader">
@@ -548,7 +552,10 @@ export function ImportPage() {
           <div className="importQueueItems">
             {statusItems.map((item) => (
               <article className="importQueueItem" key={item.key}>
-                <span className="importQueueStatus" data-state={item.state} />
+                <StatusBadge
+  status={({ working: "importing", saved: "cached", error: "failed", cancelled: "cancelled" } as Record<ImportProgressEvent["state"], StatusBadgeKind>)[item.state]}
+  className="importQueueStatusBadge"
+/>
                 <strong title={item.fileName}>{item.fileName}</strong>
                 <span className="importQueueState">
                   {item.pageCount ? `${item.pageCount} pages` : item.state}
