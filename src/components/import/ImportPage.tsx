@@ -19,6 +19,7 @@ import {
   putLinkedFolder,
 } from "../../lib/storage/db";
 import type { ArchiveSource } from "../../lib/import/types";
+import { StatusBadge, type StatusBadgeKind } from "../ui/StatusBadge";
 
 type DirectoryPermissionHandle = FileSystemDirectoryHandle & {
   queryPermission(options: { mode: "read" }): Promise<PermissionState>;
@@ -548,7 +549,10 @@ export function ImportPage() {
           <div className="importQueueItems">
             {statusItems.map((item) => (
               <article className="importQueueItem" key={item.key}>
-                <span className="importQueueStatus" data-state={item.state} />
+                <StatusBadge
+  status={({ working: "importing", saved: "cached", error: "failed", cancelled: "cancelled" } as Record<ImportProgressEvent["state"], StatusBadgeKind>)[item.state]}
+  className="importQueueStatusBadge"
+/>
                 <strong title={item.fileName}>{item.fileName}</strong>
                 <span className="importQueueState">
                   {item.pageCount ? `${item.pageCount} pages` : item.state}

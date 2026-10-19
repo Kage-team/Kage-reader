@@ -2807,6 +2807,11 @@ button:disabled {
   font-size: 11px;
 }
 
+.importQueueStatusBadge {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
 .importQueueStatus {
   width: 7px;
   aspect-ratio: 1;

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { getPreferences } from "../../lib/preferences/preferences";
 import { grantAdultAccess, verifyAdultPin } from "../../lib/security/adultPin";
@@ -6,7 +6,12 @@ import { grantAdultAccess, verifyAdultPin } from "../../lib/security/adultPin";
 export function AdultAccessPrompt({ onUnlocked }: { onUnlocked: () => void }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const pinInputRef = useRef<HTMLInputElement>(null);
   const preferences = getPreferences();
+
+  useEffect(() => {
+    pinInputRef.current?.focus();
+  }, []);
 
   async function verify(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -47,6 +52,7 @@ export function AdultAccessPrompt({ onUnlocked }: { onUnlocked: () => void }) {
           <label style={styles.label}>
             Access PIN
             <input
+              ref={pinInputRef}
               type="password"
               inputMode="numeric"
               autoComplete="current-password"

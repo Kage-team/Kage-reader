@@ -1014,8 +1014,8 @@ export function SettingsPage({
           </dl>
           <div className="storageBreakdown" aria-label="Storage breakdown">
             <div><span>Page images</span><strong>{formatBytes(seriesStorage.reduce((total, item) => total + item.bytes, 0))}</strong></div>
-            <div><span>Metadata and progress</span><strong>Included above</strong></div>
-            <div><span>Backups</span><strong>Not measured</strong></div>
+            <div><span>Metadata and progress</span><strong>Database records</strong></div>
+            <div><span>Backups</span><strong>External downloads</strong></div>
           </div>
           <details style={styles.storageDetails}>
             <summary style={styles.storageSummary}>
