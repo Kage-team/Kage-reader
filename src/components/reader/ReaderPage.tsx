@@ -2476,6 +2476,65 @@ export function ReaderPage() {
           </div>
         ) : null}
 
+        <div
+          className="readerViewport"
+          role="region"
+          aria-label="Reader content"
+        >
+          {isNovel ? (
+            <article
+              className="readerNovelContent"
+              style={{
+                ...styles.novelContent,
+                maxWidth: novelColumnWidth,
+              }}
+            >
+              <h2>{activeNovelChapter?.title ?? chapter.title}</h2>
+              {currentTextPage ? (
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: highlightNovelMarkup(currentTextPage),
+                  }}
+                />
+              ) : (
+                <LoadingSkeleton label="Loading chapter text" lines={8} />
+              )}
+            </article>
+          ) : isComicContinuous ? (
+            <div className="readerContinuousPages" style={styles.webtoonStage}>
+              {pages.map((page, index) => {
+                const url = pageUrls[index];
+                return url ? (
+                  <div
+                    key={page.id}
+                    className="readerContinuousPage"
+                    data-reader-page-index={index}
+                  >
+                    {renderComicPage(page, url, index === currentIndex, true)}
+                  </div>
+                ) : null;
+              })}
+            </div>
+          ) : (
+            <div
+              className="readerPaginatedPage"
+              data-reader-page-index={currentIndex}
+              style={styles.pageStage}
+            >
+              {pageUrls[currentIndex] ? (
+                renderComicPage(
+                  pages[currentIndex],
+                  pageUrls[currentIndex],
+                  true,
+                  false,
+                )
+              ) : (
+                <LoadingSkeleton label="Loading page image" lines={5} />
+              )}
+            </div>
+          )}
+        </div>
+
         <header
           className="legacyReaderHeader"
           style={{
