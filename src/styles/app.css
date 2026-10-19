@@ -6393,6 +6393,26 @@ main > section > [role="alert"] {
 .loadingSkeletonBlock--short { width: 62%; }
 .readerLoadingSkeleton { margin: 0 auto; }
 
+.readerEmptyState {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 18px 12px;
+  text-align: center;
+}
+
+.readerEmptyState p { margin: 0; }
+.readerEmptyState button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 7px;
+  background: var(--app-panel);
+  color: var(--app-text);
+  font: inherit;
+  cursor: pointer;
+}
+
 .routeLoadingFallback {
   display: grid;
   gap: 10px;

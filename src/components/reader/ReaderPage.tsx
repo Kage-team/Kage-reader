@@ -3095,7 +3095,10 @@ export function ReaderPage() {
                     .toLocaleLowerCase()
                     .includes(chapterPickerQuery.trim().toLocaleLowerCase()),
                 ).length === 0 ? (
-                  <p className="readerShareMessage">No matching chapters.</p>
+                  <div className="readerEmptyState">
+                    <p className="readerShareMessage">No chapters match “{chapterPickerQuery.trim()}”.</p>
+                    <button type="button" onClick={() => setChapterPickerQuery("")}>Clear search</button>
+                  </div>
                 ) : null}
               </div>
             </section>
@@ -4143,7 +4146,10 @@ export function ReaderPage() {
                   );
                 })}
                 {filteredContentsChapters.length === 0 ? (
-                  <p style={styles.emptyText}>No matching chapters.</p>
+                  <div className="readerEmptyState">
+                    <p style={styles.emptyText}>No chapters match “{contentsQuery}”.</p>
+                    <button type="button" onClick={() => setContentsQuery("")}>Clear search</button>
+                  </div>
                 ) : null}
               </div>
             </section>
