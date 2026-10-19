@@ -957,9 +957,14 @@ export function SeriesPage() {
             </div>
           </header>
           {chapters.length === 0 ? (
-            <p style={styles.emptyText}>
-              No chapters available for this series.
-            </p>
+            <div className="seriesEmptyState">
+              <p style={styles.emptyText}>
+                No chapters are available for this series yet.
+              </p>
+              <button type="button" className="libraryEmptyAction" onClick={() => archiveInputRef.current?.click()}>
+                Add chapter files
+              </button>
+            </div>
           ) : (
             <>
               <div className="seriesChapterTools">
@@ -1017,7 +1022,21 @@ export function SeriesPage() {
                   </button>
                 </div>
               </div>
-              {visibleChapters.length === 0 ? <p style={styles.emptyText}>No chapters match your search.</p> : null}
+              {visibleChapters.length === 0 ? (
+                <div className="seriesEmptyState">
+                  <p style={styles.emptyText}>No chapters match your current search or filter.</p>
+                  <button
+                    type="button"
+                    className="libraryEmptyAction"
+                    onClick={() => {
+                      setChapterQuery("");
+                      setChapterSortMode("oldest");
+                    }}
+                  >
+                    Clear chapter filters
+                  </button>
+                </div>
+              ) : null}
               <ul style={styles.list}>
 {visibleChapters.map((chapter, chapterIndex) => (
               <li key={chapter.id} style={styles.listItem}>

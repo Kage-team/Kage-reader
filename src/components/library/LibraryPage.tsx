@@ -874,11 +874,23 @@ export function LibraryPage() {
                       : "Try another title, tag, or content type."}
                 </span>
               ) : null}
-              {view === "favorites" ? (
-                <Link to="/?view=all" className="libraryEmptyAction">
-                  Browse library
-                </Link>
-              ) : null}
+              <div className="libraryEmptyActions">
+                {view === "favorites" || view === "continue" || view === "adult" ? (
+                  <Link to="/?view=all" className="libraryEmptyAction">
+                    Browse library
+                  </Link>
+                ) : null}
+                {view !== "all" && view !== "favorites" && view !== "continue" && view !== "adult" ? (
+                  <button type="button" className="libraryEmptyAction" onClick={clearFilters}>
+                    Clear filters
+                  </button>
+                ) : null}
+                {view === "continue" || view === "all" ? (
+                  <Link to="/import" className="libraryEmptyAction libraryEmptyActionPrimary">
+                    Import books
+                  </Link>
+                ) : null}
+              </div>
             </div>
           ) : (
             <div className={`libraryEntries ${libraryViewMode === "list" ? "is-list" : "is-grid"}`}>

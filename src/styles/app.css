@@ -4946,6 +4946,22 @@ button:disabled {
   cursor: pointer;
 }
 
+.libraryEmptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.seriesEmptyState {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 18px 12px;
+  text-align: center;
+}
+
 .libraryEmptyAction {
   display: inline-flex;
   min-height: 32px;
