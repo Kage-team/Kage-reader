@@ -3095,17 +3095,11 @@ export function ReaderPage() {
         ) : null}
 
         {isReaderSettingsOpen ? (
-          <div
+          <OverlayShell
+            labelledBy="reader-settings-title"
+            onEscape={() => setIsReaderSettingsOpen(false)}
             className="readerSettingsOverlay"
-            role="presentation"
-            onClick={(event) => {
-              if (event.target === event.currentTarget) {
-                setIsReaderSettingsOpen(false);
-              }
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") setIsReaderSettingsOpen(false);
-            }}
+            contentClassName="readerSettingsPanel"
           >
             <div
               style={{
@@ -3120,10 +3114,7 @@ export function ReaderPage() {
                 maxHeight: "60dvh",
                 transform: "none",
               }}
-              className="readerSettingsPanel"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="reader-settings-title"
+              className="readerSettingsPanelInner"
             >
               <header className="readerSettingsSheetHeader">
                 <div className="readerSettingsSheetTitle">
@@ -4047,24 +4038,17 @@ export function ReaderPage() {
                 </div>
               )}
             </div>
-          </div>
+          </OverlayShell>
         ) : null}
 
         {isContentsOpen ? (
-          <div
-            style={styles.contentsOverlay}
-            role="presentation"
-            onClick={(event) => {
-              if (event.target === event.currentTarget)
-                setIsContentsOpen(false);
-            }}
+          <OverlayShell
+            labelledBy="novel-contents-title"
+            onEscape={() => setIsContentsOpen(false)}
+            className="readerContentsOverlay"
+            contentClassName="readerContentsPanel"
           >
-            <section
-              style={styles.contentsPanel}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="novel-contents-title"
-            >
+            <section style={styles.contentsPanel}>
               <header style={styles.contentsHeader}>
                 <div>
                   <h2 id="novel-contents-title" style={styles.settingsTitle}>
@@ -4142,184 +4126,8 @@ export function ReaderPage() {
                 ) : null}
               </div>
             </section>
-          </div>
+          </OverlayShell>
         ) : null}
-
-        <div
-          ref={viewerFrameRef}
-          className="readerViewport"
-          onScroll={handleViewerScroll}
-          onPointerDown={handleReaderPointerDown}
-          onPointerMove={handleReaderPointerMove}
-          onPointerUp={handleReaderPointerEnd}
-          onPointerCancel={handleReaderPointerEnd}
-          onWheel={handleReaderWheel}
-          onContextMenu={handleReaderContextMenu}
-          style={{
-            ...styles.viewerFrame,
-            ...(isNovel ? styles.novelViewerFrame : {}),
-            width: "100%",
-            height: "100dvh",
-            minHeight: 0,
-            maxWidth: "none",
-            margin: "0 auto",
-            padding: 0,
-            background: isNovel
-              ? selectedNovelTheme.swatch
-              : isImmersive
-                ? "radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 35%), #07090a"
-                : "#090c0a",
-            border: isNovel
-              ? "0"
-              : isImmersive
-                ? "1px solid rgba(255,255,255,0.12)"
-                : styles.viewerFrame.border,
-            touchAction:
-              isNovel || (readerMode === "webtoon" && zoomLevel <= 1)
-                ? "pan-y"
-                : "none",
-          }}
-        >
-          {isNovelContinuous ? (
-            novelFlowContent.length > 0 ? (
-              <div style={styles.novelStrip}>
-                {novelFlowContent.map((entry, index) => (
-                  <section
-                    key={entry.chapter.id}
-                    className="novelChapterBlock"
-                    data-novel-chapter-id={entry.chapter.id}
-                    style={styles.novelChapterBlock}
-                  >
-                    <article
-                      className="novelTextContent"
-                      style={novelTextStyle}
-                      dangerouslySetInnerHTML={{
-                        __html: highlightReaderText(
-                          entry.content,
-                          [
-                            ...(entry.chapter.id === chapter.id
-                              ? bookmarks.map(
-                                  (bookmark) => bookmark.highlightText ?? "",
-                                )
-                              : []),
-                            searchQuery.trim(),
-                          ].filter(Boolean),
-                        ),
-                      }}
-                    />
-                    {entry.illustrations.map((url, imageIndex) => (
-                      <img
-                        key={`${entry.chapter.id}:${imageIndex}`}
-                        src={url}
-                        alt={`${entry.chapter.title} illustration ${imageIndex + 1}`}
-                        style={styles.novelImage}
-                      />
-                    ))}
-                    {index < novelFlowContent.length - 1 ? (
-                      <div style={styles.novelChapterDivider}>
-                        <span>{entry.chapter.title}</span>
-                      </div>
-                    ) : null}
-                  </section>
-                ))}
-              </div>
-            ) : (
-              <div style={styles.emptyViewer}>Preparing book chapters...</div>
-            )
-          ) : isNovel ? (
-            <div data-novel-chapter-id={chapter.id} style={styles.novelStrip}>
-              {textPages.map((entry) => (
-                <article
-                  key={entry.page.id}
-                  data-reader-page-index={entry.index}
-                  className="novelTextContent"
-                  style={novelTextStyle}
-                  dangerouslySetInnerHTML={{
-                    __html: highlightedMarkup(entry.text ?? "", entry.index),
-                  }}
-                />
-              ))}
-              {pages.map((page, index) =>
-                page.mime.startsWith("image/") && pageUrls[index] ? (
-                  <img
-                    key={page.id}
-                    src={pageUrls[index] ?? undefined}
-                    alt={`${chapter.title} illustration ${index + 1}`}
-                    style={styles.novelImage}
-                  />
-                ) : null,
-              )}
-              {textPages.length === 0 ? (
-                <article
-                  className="novelTextContent"
-                  style={novelTextStyle}
-                  dangerouslySetInnerHTML={{
-                    __html: highlightedMarkup(currentTextPage, currentIndex),
-                  }}
-                />
-              ) : null}
-            </div>
-          ) : isTextMime(currentPageMime) ? (
-            <article
-              data-reader-page-index={currentIndex}
-              className="novelTextContent"
-              style={novelTextStyle}
-              dangerouslySetInnerHTML={{
-                __html: highlightedMarkup(currentTextPage, currentIndex),
-              }}
-            />
-          ) : isComicContinuous ? (
-            comicFlowContent.length > 0 ? (
-              <div
-                data-reader-zoom-target
-                style={{
-                  ...styles.webtoonStrip,
-                  maxWidth: Math.min(normalizedReaderWidth, viewportWidth),
-                  margin: "0 auto",
-                  gap: `${readerPreferences.comicPageGap}px`,
-                  transform: `translate3d(${zoomTransform.translateX}px, ${zoomTransform.translateY}px, 0) scale(${zoomTransform.scale})`,
-                  transformOrigin: "0 0",
-                }}
-              >
-                {comicFlowContent.map((flowChapter, chapterIndex) => (
-                  <section
-                    key={flowChapter.chapter.id}
-                    data-comic-chapter-id={flowChapter.chapter.id}
-                    style={styles.comicChapterBlock}
-                  >
-                    {flowChapter.pages.map(({ page, url }) =>
-                      url
-                        ? renderComicPage(
-                            page,
-                            url,
-                            flowChapter.chapter.id === activeComicChapter.id &&
-                              page.index === currentIndex,
-                            true,
-                          )
-                        : null,
-                    )}
-                    {chapterIndex < comicFlowContent.length - 1 ? (
-                      <div style={styles.novelChapterDivider}>
-                        <span>{flowChapter.chapter.title}</span>
-                      </div>
-                    ) : null}
-                  </section>
-                ))}
-              </div>
-            ) : (
-              <LoadingSkeleton label="Loading pages" lines={5} className="readerLoadingSkeleton" />
-            )
-          ) : pageUrls[currentIndex] && pages[currentIndex] ? (
-            renderComicPage(
-              pages[currentIndex],
-              pageUrls[currentIndex],
-              true,
-              false,
-            )
-          ) : (
-            <LoadingSkeleton label="Loading page" lines={4} className="readerLoadingSkeleton" />
-          )}
-        </div>
 
         {panelContextMenu ? (
           <div
@@ -4348,14 +4156,11 @@ export function ReaderPage() {
         ) : null}
 
         {isBookmarkDrawerOpen ? (
-          <div
-            style={styles.pageGridOverlay}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="reader-bookmarks-title"
-            onKeyDown={(event) => {
-              if (event.key === "Escape") setIsBookmarkDrawerOpen(false);
-            }}
+          <OverlayShell
+            labelledBy="reader-bookmarks-title"
+            onEscape={() => setIsBookmarkDrawerOpen(false)}
+            className="readerBookmarksOverlay"
+            contentClassName="readerBookmarksPanel"
           >
             <section style={styles.bookmarkDrawerDialog}>
               <header style={styles.pageGridHeader}>
@@ -4454,23 +4259,17 @@ export function ReaderPage() {
                 ) : null}
               </div>
             </section>
-          </div>
+          </OverlayShell>
         ) : null}
 
         {isSearchOpen ? (
-          <div
-            style={styles.pageGridOverlay}
-            role="presentation"
-            onClick={(event) => {
-              if (event.target === event.currentTarget) setIsSearchOpen(false);
-            }}
+          <OverlayShell
+            labelledBy="reader-search-title"
+            onEscape={() => setIsSearchOpen(false)}
+            className="readerSearchOverlay"
+            contentClassName="readerSearchPanel"
           >
-            <section
-              style={styles.bookmarkDrawerDialog}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="reader-search-title"
-            >
+            <section style={styles.bookmarkDrawerDialog}>
               <header style={styles.pageGridHeader}>
                 <div>
                   <p style={styles.kicker}>TEXT CONTENT</p>
@@ -4553,18 +4352,15 @@ export function ReaderPage() {
                 ) : null}
               </div>
             </section>
-          </div>
+          </OverlayShell>
         ) : null}
 
         {isPageGridOpen ? (
-          <div
-            style={styles.pageGridOverlay}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="reader-page-grid-title"
-            onKeyDown={(event) => {
-              if (event.key === "Escape") setIsPageGridOpen(false);
-            }}
+          <OverlayShell
+            labelledBy="reader-page-grid-title"
+            onEscape={() => setIsPageGridOpen(false)}
+            className="readerPageGridOverlay"
+            contentClassName="readerPageGridPanel"
           >
             <section style={styles.pageGridDialog}>
               <header style={styles.pageGridHeader}>
@@ -4620,7 +4416,7 @@ export function ReaderPage() {
                 ))}
               </div>
             </section>
-          </div>
+          </OverlayShell>
         ) : null}
       </section>
     </main>
