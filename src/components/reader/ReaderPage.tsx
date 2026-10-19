@@ -83,6 +83,7 @@ import type {
 } from "../../lib/storage/types";
 import { SCHEMA_VERSION } from "../../lib/storage/types";
 import { LoadingSkeleton } from "../ui/LoadingSkeleton";
+import { OverlayShell } from "../ui/OverlayShell";
 
 const NOVEL_THEME_OPTIONS = [
   { value: "oled", label: "OLED", swatch: "#050505", color: "#f2f0eb" },
@@ -3022,23 +3023,12 @@ export function ReaderPage() {
         ) : null}
 
         {isChapterPickerOpen ? (
-          <div
+          <OverlayShell
+            labelledBy="reader-chapters-title"
+            onEscape={() => setIsChapterPickerOpen(false)}
             className="readerSheetOverlay"
-            role="presentation"
-            onClick={(event) => {
-              if (event.target === event.currentTarget)
-                setIsChapterPickerOpen(false);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") setIsChapterPickerOpen(false);
-            }}
+            contentClassName="readerChapterSheet"
           >
-            <section
-              className="readerChapterSheet"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="reader-chapters-title"
-            >
               <header className="readerSheetHeader">
                 <h2 id="reader-chapters-title">Chapters</h2>
                 <button
@@ -3101,8 +3091,7 @@ export function ReaderPage() {
                   </div>
                 ) : null}
               </div>
-            </section>
-          </div>
+          </OverlayShell>
         ) : null}
 
         {isReaderSettingsOpen ? (

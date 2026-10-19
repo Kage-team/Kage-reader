@@ -18,6 +18,7 @@ import { importArchiveSources } from "../../lib/import/importer";
 import { UndoToast } from "../ui/UndoToast";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { StatusBadge } from "../ui/StatusBadge";
+import { OverlayShell } from "../ui/OverlayShell";
 import type { ImportProgressEvent } from "../../lib/import/types";
 import {
   SCHEMA_VERSION,
@@ -617,17 +618,13 @@ export function SeriesPage() {
 
         {isEditing
           ? createPortal(
-              <div
+              <OverlayShell
+                labelledBy="edit-series-title"
+                onEscape={() => setIsEditing(false)}
                 className="seriesEditorBackdrop"
-                onMouseDown={(event) => {
-                  if (event.target === event.currentTarget) setIsEditing(false);
-                }}
+                contentClassName="seriesEditorDialog"
               >
                 <form
-                  className="seriesEditorDialog"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="edit-series-title"
                   style={styles.editor}
                   onKeyDown={(event) => {
                     if (event.key === "Escape") setIsEditing(false);
@@ -893,7 +890,7 @@ export function SeriesPage() {
                     </button>
                   </div>
                 </form>
-              </div>,
+              </OverlayShell>,
               document.body,
             )
           : null}

@@ -20,6 +20,7 @@ import {
 } from "../../lib/storage/db";
 import type { ArchiveSource } from "../../lib/import/types";
 import { StatusBadge, type StatusBadgeKind } from "../ui/StatusBadge";
+import { OverlayShell } from "../ui/OverlayShell";
 
 type DirectoryPermissionHandle = FileSystemDirectoryHandle & {
   queryPermission(options: { mode: "read" }): Promise<PermissionState>;
@@ -292,14 +293,13 @@ export function ImportPage() {
 
       {isImporting
         ? createPortal(
-            <div className="importProgressBackdrop" role="presentation">
-              <section
-                className="importProgressModal"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="import-progress-title"
-                aria-describedby="import-progress-status"
-              >
+            <OverlayShell
+              labelledBy="import-progress-title"
+              describedBy="import-progress-status"
+              initialFocus="none"
+              className="importProgressBackdrop"
+              contentClassName="importProgressModal"
+            >
                 <header className="importProgressModalHeader">
                   <div>
                     <p className="importKicker">LOCAL IMPORT</p>
@@ -382,8 +382,7 @@ export function ImportPage() {
                     Cancel remaining files
                   </button>
                 </footer>
-              </section>
-            </div>,
+            </OverlayShell>,
             document.body,
           )
         : null}
