@@ -70,10 +70,11 @@ export type Bookmark = {
   createdAt: number;
   note: string;
   highlightText?: string;
+  highlightStart?: number;
 };
 
 export type BookmarkInput = Omit<Bookmark, "id" | "note"> &
-  Partial<Pick<Bookmark, "id" | "note" | "highlightText">>;
+  Partial<Pick<Bookmark, "id" | "note" | "highlightText" | "highlightStart">>;
 
 export type LinkedFolder = {
   id: "primary";

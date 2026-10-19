@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { highlightReaderText, sanitizeReaderHtml } from "./html";
+import {
+  highlightReaderText,
+  highlightReaderTextAt,
+  highlightFirstReaderTextMatch,
+  sanitizeReaderHtml,
+} from "./html";
 
 describe("sanitizeReaderHtml", () => {
   it("preserves book formatting while removing executable markup", () => {
@@ -24,5 +29,24 @@ describe("sanitizeReaderHtml", () => {
         "Safe",
       ]),
     ).not.toContain("onerror");
+  });
+
+  it("highlights one selected occurrence instead of every matching phrase", () => {
+    const markup = highlightReaderTextAt("<p>echo once, echo twice</p>", 11, 4);
+
+    expect(markup.match(/<mark/g)).toHaveLength(1);
+    expect(markup).toContain(
+      'echo once, <mark class="readerTextMatch">echo</mark> twice',
+    );
+  });
+
+  it("limits legacy phrase-only highlights to the first match", () => {
+    const markup = highlightFirstReaderTextMatch(
+      "<p>echo once, echo twice</p>",
+      "ECHO",
+    );
+
+    expect(markup.match(/<mark/g)).toHaveLength(1);
+    expect(markup).toContain('<mark class="readerTextMatch">echo</mark> once');
   });
 });

@@ -44,7 +44,12 @@ import {
   X,
 } from "lucide-react";
 import { resolveReaderMode } from "../../lib/reader/mode";
-import { highlightReaderText, sanitizeReaderHtml } from "../../lib/reader/html";
+import {
+  highlightFirstReaderTextMatch,
+  highlightReaderText,
+  highlightReaderTextAt,
+  sanitizeReaderHtml,
+} from "../../lib/reader/html";
 import {
   searchTextDocuments,
   type TextSearchDocument,
@@ -193,6 +198,7 @@ export function ReaderPage() {
   const [loadedChapterId, setLoadedChapterId] = useState<string | null>(null);
   const [pages, setPages] = useState<Page[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
+  const [novelScrollProgress, setNovelScrollProgress] = useState(0);
   const [pageRotation, setPageRotation] = useState(0);
   const [widePageAspects, setWidePageAspects] = useState<
     Record<string, number>
@@ -257,8 +263,11 @@ export function ReaderPage() {
   const readerRootRef = useRef<HTMLElement>(null);
   const viewerFrameRef = useRef<HTMLDivElement>(null);
   const novelScrollProgressRef = useRef(0);
-  const novelProgressInputRef = useRef<HTMLInputElement>(null);
-  const novelProgressIndicatorRef = useRef<HTMLSpanElement>(null);
+  const novelFlowLoadedChapterIdsRef = useRef(new Set<string>());
+  const novelFlowLoadingChapterIdsRef = useRef(new Set<string>());
+  const novelFlowObjectUrlsRef = useRef<string[]>([]);
+  const novelFlowGenerationRef = useRef(0);
+  const novelMarkupCacheRef = useRef(new Map<string, string>());
   const readerProgressTrackRef = useRef<HTMLDivElement>(null);
   const readerProgressFillRef = useRef<HTMLSpanElement>(null);
   const changeZoomRef = useRef<(nextZoom: number) => void>(() => undefined);
@@ -295,6 +304,7 @@ export function ReaderPage() {
     promise: Promise<TextSearchDocument[]>;
   } | null>(null);
   const currentPageRef = useRef(currentPage);
+  const isProgressScrubbingRef = useRef(false);
   const isComicContinuous =
     readerMode === "webtoon" &&
     readerPreferences.comicInfiniteScroll &&
@@ -538,64 +548,123 @@ export function ReaderPage() {
   useEffect(() => {
     if (
       !isAutoScrollActive ||
-      readerPreferences.readerAutoScrollMode === "off" ||
-      (!isNovel &&
-        (readerMode !== "webtoon" || !readerPreferences.comicInfiniteScroll))
+      readerPreferences.readerAutoScrollMode === "off"
     ) {
       return;
+    }
+
+    const isPaginated = !isNovel && !isComicContinuous;
+    if (isPaginated) {
+      const intervalMs =
+        readerPreferences.readerAutoScrollMode === "jump"
+          ? readerPreferences.readerAutoScrollJumpDelay * 1000
+          : Math.max(
+              800,
+              8000 - readerPreferences.readerAutoScrollCreepSpeed * 70,
+            );
+      const interval = window.setInterval(() => {
+        const nextPage = currentPageRef.current + 1;
+        if (nextPage >= pages.length) {
+          setIsAutoScrollActive(false);
+          return;
+        }
+        setCurrentPage(nextPage);
+      }, intervalMs);
+      return () => window.clearInterval(interval);
     }
 
     const frame = viewerFrameRef.current;
     if (!frame) return;
 
-    if (readerPreferences.readerAutoScrollMode === "jump") {
-      const jump = () => {
-        const maximumScroll = frame.scrollHeight - frame.clientHeight;
-        if (frame.scrollTop >= maximumScroll) {
-          setIsAutoScrollActive(false);
-          return;
-        }
-        frame.scrollBy({
-          top: Math.max(240, frame.clientHeight * 0.82),
-          behavior: "smooth",
-        });
-      };
-      const interval = window.setInterval(
-        jump,
-        readerPreferences.readerAutoScrollJumpDelay * 1000,
-      );
-      return () => window.clearInterval(interval);
-    }
-
-    const pixelsPerSecond = readerPreferences.readerAutoScrollCreepSpeed * 1.5;
-    if (pixelsPerSecond <= 0) return;
-
     let animationFrame = 0;
-    let previousTime = 0;
-    const scroll = (time: number) => {
-      if (previousTime > 0) {
+    let jumpInterval = 0;
+    let resizeObserver: ResizeObserver | undefined;
+    let isDisposed = false;
+    const hasScrollableContent = () =>
+      frame.scrollHeight > frame.clientHeight + 1;
+
+    const startAutoScroll = () => {
+      if (isDisposed || !hasScrollableContent()) return;
+      resizeObserver?.disconnect();
+
+      if (readerPreferences.readerAutoScrollMode === "jump") {
+        const jump = () => {
+          const maximumScroll = frame.scrollHeight - frame.clientHeight;
+          if (maximumScroll <= 0) return;
+          if (frame.scrollTop >= maximumScroll) {
+            setIsAutoScrollActive(false);
+            return;
+          }
+          frame.scrollBy({
+            top: Math.max(240, frame.clientHeight * 0.82),
+            behavior: "smooth",
+          });
+        };
+        jumpInterval = window.setInterval(
+          jump,
+          readerPreferences.readerAutoScrollJumpDelay * 1000,
+        );
+        return;
+      }
+
+      const pixelsPerSecond =
+        readerPreferences.readerAutoScrollCreepSpeed * 1.5;
+      if (pixelsPerSecond <= 0) return;
+
+      let previousTime = 0;
+      const scroll = (time: number) => {
+        if (isDisposed) return;
         const maximumScroll = frame.scrollHeight - frame.clientHeight;
+        if (maximumScroll <= 0) {
+          animationFrame = window.requestAnimationFrame(scroll);
+          return;
+        }
         if (frame.scrollTop >= maximumScroll) {
           setIsAutoScrollActive(false);
           return;
         }
-        frame.scrollTop = Math.min(
-          maximumScroll,
-          frame.scrollTop + ((time - previousTime) * pixelsPerSecond) / 1000,
-        );
-      }
-      previousTime = time;
+        if (previousTime > 0) {
+          frame.scrollTo({
+            top: Math.min(
+              maximumScroll,
+              frame.scrollTop +
+                ((time - previousTime) * pixelsPerSecond) / 1000,
+            ),
+            behavior: "instant",
+          });
+        }
+        previousTime = time;
+        animationFrame = window.requestAnimationFrame(scroll);
+      };
+
       animationFrame = window.requestAnimationFrame(scroll);
     };
 
-    animationFrame = window.requestAnimationFrame(scroll);
-    return () => window.cancelAnimationFrame(animationFrame);
+    startAutoScroll();
+    if (!hasScrollableContent() && typeof ResizeObserver !== "undefined") {
+      const content = frame.firstElementChild;
+      if (content) {
+        resizeObserver = new ResizeObserver(startAutoScroll);
+        resizeObserver.observe(content);
+      }
+    }
+
+    return () => {
+      isDisposed = true;
+      resizeObserver?.disconnect();
+      window.clearInterval(jumpInterval);
+      window.cancelAnimationFrame(animationFrame);
+    };
   }, [
     chapterId,
     isAutoScrollActive,
     isNovel,
+    isComicContinuous,
+    loadedChapterId,
+    novelFlowContent.length,
+    pages.length,
+    pageTexts.length,
     readerMode,
-    readerPreferences.comicInfiniteScroll,
     readerPreferences.readerAutoScrollMode,
     readerPreferences.readerAutoScrollCreepSpeed,
     readerPreferences.readerAutoScrollJumpDelay,
@@ -757,82 +826,117 @@ export function ReaderPage() {
   }, [chapter, chapterId, comicFlowContent, currentPage, isComicContinuous]);
 
   useEffect(() => {
+    const loadedChapterIds = novelFlowLoadedChapterIdsRef.current;
+    const loadingChapterIds = novelFlowLoadingChapterIdsRef.current;
+    novelFlowGenerationRef.current += 1;
+    loadedChapterIds.clear();
+    loadingChapterIds.clear();
+    novelMarkupCacheRef.current.clear();
+    novelFlowObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    novelFlowObjectUrlsRef.current = [];
+    setNovelFlowContent([]);
+
+    return () => {
+      novelFlowGenerationRef.current += 1;
+      loadedChapterIds.clear();
+      loadingChapterIds.clear();
+      novelFlowObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      novelFlowObjectUrlsRef.current = [];
+    };
+  }, [chapter?.seriesId, readerMode, readerPreferences.novelInfiniteScroll]);
+
+  useEffect(() => {
     if (
       readerMode !== "novel" ||
       !readerPreferences.novelInfiniteScroll ||
+      !chapter ||
       seriesChapters.length === 0
     ) {
-      setNovelFlowContent([]);
       return;
     }
 
-    let isCancelled = false;
-    const objectUrls: string[] = [];
-    setNovelFlowContent([]);
+    const centerId = activeNovelChapterId || chapter.id;
+    const centerIndex = seriesChapters.findIndex(
+      (entry) => entry.id === centerId,
+    );
+    if (centerIndex < 0) return;
 
-    void (async () => {
-      const chapters: Array<{
-        chapter: Chapter;
-        content: string;
-        illustrations: string[];
-      }> = [];
+    const nearbyChapters = seriesChapters.slice(
+      Math.max(0, centerIndex - 1),
+      Math.min(seriesChapters.length, centerIndex + 3),
+    );
+    const chaptersToLoad = nearbyChapters.filter(
+      (entry) =>
+        !novelFlowLoadedChapterIdsRef.current.has(entry.id) &&
+        !novelFlowLoadingChapterIdsRef.current.has(entry.id),
+    );
+    if (chaptersToLoad.length === 0) return;
 
-      for (
-        let batchStart = 0;
-        batchStart < seriesChapters.length;
-        batchStart += 2
-      ) {
-        const batch = await Promise.all(
-          seriesChapters
-            .slice(batchStart, batchStart + 2)
-            .map(async (seriesChapter) => {
-              const chapterPages = await listPages(seriesChapter.id);
-              const textParts: string[] = [];
-              const illustrations: string[] = [];
+    const generation = novelFlowGenerationRef.current;
+    const createdUrls: string[] = [];
+    chaptersToLoad.forEach((entry) =>
+      novelFlowLoadingChapterIdsRef.current.add(entry.id),
+    );
 
-              for (const page of chapterPages) {
-                const blob = await getBlob(page.storageKey);
-                if (!blob) continue;
-                if (isTextMime(page.mime)) {
-                  textParts.push(sanitizeReaderHtml(await blob.text()));
-                } else if (page.mime.startsWith("image/")) {
-                  const url = URL.createObjectURL(blob);
-                  objectUrls.push(url);
-                  illustrations.push(url);
-                }
-              }
+    void Promise.all(
+      chaptersToLoad.map(async (seriesChapter) => {
+        const chapterPages = await listPages(seriesChapter.id);
+        const textParts: string[] = [];
+        const illustrations: string[] = [];
 
-              return {
-                chapter: seriesChapter,
-                content: textParts.join("\n"),
-                illustrations,
-              };
-            }),
-        );
-        chapters.push(...batch);
-
-        if (isCancelled) return;
-
-        if (batchStart + 2 < seriesChapters.length) {
-          await new Promise<void>((resolve) =>
-            requestAnimationFrame(() => resolve()),
-          );
+        for (const page of chapterPages) {
+          const blob = await getBlob(page.storageKey);
+          if (!blob) continue;
+          if (isTextMime(page.mime)) {
+            textParts.push(sanitizeReaderHtml(await blob.text()));
+          } else if (page.mime.startsWith("image/")) {
+            const url = URL.createObjectURL(blob);
+            createdUrls.push(url);
+            illustrations.push(url);
+          }
         }
-      }
 
-      if (!isCancelled) {
-        setNovelFlowContent(
-          chapters.filter((entry) => entry.content.trim().length > 0),
+        return {
+          chapter: seriesChapter,
+          content: textParts.join("\n"),
+          illustrations,
+        };
+      }),
+    )
+      .then((loadedChapters) => {
+        if (generation !== novelFlowGenerationRef.current) {
+          createdUrls.forEach((url) => URL.revokeObjectURL(url));
+          return;
+        }
+
+        novelFlowObjectUrlsRef.current.push(...createdUrls);
+        loadedChapters.forEach((entry) =>
+          novelFlowLoadedChapterIdsRef.current.add(entry.chapter.id),
         );
-      }
-    })();
-
-    return () => {
-      isCancelled = true;
-      objectUrls.forEach((url) => URL.revokeObjectURL(url));
-    };
+        setNovelFlowContent((current) => {
+          const byId = new Map(
+            current.map((entry) => [entry.chapter.id, entry]),
+          );
+          loadedChapters.forEach((entry) => {
+            if (entry.content.trim()) byId.set(entry.chapter.id, entry);
+          });
+          return seriesChapters.flatMap((seriesChapter) => {
+            const entry = byId.get(seriesChapter.id);
+            return entry ? [entry] : [];
+          });
+        });
+      })
+      .catch(() => {
+        createdUrls.forEach((url) => URL.revokeObjectURL(url));
+      })
+      .finally(() => {
+        chaptersToLoad.forEach((entry) =>
+          novelFlowLoadingChapterIdsRef.current.delete(entry.id),
+        );
+      });
   }, [
-    chapter?.seriesId,
+    activeNovelChapterId,
+    chapter,
     readerMode,
     readerPreferences.novelInfiniteScroll,
     seriesChapters,
@@ -1213,14 +1317,17 @@ export function ReaderPage() {
   }
 
   async function toggleBookmark(): Promise<void> {
-    if (!chapter || !chapterId || pages.length === 0) {
-      return;
-    }
+    if (!chapter || !chapterId) return;
 
-    const decodedChapterId = decodeURIComponent(chapterId);
+    const decodedChapterId = isComicContinuous
+      ? activeComicChapterId
+      : decodeURIComponent(chapterId);
+    if (!decodedChapterId) return;
     try {
       const currentBookmark = bookmarks.find(
-        (bookmark) => bookmark.pageIndex === currentIndex,
+        (bookmark) =>
+          bookmark.chapterId === decodedChapterId &&
+          bookmark.pageIndex === currentIndex,
       );
       if (currentBookmark) {
         await deleteBookmark(currentBookmark.id);
@@ -1334,6 +1441,9 @@ export function ReaderPage() {
       anchor?.nodeType === Node.ELEMENT_NODE
         ? (anchor as Element)
         : anchor?.parentElement;
+    const selectedContent = anchorElement?.closest<HTMLElement>(
+      ".novelTextContent, .readerNovelContent > div",
+    );
     const selectedPage = anchorElement?.closest("[data-reader-page-index]");
     const selectedChapter = anchorElement?.closest("[data-novel-chapter-id]");
     const pageIndex = Number.parseInt(
@@ -1342,6 +1452,18 @@ export function ReaderPage() {
     );
     const targetChapterId =
       selectedChapter?.getAttribute("data-novel-chapter-id") ?? chapter.id;
+    let highlightStart: number | undefined;
+    if (selectedContent && selection?.rangeCount) {
+      const range = selection.getRangeAt(0);
+      const precedingText = document.createRange();
+      precedingText.selectNodeContents(selectedContent);
+      precedingText.setEnd(range.startContainer, range.startOffset);
+      const selectedText = selection.toString();
+      const trimmedLeadingCharacters =
+        selectedText.length - selectedText.trimStart().length;
+      highlightStart =
+        precedingText.toString().length + trimmedLeadingCharacters;
+    }
     try {
       const bookmark = await putBookmark({
         schemaVersion: SCHEMA_VERSION,
@@ -1350,10 +1472,9 @@ export function ReaderPage() {
         createdAt: Date.now(),
         note: "",
         highlightText,
+        highlightStart,
       });
-      if (targetChapterId === chapter.id) {
-        setBookmarks((current) => [...current, bookmark]);
-      }
+      setBookmarks((current) => [...current, bookmark]);
       setBookmarkError("");
     } catch {
       setBookmarkError("Could not save this text annotation.");
@@ -1744,15 +1865,8 @@ export function ReaderPage() {
   function updateNovelProgressDisplay(progress: number): void {
     const normalizedProgress = Math.min(1, Math.max(0, progress));
     novelScrollProgressRef.current = normalizedProgress;
+    setNovelScrollProgress(normalizedProgress);
     const progressPercent = Math.round(normalizedProgress * 100);
-    if (novelProgressInputRef.current) {
-      novelProgressInputRef.current.value = String(
-        Math.round(normalizedProgress * 1000),
-      );
-    }
-    if (novelProgressIndicatorRef.current) {
-      novelProgressIndicatorRef.current.textContent = `Progress ${progressPercent}%`;
-    }
     if (readerProgressTrackRef.current) {
       readerProgressTrackRef.current.setAttribute(
         "aria-valuenow",
@@ -1822,7 +1936,55 @@ export function ReaderPage() {
       const chapterElements = Array.from(
         frame.querySelectorAll<HTMLElement>("[data-comic-chapter-id]"),
       );
-      if (chapterElements.length === 0) return;
+      if (chapterElements.length === 0) {
+        const readerPages = Array.from(
+          frame.querySelectorAll<HTMLElement>(
+            ".readerContinuousPage[data-reader-page-index]",
+          ),
+        );
+        if (readerPages.length === 0) return;
+
+        const viewportCenter =
+          frame.getBoundingClientRect().top + frame.clientHeight / 2;
+        let closestIndex = currentPageRef.current;
+        let closestDistance = Number.POSITIVE_INFINITY;
+        for (const readerPage of readerPages) {
+          const rect = readerPage.getBoundingClientRect();
+          const distance = Math.abs(
+            viewportCenter - (rect.top + rect.height / 2),
+          );
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestIndex = Number(readerPage.dataset.readerPageIndex);
+          }
+        }
+
+        if (Number.isFinite(closestIndex)) {
+          currentPageRef.current = closestIndex;
+          if (!isProgressScrubbingRef.current) {
+            setCurrentPage(closestIndex);
+          }
+          const now = Date.now();
+          if (now - comicProgressSavedAtRef.current >= 900) {
+            comicProgressSavedAtRef.current = now;
+            const targetChapterId = activeComicChapterId || chapter?.id;
+            if (targetChapterId) {
+              void getProgress(targetChapterId).then((existing) =>
+                putProgress({
+                  ...existing,
+                  schemaVersion: SCHEMA_VERSION,
+                  chapterId: targetChapterId,
+                  pageIndex: closestIndex,
+                  scrollRatio: 0,
+                  updatedAt: now,
+                  timeSpentSeconds: existing?.timeSpentSeconds ?? 0,
+                }),
+              );
+            }
+          }
+        }
+        return;
+      }
 
       const activeLine =
         frame.getBoundingClientRect().top +
@@ -1858,7 +2020,11 @@ export function ReaderPage() {
         }
       }
 
-      if (Number.isFinite(closestIndex) && closestIndex !== currentPage) {
+      if (
+        !isProgressScrubbingRef.current &&
+        Number.isFinite(closestIndex) &&
+        closestIndex !== currentPage
+      ) {
         setCurrentPage(closestIndex);
       }
 
@@ -1911,20 +2077,30 @@ export function ReaderPage() {
     }
   }
 
-  function selectReaderPage(index: number): void {
-    setCurrentPage(index);
+  function selectReaderPage(
+    index: number,
+    behavior: ScrollBehavior = "smooth",
+  ): void {
+    const nextIndex = Math.min(Math.max(index, 0), Math.max(totalPages - 1, 0));
+    setCurrentPage(nextIndex);
+    currentPageRef.current = nextIndex;
     setIsPageGridOpen(false);
     const frame = viewerFrameRef.current;
-    const activeChapterElement = isComicContinuous
-      ? Array.from(
-          frame?.querySelectorAll<HTMLElement>("[data-comic-chapter-id]") ?? [],
-        ).find(
-          (element) => element.dataset.comicChapterId === activeComicChapterId,
-        )
-      : frame;
-    activeChapterElement
-      ?.querySelector<HTMLElement>(`[data-reader-page-index="${index}"]`)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (isComicContinuous) {
+      const activeChapterElement = Array.from(
+        frame?.querySelectorAll<HTMLElement>("[data-comic-chapter-id]") ?? [],
+      ).find(
+        (element) => element.dataset.comicChapterId === activeComicChapterId,
+      );
+      const targetPage =
+        activeChapterElement?.querySelector<HTMLElement>(
+          `[data-reader-page-index="${nextIndex}"]`,
+        ) ??
+        frame?.querySelector<HTMLElement>(
+          `.readerContinuousPage[data-reader-page-index="${nextIndex}"]`,
+        );
+      targetPage?.scrollIntoView({ behavior, block: "start" });
+    }
   }
 
   function selectNovelChapter(selectedChapter: Chapter): void {
@@ -1954,25 +2130,86 @@ export function ReaderPage() {
     : pages.length;
   const currentIndex = Math.min(Math.max(currentPage, 0), totalPages - 1);
   const isCurrentPageBookmarked = bookmarks.some(
-    (bookmark) => bookmark.pageIndex === currentIndex,
+    (bookmark) =>
+      bookmark.chapterId ===
+        (isComicContinuous ? activeComicChapter.id : chapter.id) &&
+      bookmark.pageIndex === currentIndex,
   );
   const activeComicPage = comicFlowContent
     .find((entry) => entry.chapter.id === activeComicChapter.id)
     ?.pages.find((entry) => entry.page.index === currentIndex)?.page;
+  const pageGridItems = isComicContinuous
+    ? (comicFlowContent.find(
+        (entry) => entry.chapter.id === activeComicChapter.id,
+      )?.pages ?? [])
+    : pages.map((page, index) => ({ page, url: pageUrls[index] }));
   const currentPageMime = isComicContinuous
     ? (activeComicPage?.mime ?? "")
     : (pages[currentIndex]?.mime ?? "");
   const currentTextPage = pageTexts[currentIndex] ?? "";
-  const highlightedMarkup = (markup: string, pageIndex: number): string => {
-    const phrases = bookmarks
-      .filter(
-        (bookmark) =>
-          bookmark.pageIndex === pageIndex && Boolean(bookmark.highlightText),
-      )
-      .map((bookmark) => bookmark.highlightText ?? "");
-    if (searchQuery.trim()) phrases.push(searchQuery.trim());
-    return phrases.length > 0 ? highlightReaderText(markup, phrases) : markup;
+  const highlightedMarkup = (
+    markup: string,
+    pageIndex: number,
+    targetChapterId = chapter.id,
+    wholeChapter = false,
+  ): string => {
+    const chapterBookmarks = bookmarks.filter(
+      (bookmark) =>
+        bookmark.chapterId === targetChapterId &&
+        (wholeChapter || bookmark.pageIndex === pageIndex) &&
+        Boolean(bookmark.highlightText),
+    );
+    if (chapterBookmarks.length === 0 && !searchQuery.trim()) return markup;
+
+    let highlighted = markup;
+    for (const bookmark of chapterBookmarks) {
+      highlighted =
+        bookmark.highlightStart !== undefined
+          ? highlightReaderTextAt(
+              highlighted,
+              bookmark.highlightStart,
+              bookmark.highlightText?.length ?? 0,
+            )
+          : highlightFirstReaderTextMatch(
+              highlighted,
+              bookmark.highlightText ?? "",
+            );
+    }
+    return searchQuery.trim()
+      ? highlightReaderText(highlighted, [searchQuery.trim()])
+      : highlighted;
   };
+  const highlightedNovelFlowContent = novelFlowContent.map((entry) => {
+    const chapterBookmarks = bookmarks.filter(
+      (bookmark) =>
+        bookmark.chapterId === entry.chapter.id &&
+        Boolean(bookmark.highlightText),
+    );
+    const bookmarkKey = chapterBookmarks
+      .map(
+        (bookmark) =>
+          `${bookmark.highlightStart ?? "legacy"}:${bookmark.highlightText ?? ""}`,
+      )
+      .join("\u0001");
+    const cacheKey = `${entry.chapter.id}\u0000${entry.content.length}\u0000${searchQuery}\u0000${bookmarkKey}`;
+    let highlightedContent = novelMarkupCacheRef.current.get(cacheKey);
+    if (highlightedContent === undefined) {
+      highlightedContent = highlightedMarkup(
+        entry.content,
+        0,
+        entry.chapter.id,
+        true,
+      );
+      if (novelMarkupCacheRef.current.size >= 8) {
+        const oldestKey = novelMarkupCacheRef.current.keys().next().value;
+        if (oldestKey !== undefined) {
+          novelMarkupCacheRef.current.delete(oldestKey);
+        }
+      }
+      novelMarkupCacheRef.current.set(cacheKey, highlightedContent);
+    }
+    return { ...entry, highlightedContent };
+  });
   const viewportWidth = viewportSize.width || 1280;
   const maxViewportReaderWidth = Math.min(
     Math.max(280, viewportWidth - 32),
@@ -2024,8 +2261,7 @@ export function ReaderPage() {
       readerPreferences.novelColumnWidth === "full"
         ? "100%"
         : NOVEL_COLUMN_WIDTHS[readerPreferences.novelColumnWidth],
-    margin: "0 auto",
-    padding: "clamp(28px, 6vw, 72px) clamp(20px, 5vw, 64px)",
+    padding: 0,
     fontFamily: selectedNovelFont.font,
     fontSize: `${readerPreferences.novelFontSize}px`,
     lineHeight: readerPreferences.novelLineSpacing,
@@ -2061,7 +2297,7 @@ export function ReaderPage() {
   const pageProgress =
     totalPages > 0 ? ((currentIndex + 1) / totalPages) * 100 : 0;
   const progressPercent = Math.round(
-    isNovel ? novelScrollProgressRef.current * 100 : pageProgress,
+    isNovel ? novelScrollProgress * 100 : pageProgress,
   );
   const comicPageImageStyle = (
     isCurrentPage: boolean,
@@ -2091,8 +2327,6 @@ export function ReaderPage() {
       return {
         ...baseStyle,
         filter,
-        ...cropStyle,
-        width: `${fitWidth}px`,
         height: "auto",
         maxWidth: "none",
         maxHeight: "none",
@@ -2100,7 +2334,6 @@ export function ReaderPage() {
         transformOrigin: "center",
       };
     }
-
     return {
       ...baseStyle,
       filter,
@@ -2386,8 +2619,13 @@ export function ReaderPage() {
               isAutoScrollActive ? "Stop auto-scroll" : "Start auto-scroll"
             }
             aria-pressed={isAutoScrollActive}
-            title={isAutoScrollActive ? "Stop auto-scroll" : "Auto-scroll"}
-            disabled={!isNovel && !isComicContinuous}
+            title={
+              isAutoScrollActive
+                ? "Stop auto-scroll"
+                : isNovel || isComicContinuous
+                  ? "Auto-scroll"
+                  : "Auto page turn"
+            }
             onClick={() => {
               if (readerPreferences.readerAutoScrollMode === "off") {
                 updateReaderPreferences({ readerAutoScrollMode: "creep" });
@@ -2456,22 +2694,12 @@ export function ReaderPage() {
             <button
               type="button"
               className="readerHudIconButton"
-              aria-label="Zoom in"
-              title="Zoom in"
-              disabled={zoomLevel >= 4}
-              onClick={() => changeZoom(zoomLevel + 0.25)}
+              aria-label="Highlight selected text"
+              title="Highlight selected text"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => void annotateTextSelection()}
             >
-              <Plus size={17} />
-            </button>
-            <button
-              type="button"
-              className="readerHudIconButton"
-              aria-label="Zoom out"
-              title="Zoom out"
-              disabled={zoomLevel <= 1}
-              onClick={() => changeZoom(zoomLevel - 0.25)}
-            >
-              <Minus size={17} />
+              <Highlighter size={17} />
             </button>
           </div>
         ) : null}
@@ -2479,6 +2707,9 @@ export function ReaderPage() {
         <div
           className="readerViewport"
           ref={viewerFrameRef}
+          style={{
+            background: isNovel ? selectedNovelTheme.swatch : "#000",
+          }}
           role="region"
           aria-label="Reader content"
           onPointerDown={handleReaderPointerDown}
@@ -2489,9 +2720,46 @@ export function ReaderPage() {
           onContextMenu={handleReaderContextMenu}
           onScroll={handleViewerScroll}
         >
-          {isNovel ? (
+          {isNovelContinuous ? (
+            novelFlowContent.length > 0 ? (
+              <div style={styles.novelStrip}>
+                {highlightedNovelFlowContent.map((entry, index) => (
+                  <section
+                    key={entry.chapter.id}
+                    className="novelChapterBlock"
+                    data-novel-chapter-id={entry.chapter.id}
+                    style={styles.novelChapterBlock}
+                  >
+                    <article
+                      className="novelTextContent"
+                      style={novelTextStyle}
+                      dangerouslySetInnerHTML={{
+                        __html: entry.highlightedContent,
+                      }}
+                    />
+                    {entry.illustrations.map((url, imageIndex) => (
+                      <img
+                        key={`${entry.chapter.id}:${imageIndex}`}
+                        src={url}
+                        alt={`${entry.chapter.title} illustration ${imageIndex + 1}`}
+                        style={styles.novelImage}
+                      />
+                    ))}
+                    {index < novelFlowContent.length - 1 ? (
+                      <div style={styles.novelChapterDivider}>
+                        <span>{entry.chapter.title}</span>
+                      </div>
+                    ) : null}
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <div style={styles.emptyViewer}>Preparing book chapters...</div>
+            )
+          ) : isNovel ? (
             <article
               className="readerNovelContent"
+              data-novel-chapter-id={activeNovelChapter?.id ?? chapter.id}
               style={{
                 ...styles.novelContent,
                 maxWidth: novelColumnLabel,
@@ -2500,6 +2768,7 @@ export function ReaderPage() {
               <h2>{activeNovelChapter?.title ?? chapter.title}</h2>
               {currentTextPage ? (
                 <div
+                  className="novelTextContent"
                   style={novelTextStyle}
                   dangerouslySetInnerHTML={{
                     __html: highlightedMarkup(currentTextPage, currentIndex),
@@ -2765,7 +3034,7 @@ export function ReaderPage() {
             aria-label="Reading progress details"
           >
             {readerPreferences.readerProgressShowPage ? (
-              <span ref={isNovel ? novelProgressIndicatorRef : undefined}>
+              <span>
                 {isNovel
                   ? `Progress ${progressPercent}%`
                   : `Page ${currentIndex + 1} / ${totalPages || 1}`}
@@ -2785,14 +3054,25 @@ export function ReaderPage() {
           aria-label="Reading navigation"
         >
           <input
-            ref={isNovel ? novelProgressInputRef : undefined}
             className="readerBottomSlider"
             type="range"
+            onPointerDown={() => {
+              isProgressScrubbingRef.current = true;
+            }}
+            onPointerUp={() => {
+              isProgressScrubbingRef.current = false;
+            }}
+            onPointerCancel={() => {
+              isProgressScrubbingRef.current = false;
+            }}
+            onBlur={() => {
+              isProgressScrubbingRef.current = false;
+            }}
             min={0}
             max={isNovel ? 1000 : Math.max(totalPages - 1, 0)}
             value={
               isNovel
-                ? Math.round(novelScrollProgressRef.current * 1000)
+                ? Math.round(novelScrollProgress * 1000)
                 : Math.max(currentIndex, 0)
             }
             disabled={!isNovel && totalPages <= 1}
@@ -2803,16 +3083,18 @@ export function ReaderPage() {
                 const frame = viewerFrameRef.current;
                 if (!frame) return;
                 updateNovelProgressDisplay(progress);
-                frame.scrollTop =
-                  progress * (frame.scrollHeight - frame.clientHeight);
+                frame.scrollTo({
+                  top: progress * (frame.scrollHeight - frame.clientHeight),
+                  behavior: "instant",
+                });
               } else {
-                selectReaderPage(Number(event.currentTarget.value));
+                selectReaderPage(Number(event.currentTarget.value), "instant");
               }
             }}
           />
           <span className="readerBottomCount">
             {isNovel
-              ? `Progress ${Math.round(novelScrollProgressRef.current * 100)}%`
+              ? `Progress ${Math.round(novelScrollProgress * 100)}%`
               : `Page ${currentIndex + 1}/${totalPages || 1}`}
           </span>
           {!isNovel ? (
@@ -2840,18 +3122,34 @@ export function ReaderPage() {
             className="readerHudIconButton"
             aria-label="Previous page"
             title="Previous page"
-            disabled={!isNovel && currentIndex <= 0}
+            disabled={
+              !isNovel &&
+              (isComicContinuous
+                ? currentIndex <= 0 && !previousChapter
+                : currentIndex <= 0)
+            }
             onClick={() => {
               if (isNovel) {
-                viewerFrameRef.current?.scrollBy({
-                  top: -Math.max(
-                    240,
-                    (viewerFrameRef.current?.clientHeight ?? 0) * 0.8,
-                  ),
+                const frame = viewerFrameRef.current;
+                if (!frame) return;
+                if (
+                  !readerPreferences.novelInfiniteScroll &&
+                  frame.scrollTop <= 8 &&
+                  previousChapter
+                ) {
+                  navigate(`/read/${encodeURIComponent(previousChapter.id)}`);
+                  return;
+                }
+                frame.scrollBy({
+                  top: -Math.max(240, frame.clientHeight * 0.8),
                   behavior: "smooth",
                 });
               } else {
-                selectReaderPage(currentIndex - 1);
+                if (isComicContinuous && currentIndex <= 0 && previousChapter) {
+                  navigate(`/read/${encodeURIComponent(previousChapter.id)}`);
+                } else {
+                  selectReaderPage(currentIndex - 1);
+                }
               }
             }}
           >
@@ -2862,18 +3160,39 @@ export function ReaderPage() {
             className="readerHudIconButton"
             aria-label="Next page"
             title="Next page"
-            disabled={!isNovel && currentIndex >= totalPages - 1}
+            disabled={
+              !isNovel &&
+              (isComicContinuous
+                ? currentIndex >= totalPages - 1 && !nextChapter
+                : currentIndex >= totalPages - 1)
+            }
             onClick={() => {
               if (isNovel) {
-                viewerFrameRef.current?.scrollBy({
-                  top: Math.max(
-                    240,
-                    (viewerFrameRef.current?.clientHeight ?? 0) * 0.8,
-                  ),
+                const frame = viewerFrameRef.current;
+                if (!frame) return;
+                if (
+                  !readerPreferences.novelInfiniteScroll &&
+                  frame.scrollTop + frame.clientHeight >=
+                    frame.scrollHeight - 8 &&
+                  nextChapter
+                ) {
+                  navigate(`/read/${encodeURIComponent(nextChapter.id)}`);
+                  return;
+                }
+                frame.scrollBy({
+                  top: Math.max(240, frame.clientHeight * 0.8),
                   behavior: "smooth",
                 });
               } else {
-                selectReaderPage(currentIndex + 1);
+                if (
+                  isComicContinuous &&
+                  currentIndex >= totalPages - 1 &&
+                  nextChapter
+                ) {
+                  navigate(`/read/${encodeURIComponent(nextChapter.id)}`);
+                } else {
+                  selectReaderPage(currentIndex + 1);
+                }
               }
             }}
           >
@@ -2885,20 +3204,21 @@ export function ReaderPage() {
           <div className="readerToolbarMain">
             {isNovel ? (
               <input
-                ref={novelProgressInputRef}
                 className="readerNovelProgress"
                 type="range"
                 min={0}
                 max={1000}
-                value={Math.round(novelScrollProgressRef.current * 1000)}
+                value={Math.round(novelScrollProgress * 1000)}
                 aria-label="Novel reading progress"
                 onChange={(event) => {
                   const progress = Number(event.currentTarget.value) / 1000;
                   const frame = viewerFrameRef.current;
                   if (!frame) return;
                   updateNovelProgressDisplay(progress);
-                  frame.scrollTop =
-                    progress * (frame.scrollHeight - frame.clientHeight);
+                  frame.scrollTo({
+                    top: progress * (frame.scrollHeight - frame.clientHeight),
+                    behavior: "instant",
+                  });
                 }}
               />
             ) : (
@@ -3180,21 +3500,7 @@ export function ReaderPage() {
             className="readerSettingsOverlay"
             contentClassName="readerSettingsPanel"
           >
-            <div
-              style={{
-                ...styles.settingsPanel,
-                width: "min(720px, 100vw)",
-                position: "fixed",
-                top: "auto",
-                right: 0,
-                bottom: 0,
-                left: 0,
-                height: "min(60dvh, 600px)",
-                maxHeight: "60dvh",
-                transform: "none",
-              }}
-              className="readerSettingsPanelInner"
-            >
+            <>
               <header className="readerSettingsSheetHeader">
                 <div className="readerSettingsSheetTitle">
                   {readerSettingsSection !== "menu" ? (
@@ -3777,7 +4083,13 @@ export function ReaderPage() {
                         </span>
                         <output>{novelColumnLabel}</output>
                       </div>
-                      <div style={styles.novelSegmentRow}>
+                      <div
+                        className="novelColumnWidthOptions"
+                        style={{
+                          ...styles.novelSegmentRow,
+                          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                        }}
+                      >
                         {[
                           { value: "narrow", label: "Narrow" },
                           { value: "standard", label: "Standard" },
@@ -4116,7 +4428,7 @@ export function ReaderPage() {
                   </label>
                 </div>
               )}
-            </div>
+            </>
           </OverlayShell>
         ) : null}
 
@@ -4470,35 +4782,37 @@ export function ReaderPage() {
                 </button>
               </header>
               <div style={styles.pageGridTiles}>
-                {pages.map((page, index) => (
+                {pageGridItems.map(({ page, url }) => (
                   <button
                     key={page.id}
                     type="button"
-                    aria-label={`Go to page ${index + 1}`}
-                    aria-current={index === currentIndex ? "page" : undefined}
-                    onClick={() => selectReaderPage(index)}
+                    aria-label={`Go to page ${page.index + 1}`}
+                    aria-current={
+                      page.index === currentIndex ? "page" : undefined
+                    }
+                    onClick={() => selectReaderPage(page.index)}
                     style={{
                       ...styles.pageGridTile,
-                      ...(index === currentIndex
+                      ...(page.index === currentIndex
                         ? styles.pageGridTileCurrent
                         : {}),
                     }}
                   >
-                    {pageUrls[index] ? (
-                      <img
-                        src={pageUrls[index] ?? undefined}
-                        alt=""
-                        style={styles.pageGridImage}
-                      />
+                    {url ? (
+                      <img src={url} alt="" style={styles.pageGridImage} />
                     ) : (
                       <span style={styles.pageGridTextPreview}>
                         <BookOpen size={19} />
                         TEXT
                       </span>
                     )}
-                    <span style={styles.pageGridNumber}>{index + 1}</span>
+                    <span style={styles.pageGridNumber}>{page.index + 1}</span>
                     {bookmarks.some(
-                      (bookmark) => bookmark.pageIndex === index,
+                      (bookmark) =>
+                        bookmark.chapterId ===
+                          (isComicContinuous
+                            ? activeComicChapter.id
+                            : chapter.id) && bookmark.pageIndex === page.index,
                     ) ? (
                       <span style={styles.pageGridBookmark}>Saved</span>
                     ) : null}
@@ -4753,6 +5067,15 @@ const styles: Record<string, React.CSSProperties> = {
   },
   errorText: { margin: 0, color: "var(--app-danger)", fontSize: 11 },
   pageIndicator: { color: "var(--app-muted)", fontSize: 10, fontWeight: 600 },
+  pageStage: {
+    display: "grid",
+    width: "100%",
+    minWidth: 0,
+    minHeight: "100dvh",
+    placeItems: "center",
+    boxSizing: "border-box",
+    padding: "48px 56px 112px",
+  },
   viewerFrame: {
     display: "grid",
     width: "100%",
@@ -4781,6 +5104,14 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: "none",
     scrollBehavior: "smooth",
     overscrollBehavior: "contain",
+  },
+  novelContent: {
+    boxSizing: "border-box",
+    width: "100%",
+    minWidth: 0,
+    margin: "0 auto",
+    padding:
+      "clamp(28px, 6vw, 72px) clamp(20px, 5vw, 64px) calc(176px + env(safe-area-inset-bottom))",
   },
   novelTextContent: {
     boxSizing: "border-box",
@@ -5419,7 +5750,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   pageGridTiles: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(92px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))",
     alignContent: "start",
     gap: 9,
     overflowY: "auto",
@@ -5440,7 +5771,14 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
   pageGridTileCurrent: { border: "2px solid var(--app-accent)" },
-  pageGridImage: { width: "100%", height: "100%", objectFit: "cover" },
+  pageGridImage: {
+    position: "absolute",
+    inset: 0,
+    width: "100%",
+    height: "100%",
+    objectFit: "contain",
+    background: "#080a0a",
+  },
   pageGridTextPreview: {
     display: "grid",
     justifyItems: "center",
