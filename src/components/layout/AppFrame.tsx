@@ -8,7 +8,9 @@ import {
   History,
   Heart,
   Settings,
+  Search,
 } from "lucide-react";
+import { GlobalCommandCenter } from "./GlobalCommandCenter";
 
 export function AppFrame({ children }: PropsWithChildren) {
   const { pathname, search } = useLocation();
@@ -97,6 +99,11 @@ export function AppFrame({ children }: PropsWithChildren) {
             </Link>
           </div>
           <div className="appTopbarStatus">
+            <button type="button" className="appTopbarSearch" onClick={() => window.dispatchEvent(new Event("kage:open-search"))} aria-label="Search everywhere" title="Search everywhere (/)">
+              <Search size={16} />
+              <span>Search</span>
+              <kbd>/</kbd>
+            </button>
             <div className="appTopbarUtilities">
               <Link
                 to="/import"
@@ -121,6 +128,7 @@ export function AppFrame({ children }: PropsWithChildren) {
           </div>
         </header>
         <div className="appView" id="main-content">{children}</div>
+        <GlobalCommandCenter />
         </div>
     </div>
   );
