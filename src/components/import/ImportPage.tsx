@@ -21,6 +21,7 @@ import {
 import type { ArchiveSource } from "../../lib/import/types";
 import { StatusBadge, type StatusBadgeKind } from "../ui/StatusBadge";
 import { OverlayShell } from "../ui/OverlayShell";
+import { LoadingSkeleton } from "../ui/LoadingSkeleton";
 
 type DirectoryPermissionHandle = FileSystemDirectoryHandle & {
   queryPermission(options: { mode: "read" }): Promise<PermissionState>;
@@ -499,10 +500,13 @@ export function ImportPage() {
         ) : null}
       </section>
 
+      {isImporting && statusItems.length === 0 ? (
+        <LoadingSkeleton label="Preparing import results" lines={4} className="importResultsSkeleton" />
+      ) : null}
       {statusItems.length > 0 ? (
-        <section
-          className="importQueue"
-          aria-live="polite"
+      <section
+        className="importQueue"
+        aria-live="polite"
           aria-label="Import progress"
         >
           <header className="importQueueHeader">

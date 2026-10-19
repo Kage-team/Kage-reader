@@ -216,6 +216,7 @@ export function ReaderPage() {
     }>
   >([]);
   const [isBookmarkDrawerOpen, setIsBookmarkDrawerOpen] = useState(false);
+  const [isBookmarksLoading, setIsBookmarksLoading] = useState(false);
   const [bookmarkError, setBookmarkError] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -1245,6 +1246,7 @@ export function ReaderPage() {
   }
 
   async function openBookmarkDrawer(): Promise<void> {
+    setIsBookmarksLoading(true);
     try {
       const records = await listBookmarks();
       const entries = await Promise.all(
@@ -1269,6 +1271,8 @@ export function ReaderPage() {
       setIsBookmarkDrawerOpen(true);
     } catch {
       setBookmarkError("Could not load bookmarks.");
+    } finally {
+      setIsBookmarksLoading(false);
     }
   }
 
@@ -4180,7 +4184,8 @@ export function ReaderPage() {
                 </button>
               </header>
               <div style={styles.bookmarkEntries}>
-                {bookmarkDrawerEntries.map((entry) => (
+                {isBookmarksLoading ? <LoadingSkeleton label="Loading bookmarks" lines={3} /> : null}
+                {!isBookmarksLoading && bookmarkDrawerEntries.map((entry) => (
                   <article key={entry.bookmark.id} style={styles.bookmarkEntry}>
                     <div style={styles.bookmarkEntryHeader}>
                       <button
@@ -4254,7 +4259,7 @@ export function ReaderPage() {
                     />
                   </article>
                 ))}
-                {bookmarkDrawerEntries.length === 0 ? (
+                {!isBookmarksLoading && bookmarkDrawerEntries.length === 0 ? (
                   <p style={styles.emptyText}>No saved pages yet.</p>
                 ) : null}
               </div>
@@ -4310,7 +4315,7 @@ export function ReaderPage() {
               </div>
               <div style={styles.bookmarkEntries} aria-live="polite">
                 {isSearching ? (
-                  <p style={styles.emptyText}>Searching this book...</p>
+                  <LoadingSkeleton label="Searching this book" lines={3} />
                 ) : searchQuery.trim() ? (
                   <p style={styles.emptyText}>
                     {searchResults.length}{" "}

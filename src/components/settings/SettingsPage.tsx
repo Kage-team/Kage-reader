@@ -1125,6 +1125,13 @@ export function SettingsPage({
                   : `Last backup: ${new Date(preferences.lastBackupAt).toLocaleDateString()}.`}
             </p>
           </div>
+          {isBackingUp || isRestoring ? (
+            <LoadingSkeleton
+              label={isRestoring ? "Restoring backup" : "Creating backup"}
+              lines={3}
+              className="settingsBackupSkeleton"
+            />
+          ) : null}
           <div style={styles.backupActions}>
             <button
               type="button"

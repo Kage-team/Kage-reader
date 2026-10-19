@@ -19,6 +19,7 @@ import { UndoToast } from "../ui/UndoToast";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { StatusBadge } from "../ui/StatusBadge";
 import { OverlayShell } from "../ui/OverlayShell";
+import { LoadingSkeleton } from "../ui/LoadingSkeleton";
 import type { ImportProgressEvent } from "../../lib/import/types";
 import {
   SCHEMA_VERSION,
@@ -73,6 +74,7 @@ export function SeriesPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [series, setSeries] = useState<Series | null>(null);
+  const [isSeriesLoading, setIsSeriesLoading] = useState(true);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [progressByChapter, setProgressByChapter] = useState<
     Record<string, Progress>
@@ -133,6 +135,7 @@ export function SeriesPage() {
       return;
     }
 
+    setIsSeriesLoading(true);
     void (async () => {
       const decodedId = decodeURIComponent(id);
       const [seriesRecord, chapterRows, progressRows] = await Promise.all([
@@ -151,6 +154,7 @@ export function SeriesPage() {
         ),
       );
       if (seriesRecord) resetDrafts(seriesRecord);
+      setIsSeriesLoading(false);
     })();
   }, [id]);
 
@@ -428,6 +432,16 @@ export function SeriesPage() {
     };
     await putProgress(updated);
     setProgressByChapter((current) => ({ ...current, [chapter.id]: updated }));
+  }
+
+  if (isSeriesLoading) {
+    return (
+      <main className="seriesPage" style={styles.page}>
+        <section style={styles.panel}>
+          <LoadingSkeleton label="Loading series" lines={6} className="seriesLoadingSkeleton" />
+        </section>
+      </main>
+    );
   }
 
   if (!series) {
