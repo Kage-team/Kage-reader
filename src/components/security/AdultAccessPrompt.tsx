@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { getPreferences } from "../../lib/preferences/preferences";
+import { OverlayShell } from "../ui/OverlayShell";
 import { grantAdultAccess, verifyAdultPin } from "../../lib/security/adultPin";
 
 export function AdultAccessPrompt({ onUnlocked }: { onUnlocked: () => void }) {
@@ -38,13 +39,12 @@ export function AdultAccessPrompt({ onUnlocked }: { onUnlocked: () => void }) {
   }
 
   return (
-    <div style={styles.overlay}>
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="adult-access-title"
-        style={styles.dialog}
-      >
+    <OverlayShell
+      labelledBy="adult-access-title"
+      className="adultAccessOverlay"
+      contentClassName="adultAccessDialog"
+      initialFocus="none"
+    >
         <h1 id="adult-access-title" style={styles.title}>
           18+ verification
         </h1>
@@ -75,8 +75,7 @@ export function AdultAccessPrompt({ onUnlocked }: { onUnlocked: () => void }) {
         <Link to="/settings" style={styles.settingsLink}>
           Set or change PIN in Settings
         </Link>
-      </section>
-    </div>
+    </OverlayShell>
   );
 }
 

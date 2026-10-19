@@ -20,6 +20,7 @@ import {
 } from "../../lib/storage/db";
 import { BookOpen, Sparkles } from "lucide-react";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { LoadingSkeleton } from "../ui/LoadingSkeleton";
 import type { PwaInstallPrompt } from "../../lib/pwa/install";
 import type {
   AccentColor,
@@ -988,7 +989,10 @@ export function SettingsPage({
               Your imported files stay on this device.
             </p>
           </div>
-          <dl style={styles.storageGrid}>
+          {storageStatus.usage === undefined ? (
+            <LoadingSkeleton label="Loading storage usage" lines={4} />
+          ) : null}
+          <dl style={styles.storageGrid} aria-busy={storageStatus.usage === undefined}>
             <div>
               <dt style={styles.storageLabel}>In use</dt>
               <dd style={styles.storageValue}>

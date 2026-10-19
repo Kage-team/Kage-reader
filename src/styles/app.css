@@ -6418,6 +6418,28 @@ main > section > [role="alert"] {
   cursor: pointer;
 }
 
+.overlayShellBackdrop {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.overlayShellContent {
+  width: min(420px, 100%);
+  max-height: min(720px, calc(100vh - 40px));
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 10px;
+  background: var(--app-panel);
+  color: var(--app-text);
+}
+
 .routeLoadingFallback {
   display: grid;
   gap: 10px;
