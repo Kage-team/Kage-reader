@@ -2478,22 +2478,31 @@ export function ReaderPage() {
 
         <div
           className="readerViewport"
+          ref={viewerFrameRef}
           role="region"
           aria-label="Reader content"
+          onPointerDown={handleReaderPointerDown}
+          onPointerMove={handleReaderPointerMove}
+          onPointerUp={handleReaderPointerEnd}
+          onPointerCancel={handleReaderPointerEnd}
+          onWheel={handleReaderWheel}
+          onContextMenu={handleReaderContextMenu}
+          onScroll={handleViewerScroll}
         >
           {isNovel ? (
             <article
               className="readerNovelContent"
               style={{
                 ...styles.novelContent,
-                maxWidth: novelColumnWidth,
+                maxWidth: novelColumnLabel,
               }}
             >
               <h2>{activeNovelChapter?.title ?? chapter.title}</h2>
               {currentTextPage ? (
                 <div
+                  style={novelTextStyle}
                   dangerouslySetInnerHTML={{
-                    __html: highlightNovelMarkup(currentTextPage),
+                    __html: highlightedMarkup(currentTextPage, currentIndex),
                   }}
                 />
               ) : (
@@ -3092,68 +3101,75 @@ export function ReaderPage() {
             className="readerSheetOverlay"
             contentClassName="readerChapterSheet"
           >
-              <header className="readerSheetHeader">
-                <h2 id="reader-chapters-title">Chapters</h2>
-                <button
-                  type="button"
-                  aria-label="Close chapters"
-                  onClick={() => setIsChapterPickerOpen(false)}
-                >
-                  <X size={17} />
-                </button>
-              </header>
-              <label className="readerChapterSearch">
-                <Search size={15} />
-                <input
-                  autoFocus
-                  type="search"
-                  aria-label="Search chapters"
-                  value={chapterPickerQuery}
-                  onChange={(event) =>
-                    setChapterPickerQuery(event.currentTarget.value)
-                  }
-                  placeholder="Search chapters"
-                />
-              </label>
-              <div className="readerChapterList">
-                {seriesChapters
-                  .filter((entry) =>
-                    entry.title
-                      .toLocaleLowerCase()
-                      .includes(chapterPickerQuery.trim().toLocaleLowerCase()),
-                  )
-                  .map((entry, index) => (
-                    <button
-                      key={entry.id}
-                      type="button"
-                      aria-current={
-                        entry.id === navigationChapterId ? "true" : undefined
-                      }
-                      onClick={() => {
-                        setIsChapterPickerOpen(false);
-                        setChapterPickerQuery("");
-                        navigate(`/read/${encodeURIComponent(entry.id)}`);
-                      }}
-                    >
-                      <span>
-                        {entry.number !== undefined
-                          ? `Chapter ${entry.number}`
-                          : `Chapter ${index + 1}`}
-                      </span>
-                      <strong>{entry.title}</strong>
-                    </button>
-                  ))}
-                {seriesChapters.filter((entry) =>
+            <header className="readerSheetHeader">
+              <h2 id="reader-chapters-title">Chapters</h2>
+              <button
+                type="button"
+                aria-label="Close chapters"
+                onClick={() => setIsChapterPickerOpen(false)}
+              >
+                <X size={17} />
+              </button>
+            </header>
+            <label className="readerChapterSearch">
+              <Search size={15} />
+              <input
+                autoFocus
+                type="search"
+                aria-label="Search chapters"
+                value={chapterPickerQuery}
+                onChange={(event) =>
+                  setChapterPickerQuery(event.currentTarget.value)
+                }
+                placeholder="Search chapters"
+              />
+            </label>
+            <div className="readerChapterList">
+              {seriesChapters
+                .filter((entry) =>
                   entry.title
                     .toLocaleLowerCase()
                     .includes(chapterPickerQuery.trim().toLocaleLowerCase()),
-                ).length === 0 ? (
-                  <div className="readerEmptyState">
-                    <p className="readerShareMessage">No chapters match “{chapterPickerQuery.trim()}”.</p>
-                    <button type="button" onClick={() => setChapterPickerQuery("")}>Clear search</button>
-                  </div>
-                ) : null}
-              </div>
+                )
+                .map((entry, index) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    aria-current={
+                      entry.id === navigationChapterId ? "true" : undefined
+                    }
+                    onClick={() => {
+                      setIsChapterPickerOpen(false);
+                      setChapterPickerQuery("");
+                      navigate(`/read/${encodeURIComponent(entry.id)}`);
+                    }}
+                  >
+                    <span>
+                      {entry.number !== undefined
+                        ? `Chapter ${entry.number}`
+                        : `Chapter ${index + 1}`}
+                    </span>
+                    <strong>{entry.title}</strong>
+                  </button>
+                ))}
+              {seriesChapters.filter((entry) =>
+                entry.title
+                  .toLocaleLowerCase()
+                  .includes(chapterPickerQuery.trim().toLocaleLowerCase()),
+              ).length === 0 ? (
+                <div className="readerEmptyState">
+                  <p className="readerShareMessage">
+                    No chapters match “{chapterPickerQuery.trim()}”.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setChapterPickerQuery("")}
+                  >
+                    Clear search
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </OverlayShell>
         ) : null}
 
@@ -4183,8 +4199,12 @@ export function ReaderPage() {
                 })}
                 {filteredContentsChapters.length === 0 ? (
                   <div className="readerEmptyState">
-                    <p style={styles.emptyText}>No chapters match “{contentsQuery}”.</p>
-                    <button type="button" onClick={() => setContentsQuery("")}>Clear search</button>
+                    <p style={styles.emptyText}>
+                      No chapters match “{contentsQuery}”.
+                    </p>
+                    <button type="button" onClick={() => setContentsQuery("")}>
+                      Clear search
+                    </button>
                   </div>
                 ) : null}
               </div>
@@ -4243,81 +4263,87 @@ export function ReaderPage() {
                 </button>
               </header>
               <div style={styles.bookmarkEntries}>
-                {isBookmarksLoading ? <LoadingSkeleton label="Loading bookmarks" lines={3} /> : null}
-                {!isBookmarksLoading && bookmarkDrawerEntries.map((entry) => (
-                  <article key={entry.bookmark.id} style={styles.bookmarkEntry}>
-                    <div style={styles.bookmarkEntryHeader}>
-                      <button
-                        type="button"
-                        onClick={() => selectBookmark(entry.bookmark)}
-                        style={styles.bookmarkEntryTitle}
-                      >
-                        <span>{entry.seriesTitle}</span>
-                        <span>{entry.chapterTitle}</span>
-                        <span>Page {entry.bookmark.pageIndex + 1}</span>
-                        {entry.bookmark.highlightText ? (
-                          <q>{entry.bookmark.highlightText}</q>
-                        ) : null}
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={
-                          entry.bookmark.highlightText
-                            ? `Remove annotation in ${entry.chapterTitle}`
-                            : `Remove bookmark for ${entry.chapterTitle}, page ${entry.bookmark.pageIndex + 1}`
+                {isBookmarksLoading ? (
+                  <LoadingSkeleton label="Loading bookmarks" lines={3} />
+                ) : null}
+                {!isBookmarksLoading &&
+                  bookmarkDrawerEntries.map((entry) => (
+                    <article
+                      key={entry.bookmark.id}
+                      style={styles.bookmarkEntry}
+                    >
+                      <div style={styles.bookmarkEntryHeader}>
+                        <button
+                          type="button"
+                          onClick={() => selectBookmark(entry.bookmark)}
+                          style={styles.bookmarkEntryTitle}
+                        >
+                          <span>{entry.seriesTitle}</span>
+                          <span>{entry.chapterTitle}</span>
+                          <span>Page {entry.bookmark.pageIndex + 1}</span>
+                          {entry.bookmark.highlightText ? (
+                            <q>{entry.bookmark.highlightText}</q>
+                          ) : null}
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={
+                            entry.bookmark.highlightText
+                              ? `Remove annotation in ${entry.chapterTitle}`
+                              : `Remove bookmark for ${entry.chapterTitle}, page ${entry.bookmark.pageIndex + 1}`
+                          }
+                          title={
+                            entry.bookmark.highlightText
+                              ? "Remove annotation"
+                              : "Remove bookmark"
+                          }
+                          onClick={() =>
+                            void removeBookmarkRecord(entry.bookmark)
+                          }
+                          style={
+                            entry.bookmark.highlightText
+                              ? styles.removeHighlightButton
+                              : styles.bookmarkRemoveButton
+                          }
+                        >
+                          {entry.bookmark.highlightText ? (
+                            <>
+                              <Trash2 size={15} />
+                              <span>Remove highlight</span>
+                            </>
+                          ) : (
+                            <X size={15} />
+                          )}
+                        </button>
+                      </div>
+                      <textarea
+                        aria-label={`Note for ${entry.chapterTitle}, page ${entry.bookmark.pageIndex + 1}`}
+                        value={entry.bookmark.note}
+                        placeholder="Add a note"
+                        rows={2}
+                        onChange={(event) => {
+                          const note = event.currentTarget.value;
+                          setBookmarkDrawerEntries((current) =>
+                            current.map((item) =>
+                              item.bookmark.id === entry.bookmark.id
+                                ? {
+                                    ...item,
+                                    bookmark: { ...item.bookmark, note },
+                                  }
+                                : item,
+                            ),
+                          );
+                        }}
+                        onBlur={(event) =>
+                          void saveBookmarkNote(
+                            entry.bookmark,
+                            event.currentTarget.value,
+                          )
                         }
-                        title={
-                          entry.bookmark.highlightText
-                            ? "Remove annotation"
-                            : "Remove bookmark"
-                        }
-                        onClick={() =>
-                          void removeBookmarkRecord(entry.bookmark)
-                        }
-                        style={
-                          entry.bookmark.highlightText
-                            ? styles.removeHighlightButton
-                            : styles.bookmarkRemoveButton
-                        }
-                      >
-                        {entry.bookmark.highlightText ? (
-                          <>
-                            <Trash2 size={15} />
-                            <span>Remove highlight</span>
-                          </>
-                        ) : (
-                          <X size={15} />
-                        )}
-                      </button>
-                    </div>
-                    <textarea
-                      aria-label={`Note for ${entry.chapterTitle}, page ${entry.bookmark.pageIndex + 1}`}
-                      value={entry.bookmark.note}
-                      placeholder="Add a note"
-                      rows={2}
-                      onChange={(event) => {
-                        const note = event.currentTarget.value;
-                        setBookmarkDrawerEntries((current) =>
-                          current.map((item) =>
-                            item.bookmark.id === entry.bookmark.id
-                              ? {
-                                  ...item,
-                                  bookmark: { ...item.bookmark, note },
-                                }
-                              : item,
-                          ),
-                        );
-                      }}
-                      onBlur={(event) =>
-                        void saveBookmarkNote(
-                          entry.bookmark,
-                          event.currentTarget.value,
-                        )
-                      }
-                      style={styles.bookmarkNote}
-                    />
-                  </article>
-                ))}
+                        style={styles.bookmarkNote}
+                      />
+                    </article>
+                  ))}
                 {!isBookmarksLoading && bookmarkDrawerEntries.length === 0 ? (
                   <p style={styles.emptyText}>No saved pages yet.</p>
                 ) : null}
