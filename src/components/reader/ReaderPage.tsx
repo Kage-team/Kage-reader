@@ -2261,7 +2261,7 @@ export function ReaderPage() {
       readerPreferences.novelColumnWidth === "full"
         ? "100%"
         : NOVEL_COLUMN_WIDTHS[readerPreferences.novelColumnWidth],
-    padding: 0,
+    padding: "0 clamp(20px, 5vw, 64px)",
     fontFamily: selectedNovelFont.font,
     fontSize: `${readerPreferences.novelFontSize}px`,
     lineHeight: readerPreferences.novelLineSpacing,
@@ -2327,8 +2327,9 @@ export function ReaderPage() {
       return {
         ...baseStyle,
         filter,
+        width: `${fitWidth}px`,
         height: "auto",
-        maxWidth: "none",
+        maxWidth: `${fitWidth}px`,
         maxHeight: "none",
         ...(pageRotation ? { transform: `rotate(${pageRotation}deg)` } : {}),
         transformOrigin: "center",
@@ -2779,19 +2780,64 @@ export function ReaderPage() {
               )}
             </article>
           ) : isComicContinuous ? (
-            <div className="readerContinuousPages" style={styles.webtoonStage}>
-              {pages.map((page, index) => {
-                const url = pageUrls[index];
-                return url ? (
-                  <div
-                    key={page.id}
-                    className="readerContinuousPage"
-                    data-reader-page-index={index}
-                  >
-                    {renderComicPage(page, url, index === currentIndex, true)}
-                  </div>
-                ) : null;
-              })}
+            <div
+              className="readerContinuousPages"
+              style={{ ...styles.webtoonStage, gap: 0 }}
+            >
+              {comicFlowContent.length > 0
+                ? comicFlowContent.map((flowChapter) => (
+                    <section
+                      key={flowChapter.chapter.id}
+                      className="readerContinuousChapter"
+                      data-comic-chapter-id={flowChapter.chapter.id}
+                      style={{
+                        display: "grid",
+                        justifyItems: "center",
+                        width: "100%",
+                        minWidth: 0,
+                        gap: `${readerPreferences.comicPageGap}px`,
+                      }}
+                    >
+                      {flowChapter.pages.map(({ page, url }) =>
+                        url ? (
+                          <div
+                            key={page.id}
+                            className="readerContinuousPage"
+                            data-reader-page-index={page.index}
+                          >
+                            {renderComicPage(
+                              page,
+                              url,
+                              flowChapter.chapter.id ===
+                                activeComicChapter.id &&
+                                page.index === currentIndex,
+                              true,
+                            )}
+                          </div>
+                        ) : null,
+                      )}
+                      <div style={styles.comicChapterDivider}>
+                        {flowChapter.chapter.title}
+                      </div>
+                    </section>
+                  ))
+                : pages.map((page, index) => {
+                    const url = pageUrls[index];
+                    return url ? (
+                      <div
+                        key={page.id}
+                        className="readerContinuousPage"
+                        data-reader-page-index={index}
+                      >
+                        {renderComicPage(
+                          page,
+                          url,
+                          index === currentIndex,
+                          true,
+                        )}
+                      </div>
+                    ) : null;
+                  })}
             </div>
           ) : (
             <div
@@ -5159,6 +5205,11 @@ const styles: Record<string, React.CSSProperties> = {
     color: "var(--app-muted)",
     fontSize: 12,
     textAlign: "center",
+  },
+  comicChapterDivider: {
+    width: "min(760px, calc(100% - 48px))",
+    margin: "18px auto",
+    borderTop: "1px solid rgba(127,127,127,0.25)",
   },
   novelImage: {
     width: "100%",
