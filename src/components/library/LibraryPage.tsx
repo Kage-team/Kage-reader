@@ -37,7 +37,13 @@ import { useViewMode } from "./useViewMode";
 import { ViewModeToggle } from "./ViewModeToggle";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 
-const SERIES_TYPES: SeriesType[] = ["manga", "manhua", "oel", "novel"];
+const SERIES_TYPES: SeriesType[] = [
+  "manga",
+  "manhwa",
+  "manhua",
+  "oel",
+  "novel",
+];
 const SERIES_TYPE_COLORS: Record<SeriesType, string> = {
   manga: "#a675ff",
   manhua: "#ffae42",
@@ -47,7 +53,7 @@ const SERIES_TYPE_COLORS: Record<SeriesType, string> = {
 };
 const SERIES_TYPE_LABELS: Record<SeriesType, string> = {
   manga: "Manga & manhwa",
-  manhwa: "Manga & manhwa",
+  manhwa: "Manhwa",
   manhua: "Manhua",
   oel: "OEL",
   novel: "Novel",
@@ -109,40 +115,48 @@ export function LibraryPage() {
       : "all";
 
   async function loadEntries(): Promise<void> {
-    const [series, chapters, progress] = await Promise.all([
-      listSeries(),
-      listAllChapters(),
-      listProgress(),
-    ]);
-    setEntries(buildLibraryEntries(series, chapters, progress));
-    const chapterById = new Map(
-      chapters.map((chapter) => [chapter.id, chapter]),
-    );
-    const seriesById = new Map(series.map((entry) => [entry.id, entry]));
-    setRecentChapters(
-      progress
-        .flatMap((record) => {
-          const chapter = chapterById.get(record.chapterId);
-          const owner = chapter ? seriesById.get(chapter.seriesId) : undefined;
-          return chapter && owner
-            ? [
-                {
-                  id: chapter.id,
-                  seriesId: owner.id,
-                  title: chapter.title,
-                  number: chapter.number,
-                  seriesTitle: owner.title,
-                  pageIndex: record.pageIndex,
-                  pageCount: chapter.pageCount,
-                  updatedAt: record.updatedAt,
-                },
-              ]
-            : [];
-        })
-        .sort((left, right) => right.updatedAt - left.updatedAt)
-        .slice(0, 50),
-    );
-    setIsLoading(false);
+    setIsLoading(true);
+    try {
+      const [series, chapters, progress] = await Promise.all([
+        listSeries(),
+        listAllChapters(),
+        listProgress(),
+      ]);
+      setEntries(buildLibraryEntries(series, chapters, progress));
+      const chapterById = new Map(
+        chapters.map((chapter) => [chapter.id, chapter]),
+      );
+      const seriesById = new Map(series.map((entry) => [entry.id, entry]));
+      setRecentChapters(
+        progress
+          .flatMap((record) => {
+            const chapter = chapterById.get(record.chapterId);
+            const owner = chapter ? seriesById.get(chapter.seriesId) : undefined;
+            return chapter && owner
+              ? [
+                  {
+                    id: chapter.id,
+                    seriesId: owner.id,
+                    title: chapter.title,
+                    number: chapter.number,
+                    seriesTitle: owner.title,
+                    pageIndex: record.pageIndex,
+                    pageCount: chapter.pageCount,
+                    updatedAt: record.updatedAt,
+                  },
+                ]
+              : [];
+          })
+          .sort((left, right) => right.updatedAt - left.updatedAt)
+          .slice(0, 50),
+      );
+    } catch {
+      setEntries([]);
+      setRecentChapters([]);
+      setFavoriteError("Could not load your library. Please reload and try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   useEffect(() => {
