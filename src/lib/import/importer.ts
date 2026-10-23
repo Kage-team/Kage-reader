@@ -13,6 +13,7 @@ import type { Chapter, Page, Series } from "../storage/types";
 import { hashBlobSignature } from "./hash";
 import { parseComicInfoXml } from "./comicInfo";
 import {
+  deriveChapterTitle,
   deriveSeriesId,
   deriveSeriesTitle,
   groupArchiveEntries,
@@ -31,16 +32,28 @@ import type {
 function preferDetectedChapterTitle(
   detectedTitle: string | undefined,
   metadataTitle: string | undefined,
+  sourceName: string,
 ): string | undefined {
   const detected = detectedTitle?.trim();
   const metadata = metadataTitle?.trim();
-  if (!detected) return undefined;
-  if (!metadata) return detected;
+  const isGeneric = (value: string | undefined) =>
+    Boolean(
+      value &&
+        /^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+\b/i.test(
+          value,
+        ),
+    );
 
-  const genericMetadataTitle = /^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+\b/i.test(
-    metadata,
+  if (!isGeneric(metadata)) return undefined;
+  if (detected && !isGeneric(detected)) return detected;
+
+  const sourceHasChapterMarker = /(?:^|[\\/\\])(?:chapter|chap|ch|episode|ep|part|issue)\\s*[._#-]*0*\\d+\\b/i.test(
+    sourceName,
   );
-  return genericMetadataTitle ? detected : undefined;
+  if (!sourceHasChapterMarker) return undefined;
+
+  const sourceTitle = deriveChapterTitle("", sourceName).trim();
+  return isGeneric(sourceTitle) ? undefined : sourceTitle;
 }
 
 async function saveArchiveAsChapter(
@@ -159,11 +172,19 @@ async function saveArchiveAsChapter(
       id: chapterId,
       seriesId,
       title:
-        chapterGroups.length === 1
-          ? preferDetectedChapterTitle(chapterGroup.title, comicInfo.title) ||
-            comicInfo.title?.trim() ||
-            seriesTitle
-          : chapterGroup.title || comicInfo.title?.trim() || seriesTitle,
+        (comicInfo.title?.trim() &&
+        !/^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+\b/i.test(
+          comicInfo.title.trim(),
+        )
+          ? comicInfo.title.trim()
+          : undefined) ||
+        preferDetectedChapterTitle(
+          chapterGroup.title,
+          comicInfo.title,
+          source.name,
+        ) ||
+        chapterGroup.title ||
+        seriesTitle,
       number:
         chapterGroup.number ??
         (chapterGroups.length === 1 && comicInfo.number
