@@ -59,12 +59,21 @@ export function deriveSeriesTitle(
     return seriesTitle;
   }
 
-  const strippedName = stripChapterSuffix(baseNameWithoutExtension(sourceName));
-  const readable = (strippedName || baseNameWithoutExtension(sourceName))
+  const normalizedSource = sourceName.replaceAll("\\", "/");
+  const sourceParts = normalizedSource.split("/").filter(Boolean);
+  const sourceBaseName = baseNameWithoutExtension(normalizedSource);
+  const parentName = sourceParts.length > 1 ? sourceParts.at(-2) ?? "" : "";
+  const chapterLikeName = /^(?:chapter|chap|ch|episode|ep|part|issue)\b/i.test(
+    sourceBaseName,
+  );
+  const rawTitle = chapterLikeName && parentName
+    ? baseNameWithoutExtension(parentName)
+    : stripChapterSuffix(sourceBaseName);
+  const readable = (rawTitle || sourceBaseName)
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  return titleCase(readable || baseNameWithoutExtension(sourceName));
+  return titleCase(readable || sourceBaseName);
 }
 
 export function deriveSeriesId(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupArchiveEntries } from "./grouping";
+import { deriveSeriesTitle, groupArchiveEntries } from "./grouping";
 import type { ArchiveEntry } from "./types";
 
 function image(name: string): ArchiveEntry {
@@ -19,6 +19,11 @@ function text(name: string): ArchiveEntry {
 }
 
 describe("chapter grouping", () => {
+  it("uses the parent folder as the series for chapter-named archives", () => {
+    expect(deriveSeriesTitle("Uriah/Ch. 011 Rain Named Depth.cbz")).toBe("Uriah");
+    expect(deriveSeriesTitle("Uriah/Ch. 010 School Full Of Monsters.cbz")).toBe("Uriah");
+  });
+
   it("groups chapter folders and extracts volume and chapter numbers", () => {
     const groups = groupArchiveEntries([
       image("Volume 1/Chapter 1/001.jpg"),
