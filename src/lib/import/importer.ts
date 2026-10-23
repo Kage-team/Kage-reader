@@ -56,6 +56,20 @@ function preferDetectedChapterTitle(
   return isGeneric(sourceTitle) ? undefined : sourceTitle;
 }
 
+function deriveImportedChapterTitle(
+  chapterTitle: string | undefined,
+  sourceName: string,
+): string | undefined {
+  const detected = chapterTitle?.trim();
+  if (detected && !/^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+\b/i.test(detected)) {
+    return detected;
+  }
+  const sourceTitle = deriveChapterTitle("", sourceName).trim();
+  return /^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+\b/i.test(sourceTitle)
+    ? undefined
+    : sourceTitle || undefined;
+}
+
 async function saveArchiveAsChapter(
   source: ArchiveSource,
   targetSeriesId?: string,
@@ -178,6 +192,7 @@ async function saveArchiveAsChapter(
         )
           ? comicInfo.title.trim()
           : undefined) ||
+        deriveImportedChapterTitle(chapterGroup.title, source.name) ||
         preferDetectedChapterTitle(
           chapterGroup.title,
           comicInfo.title,
