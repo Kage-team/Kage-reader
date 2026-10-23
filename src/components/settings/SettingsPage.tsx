@@ -512,9 +512,12 @@ export function SettingsPage({
               {tab.label}
             </button>
           ))}
-          <button type="button" className="settingsResetButton" onClick={resetActiveSection}>
-            Reset {SETTINGS_TABS.find((tab) => tab.id === activeSettingsTab)?.label ?? "section"}
-          </button>
+  {activeSettingsTab !== "storage" && activeSettingsTab !== "backup" ? (
+  <button type="button" className="settingsResetButton" onClick={resetActiveSection}>
+  Reset {SETTINGS_TABS.find((tab) => tab.id === activeSettingsTab)?.label ?? "section"}
+  </button>
+  ) : null}
+
         </nav>
 
         <section
