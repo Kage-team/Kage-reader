@@ -28,6 +28,21 @@ import type {
   ImportedChapterSummary,
 } from "./types";
 
+function preferDetectedChapterTitle(
+  detectedTitle: string | undefined,
+  metadataTitle: string | undefined,
+): string | undefined {
+  const detected = detectedTitle?.trim();
+  const metadata = metadataTitle?.trim();
+  if (!detected) return undefined;
+  if (!metadata) return detected;
+
+  const genericMetadataTitle = /^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+\b/i.test(
+    metadata,
+  );
+  return genericMetadataTitle ? detected : undefined;
+}
+
 async function saveArchiveAsChapter(
   source: ArchiveSource,
   targetSeriesId?: string,
@@ -145,7 +160,9 @@ async function saveArchiveAsChapter(
       seriesId,
       title:
         chapterGroups.length === 1
-          ? comicInfo.title?.trim() || chapterGroup.title || seriesTitle
+          ? preferDetectedChapterTitle(chapterGroup.title, comicInfo.title) ||
+            comicInfo.title?.trim() ||
+            seriesTitle
           : chapterGroup.title || comicInfo.title?.trim() || seriesTitle,
       number:
         chapterGroup.number ??
