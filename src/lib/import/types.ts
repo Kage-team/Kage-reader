@@ -1,6 +1,7 @@
 export type ArchiveSource = {
   name: string;
   blob: Blob;
+  rootFolderName?: string;
 };
 
 export type ArchiveEntry = {

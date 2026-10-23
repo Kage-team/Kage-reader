@@ -42,6 +42,28 @@ describe("packageLooseImageSources", () => {
     ]);
   });
 
+  it("uses the linked manga folder name instead of its chapter folder name", async () => {
+    const packaged = await packageLooseImageSources([
+      {
+        name: "Oneshot/page_1.jpg",
+        blob: new Blob(["one"]),
+        rootFolderName: "Manga Name",
+      },
+      {
+        name: "Oneshot/page_2.jpg",
+        blob: new Blob(["two"]),
+        rootFolderName: "Manga Name",
+      },
+    ]);
+
+    expect(packaged.map((source) => source.name)).toEqual(["Manga Name.cbz"]);
+    const entries = await extractArchiveEntries(packaged[0]!);
+    expect(entries.map((entry) => entry.name)).toEqual([
+      "Oneshot/page_1.jpg",
+      "Oneshot/page_2.jpg",
+    ]);
+  });
+
   it("collects standalone images into one readable chapter archive", async () => {
     const packaged = await packageLooseImageSources([
       { name: "page_1.png", blob: new Blob(["one"]) },

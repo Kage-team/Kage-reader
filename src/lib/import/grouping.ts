@@ -62,18 +62,20 @@ export function deriveSeriesTitle(
   const normalizedSource = sourceName.replaceAll("\\", "/");
   const sourceParts = normalizedSource.split("/").filter(Boolean);
   const sourceBaseName = baseNameWithoutExtension(normalizedSource);
-  const parentName = sourceParts.length > 1 ? sourceParts.at(-2) ?? "" : "";
-  const chapterLikeName = /^(?:chapter|chap|ch|episode|ep|part|issue)\b/i.test(
-    sourceBaseName,
-  );
-  const rawTitle = chapterLikeName && parentName
+  const parentName = sourceParts.length > 1 ? (sourceParts.at(-2) ?? "") : "";
+  const chapterLikeName =
+    /^(?:chapter|chap|ch|episode|ep|part|issue)\b/i.test(sourceBaseName) ||
+    /^one[\s._-]*shot$/i.test(sourceBaseName);
+  const useParentTitle = chapterLikeName && Boolean(parentName);
+  const rawTitle = useParentTitle
     ? baseNameWithoutExtension(parentName)
     : stripChapterSuffix(sourceBaseName);
   const readable = (rawTitle || sourceBaseName)
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  return titleCase(readable || sourceBaseName);
+  const title = readable || sourceBaseName;
+  return useParentTitle ? title : titleCase(title);
 }
 
 export function deriveSeriesId(

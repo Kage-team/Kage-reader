@@ -4,6 +4,7 @@ import {
   listChapters,
   listPages,
   deleteChapterWithContents,
+  deleteSeriesWithContents,
   putChapter,
   putPage,
   putSeries,
@@ -39,17 +40,18 @@ function preferDetectedChapterTitle(
   const isGeneric = (value: string | undefined) =>
     Boolean(
       value &&
-        /^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+\b/i.test(
-          value,
-        ),
+      /^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+\b/i.test(
+        value,
+      ),
     );
 
   if (!isGeneric(metadata)) return undefined;
   if (detected && !isGeneric(detected)) return detected;
 
-  const sourceHasChapterMarker = /(?:^|[\\/\\])(?:chapter|chap|ch|episode|ep|part|issue)\\s*[._#-]*0*\\d+\\b/i.test(
-    sourceName,
-  );
+  const sourceHasChapterMarker =
+    /(?:^|[\\/\\])(?:chapter|chap|ch|episode|ep|part|issue)\\s*[._#-]*0*\\d+\\b/i.test(
+      sourceName,
+    );
   if (!sourceHasChapterMarker) return undefined;
 
   const sourceTitle = deriveChapterTitle("", sourceName).trim();
@@ -61,11 +63,18 @@ function deriveImportedChapterTitle(
   sourceName: string,
 ): string | undefined {
   const detected = chapterTitle?.trim();
-  if (detected && !/^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+\b/i.test(detected)) {
+  if (
+    detected &&
+    !/^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+\b/i.test(
+      detected,
+    )
+  ) {
     return detected;
   }
   const sourceTitle = deriveChapterTitle("", sourceName).trim();
-  return /^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+\b/i.test(sourceTitle)
+  return /^(?:chapter|chap|ch|episode|ep|part|issue)\s*[._#-]*0*\d+\b/i.test(
+    sourceTitle,
+  )
     ? undefined
     : sourceTitle || undefined;
 }
@@ -99,7 +108,7 @@ async function saveArchiveAsChapter(
   const now = Date.now();
   let coverPageKey: string | undefined;
   const importedSummaries: ImportedChapterSummary[] = [];
-  const existingSeries = await getSeries(seriesId);
+  let existingSeries = await getSeries(seriesId);
   if (targetSeriesId && !existingSeries) {
     throw new Error("The selected series no longer exists.");
   }
@@ -121,6 +130,7 @@ async function saveArchiveAsChapter(
       -1,
     ) + 1;
   const retainedExistingIds = new Set<string>();
+  let legacyOneShotSeriesId: string | undefined;
   let series: Series = existingSeries ?? {
     schemaVersion: 1,
     id: seriesId,
@@ -146,6 +156,37 @@ async function saveArchiveAsChapter(
     if (existingChapter) {
       if (existingChapter.seriesId === seriesId) {
         retainedExistingIds.add(existingChapter.id);
+      } else if (
+        !targetSeriesId &&
+        (!existingSeries || existingSeries.id === legacyOneShotSeriesId) &&
+        existingChapter.sourceName === source.name
+      ) {
+        const previousSeries = await getSeries(existingChapter.seriesId);
+        if (
+          previousSeries &&
+          (!legacyOneShotSeriesId ||
+            previousSeries.id === legacyOneShotSeriesId) &&
+          /^one[\s._-]*shot$/i.test(previousSeries.title.trim())
+        ) {
+          const previousSeriesId = previousSeries.id;
+          legacyOneShotSeriesId = previousSeriesId;
+          existingSeries = previousSeries;
+          series = {
+            ...previousSeries,
+            id: seriesId,
+            title: seriesTitle,
+            updatedAt: now,
+          };
+          await putChapter({
+            ...existingChapter,
+            seriesId,
+            order: nextChapterOrder++,
+          });
+          retainedExistingIds.add(existingChapter.id);
+          if ((await listChapters(previousSeriesId)).length === 0) {
+            await deleteSeriesWithContents(previousSeriesId);
+          }
+        }
       }
       continue;
     }

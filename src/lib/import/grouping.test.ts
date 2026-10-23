@@ -20,8 +20,19 @@ function text(name: string): ArchiveEntry {
 
 describe("chapter grouping", () => {
   it("uses the parent folder as the series for chapter-named archives", () => {
-    expect(deriveSeriesTitle("Uriah/Ch. 011 Rain Named Depth.cbz")).toBe("Uriah");
-    expect(deriveSeriesTitle("Uriah/Ch. 010 School Full Of Monsters.cbz")).toBe("Uriah");
+    expect(deriveSeriesTitle("Uriah/Ch. 011 Rain Named Depth.cbz")).toBe(
+      "Uriah",
+    );
+    expect(deriveSeriesTitle("Uriah/Ch. 010 School Full Of Monsters.cbz")).toBe(
+      "Uriah",
+    );
+  });
+
+  it("uses the manga folder as the series for one-shot archives", () => {
+    const mangaFolder = "Kimi wa Mada Torikago no Naka";
+
+    expect(deriveSeriesTitle(`${mangaFolder}/Oneshot.cbz`)).toBe(mangaFolder);
+    expect(deriveSeriesTitle(`${mangaFolder}/One Shot.cbz`)).toBe(mangaFolder);
   });
 
   it("groups chapter folders and extracts volume and chapter numbers", () => {

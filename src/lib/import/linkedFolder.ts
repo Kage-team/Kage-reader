@@ -10,6 +10,7 @@ type IterableDirectoryHandle = FileSystemDirectoryHandle & {
 export async function collectLinkedFolderSources(
   directory: FileSystemDirectoryHandle,
   parentPath = "",
+  rootFolderName = directory.name,
 ): Promise<ArchiveSource[]> {
   const sources: ArchiveSource[] = [];
 
@@ -22,12 +23,14 @@ export async function collectLinkedFolderSources(
         ...(await collectLinkedFolderSources(
           entry as FileSystemDirectoryHandle,
           relativePath,
+          rootFolderName,
         )),
       );
     } else if (SUPPORTED_FOLDER_FILE.test(name)) {
       sources.push({
         name: relativePath,
         blob: await (entry as FileSystemFileHandle).getFile(),
+        rootFolderName,
       });
     }
   }

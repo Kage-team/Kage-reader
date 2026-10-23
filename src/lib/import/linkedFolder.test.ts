@@ -40,5 +40,6 @@ describe("collectLinkedFolderSources", () => {
       "book.epub",
     ]);
     expect(sources[0]?.blob.size).toBe(5);
+    expect(sources[0]?.rootFolderName).toBe("library");
   });
 });

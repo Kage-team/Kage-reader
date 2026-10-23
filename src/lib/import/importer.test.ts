@@ -162,6 +162,77 @@ describe("importer metadata and grouping", () => {
     expect(new Set(chapters.map((chapter) => chapter.seriesId)).size).toBe(1);
   });
 
+  it("uses the containing folder as the series title for one-shot archives", async () => {
+    const mangaTitle = "Kimi wa Mada Torikago no Naka";
+    const source = await loadFixture("ok.cbz");
+    const result = await importArchiveSources([
+      { ...source, name: `${mangaTitle}/Oneshot.cbz` },
+    ]);
+
+    expect(result.imported[0]?.title).toBe(mangaTitle);
+    await expect(
+      getSeries(deriveSeriesId(`${mangaTitle}/Oneshot.cbz`)),
+    ).resolves.toMatchObject({
+      title: mangaTitle,
+    });
+  });
+
+  it("repairs a previously imported one-shot series on re-import", async () => {
+    const mangaTitle = "Kimi wa Mada Torikago no Naka";
+    const archive = zipSync({
+      "Chapter 1/page.jpg": new Uint8Array([1, 2, 3]),
+      "Chapter 2/page.jpg": new Uint8Array([4, 5, 6]),
+    });
+    const source = {
+      name: "Oneshot.cbz",
+      blob: new Blob([archive], { type: "application/zip" }),
+    };
+    await importArchiveSources([source]);
+
+    const [previousSeries] = await listSeries();
+    const previousChapters = await listAllChapters();
+    if (!previousSeries || previousChapters.length !== 2) {
+      throw new Error("Expected the legacy one-shot import");
+    }
+    expect(previousSeries.title).toBe("Oneshot");
+    await putSeries({ ...previousSeries, title: "Oneshot" });
+    await Promise.all(
+      previousChapters.map((chapter) =>
+        putChapter({
+          ...chapter,
+          sourceName: `${mangaTitle}/Oneshot.cbz`,
+        }),
+      ),
+    );
+    expect(
+      (await listAllChapters()).every(
+        (chapter) => chapter.sourceName === `${mangaTitle}/Oneshot.cbz`,
+      ),
+    ).toBe(true);
+    expect(previousSeries.id).not.toBe(
+      deriveSeriesId(`${mangaTitle}/Oneshot.cbz`),
+    );
+
+    const result = await importArchiveSources([
+      { ...source, name: `${mangaTitle}/Oneshot.cbz` },
+    ]);
+
+    expect(result.imported).toHaveLength(0);
+    expect(result.errors).toEqual([]);
+    expect(await listSeries()).toMatchObject([
+      {
+        id: deriveSeriesId(`${mangaTitle}/Oneshot.cbz`),
+        title: mangaTitle,
+      },
+    ]);
+    await expect(listAllChapters()).resolves.toMatchObject([
+      ...previousChapters.map((chapter) => ({
+        id: chapter.id,
+        seriesId: deriveSeriesId(`${mangaTitle}/Oneshot.cbz`),
+      })),
+    ]);
+  });
+
   it("accepts EPUB novels alongside comic archives", async () => {
     const result = await importArchiveSources([await loadFixture("book.epub")]);
 
