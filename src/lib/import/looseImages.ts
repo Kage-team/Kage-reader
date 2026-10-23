@@ -39,11 +39,38 @@ function safeArchiveTitle(name: string): string {
   return safeName.trim() || "Loose Images";
 }
 
+function looksLikeChapterFolder(name: string): boolean {
+  return /^(?:chapter|chap|ch|episode|ep|part|issue)[\s._#-]*0*\d+\b/i.test(
+    name.trim(),
+  );
+}
+
+
+function commonFolderName(paths: string[][]): string | undefined {
+  const firstParts = paths
+    .map((parts) => parts[0])
+    .filter((part): part is string => Boolean(part));
+  if (firstParts.length === 0 || !firstParts.every((part) => part === firstParts[0])) {
+    return undefined;
+  }
+  return firstParts[0];
+}
+
 export async function packageLooseImageSources(
   sources: ArchiveSource[],
 ): Promise<ArchiveSource[]> {
   const imageGroups = new Map<string, Map<string, ArchiveSource>>();
   const regularSources: ArchiveSource[] = [];
+  const imageSources = sources.filter(
+    (source) =>
+      !ARCHIVE_PATTERN.test(source.name) &&
+      IMAGE_EXTENSIONS.has(extensionFor(source.name)),
+  );
+  const imagePaths = imageSources.map((source) => archiveSafePath(source.name));
+  const sharedRoot = commonFolderName(imagePaths);
+  const firstPartsAreChapters =
+    imagePaths.length > 1 &&
+    imagePaths.every((parts) => parts.length > 1 && looksLikeChapterFolder(parts[0] ?? ""));
 
   for (const source of sources) {
     if (
@@ -56,12 +83,18 @@ export async function packageLooseImageSources(
 
     const pathParts = archiveSafePath(source.name);
     const hasFolderPath = pathParts.length > 1;
-    const title = hasFolderPath ? pathParts[0] : "Loose Images";
-    const entryPath = hasFolderPath
-      ? pathParts.slice(1).join("/")
-      : (pathParts[0] ?? source.name);
+    const title = firstPartsAreChapters
+      ? "Loose Images"
+      : sharedRoot ?? (hasFolderPath ? pathParts[0] : "Loose Images");
+    const entryPath = firstPartsAreChapters
+      ? pathParts.join("/")
+      : sharedRoot && pathParts[0] === sharedRoot
+        ? pathParts.slice(1).join("/")
+        : hasFolderPath
+          ? pathParts.slice(1).join("/")
+          : (pathParts[0] ?? source.name);
     const entries = imageGroups.get(title) ?? new Map<string, ArchiveSource>();
-    entries.set(entryPath, source);
+    entries.set(entryPath || source.name, source);
     imageGroups.set(title, entries);
   }
 

@@ -26,6 +26,22 @@ describe("packageLooseImageSources", () => {
     ]);
   });
 
+  it("keeps chapter folders in one series when the selected folder is the chapter parent", async () => {
+    const packaged = await packageLooseImageSources([
+      { name: "Ch. 001 (Official)/page_1.jpg", blob: new Blob(["one"]) },
+      { name: "Ch. 001 (Official)/page_2.jpg", blob: new Blob(["two"]) },
+      { name: "Ch. 002 (Official)/page_1.jpg", blob: new Blob(["three"]) },
+    ]);
+
+    expect(packaged.map((source) => source.name)).toEqual(["Loose Images.cbz"]);
+    const entries = await extractArchiveEntries(packaged[0]!);
+    expect(entries.map((entry) => entry.name)).toEqual([
+      "Ch. 001 (Official)/page_1.jpg",
+      "Ch. 001 (Official)/page_2.jpg",
+      "Ch. 002 (Official)/page_1.jpg",
+    ]);
+  });
+
   it("collects standalone images into one readable chapter archive", async () => {
     const packaged = await packageLooseImageSources([
       { name: "page_1.png", blob: new Blob(["one"]) },
