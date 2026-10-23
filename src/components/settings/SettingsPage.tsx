@@ -256,16 +256,46 @@ export function SettingsPage({
 
   function resetActiveSection(): void {
     const resets: Record<string, Partial<Preferences>> = {
-      appearance: { theme: DEFAULT_PREFERENCES.theme, accent: DEFAULT_PREFERENCES.accent, highContrast: DEFAULT_PREFERENCES.highContrast },
-      reading: { defaultReaderMode: DEFAULT_PREFERENCES.defaultReaderMode, defaultReadingDirection: DEFAULT_PREFERENCES.defaultReadingDirection, textScale: DEFAULT_PREFERENCES.textScale },
-      content: { safeMode: DEFAULT_PREFERENCES.safeMode, adultPinSalt: DEFAULT_PREFERENCES.adultPinSalt, adultPinHash: DEFAULT_PREFERENCES.adultPinHash },
+      appearance: {
+        theme: DEFAULT_PREFERENCES.theme,
+        accent: DEFAULT_PREFERENCES.accent,
+        highContrast: DEFAULT_PREFERENCES.highContrast,
+      },
+      reading: {
+        defaultReaderMode: DEFAULT_PREFERENCES.defaultReaderMode,
+        defaultReadingDirection: DEFAULT_PREFERENCES.defaultReadingDirection,
+        textScale: DEFAULT_PREFERENCES.textScale,
+        readerWidth: DEFAULT_PREFERENCES.readerWidth,
+        immersiveMode: DEFAULT_PREFERENCES.immersiveMode,
+        readerAutoHide: DEFAULT_PREFERENCES.readerAutoHide,
+        readerAutoHideDelay: DEFAULT_PREFERENCES.readerAutoHideDelay,
+        readerTapBehavior: DEFAULT_PREFERENCES.readerTapBehavior,
+        novelFontFamily: DEFAULT_PREFERENCES.novelFontFamily,
+        novelFontSize: DEFAULT_PREFERENCES.novelFontSize,
+        novelLineSpacing: DEFAULT_PREFERENCES.novelLineSpacing,
+        novelTextAlignment: DEFAULT_PREFERENCES.novelTextAlignment,
+        novelParagraphIndent: DEFAULT_PREFERENCES.novelParagraphIndent,
+        novelParagraphGap: DEFAULT_PREFERENCES.novelParagraphGap,
+        novelColumnWidth: DEFAULT_PREFERENCES.novelColumnWidth,
+        novelReadingTheme: DEFAULT_PREFERENCES.novelReadingTheme,
+      },
+      content: {
+        safeMode: DEFAULT_PREFERENCES.safeMode,
+        adultPinSalt: DEFAULT_PREFERENCES.adultPinSalt,
+        adultPinHash: DEFAULT_PREFERENCES.adultPinHash,
+      },
       privacy: { stealthMode: DEFAULT_PREFERENCES.stealthMode },
       storage: { lastBackupAt: DEFAULT_PREFERENCES.lastBackupAt },
       backup: { lastBackupAt: DEFAULT_PREFERENCES.lastBackupAt },
     };
+
+    const update = resets[activeSettingsTab] ?? {};
+    updatePreferences(update);
     setPreviewTheme(null);
-    updatePreferences(resets[activeSettingsTab] ?? {});
+    setBackupMessage("");
+    setStorageMessage("");
   }
+
 
   async function saveAdultPin(): Promise<void> {
     if (!/^\d{4,6}$/.test(adultPin)) {
