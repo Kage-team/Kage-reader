@@ -74,7 +74,6 @@ export async function packageLooseImageSources(
   const rootIsSeries =
     Boolean(rootFolderName) &&
     imageSources.every((source) => source.rootFolderName === rootFolderName) &&
-    imagePaths.every((parts) => parts.length <= 2) &&
     regularSources.length === 0;
   const firstPartsAreChapters =
     imagePaths.length > 1 &&

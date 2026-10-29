@@ -9998,6 +9998,54 @@ main
   .libraryEntries.is-grid .libraryCardSelectLabel {
     display: none;
   }
+
+  .libraryEntries.is-list {
+    gap: 10px !important;
+  }
+
+  .libraryEntries.is-list .libraryCard {
+    min-height: 112px;
+    border: 1px solid color-mix(in srgb, var(--app-border) 88%, transparent);
+    border-radius: 17px;
+    background: #090a0b;
+    overflow: hidden;
+    box-shadow: 0 8px 22px rgb(0 0 0 / 20%);
+  }
+
+  .libraryEntries.is-list .libraryCard > a {
+    min-height: 112px;
+  }
+
+  .libraryEntries.is-list .libraryCard > a > div:first-child {
+    width: 92px !important;
+    min-width: 92px !important;
+    height: 112px !important;
+    border-radius: 0 !important;
+  }
+
+  .libraryEntries.is-list .seriesCardBody {
+    padding: 16px 48px 16px 13px !important;
+    background: linear-gradient(180deg, #111415, #090a0b) !important;
+  }
+
+  .libraryEntries.is-list .seriesCardTitle {
+    color: #f4f5f5;
+    font-size: 15px !important;
+    line-height: 1.25 !important;
+    font-weight: 650;
+  }
+
+  .libraryEntries.is-list .coverProgressOverlay {
+    padding: 34px 6px 8px;
+  }
+
+  .libraryEntries.is-list .coverProgressTrack {
+    background: rgb(255 255 255 / 24%);
+  }
+
+  .libraryEntries.is-list .coverProgressTrack > span {
+    background: #12b89a;
+  }
 }
 
 /* Reference-inspired library polish: calmer surfaces, stronger hierarchy, and useful card affordances. */

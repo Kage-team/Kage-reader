@@ -64,6 +64,16 @@ describe("packageLooseImageSources", () => {
     ]);
   });
 
+  it("groups issue subfolders under the selected manga folder", async () => {
+    const packaged = await packageLooseImageSources([
+      { name: "Hellboy Issue #9/page-1.jpg", blob: new Blob(["one"]), rootFolderName: "Hellboy" },
+      { name: "Hellboy Issue #9/page-2.jpg", blob: new Blob(["two"]), rootFolderName: "Hellboy" },
+      { name: "Hellboy Issue #8/page-1.jpg", blob: new Blob(["three"]), rootFolderName: "Hellboy" },
+    ]);
+
+    expect(packaged.map((source) => source.name)).toEqual(["Hellboy.cbz"]);
+  });
+
   it("keeps issue-named images from becoming separate chapters", async () => {
     const packaged = await packageLooseImageSources([
       { name: "Hellboy Issue #1.jpg", blob: new Blob(["one"]) },
