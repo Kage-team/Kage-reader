@@ -1068,20 +1068,26 @@ export function SeriesPage() {
                         {startsVolumeGroup ? <div className="chapterVolumeGroup" aria-label={volumeLabel}>{volumeLabel}</div> : null}
                       <div className={`seriesChapterItem${mostRecentChapter?.id === chapter.id ? " is-resume" : ""}`}>
                         <div className="seriesChapterRow">
-                          <input
-                            type="checkbox"
-                            className="seriesChapterCheckbox"
-                            checked={selectedChapterIds.has(chapter.id)}
-                            onChange={(event) => {
-                              const isChecked = event.currentTarget.checked;
-                              setSelectedChapterIds((current) => {
-                                const next = new Set(current);
-                                if (isChecked) next.add(chapter.id); else next.delete(chapter.id);
-                                return next;
-                              });
-                            }}
-                            aria-label={`Select ${titleLabel}`}
-                          />
+                          <div className="seriesChapterSelectCell">
+                            <input
+                              type="checkbox"
+                              className="seriesChapterCheckbox"
+                              checked={selectedChapterIds.has(chapter.id)}
+                              onChange={(event) => {
+                                const isChecked = event.currentTarget.checked;
+                                setSelectedChapterIds((current) => {
+                                  const next = new Set(current);
+                                  if (isChecked) next.add(chapter.id); else next.delete(chapter.id);
+                                  return next;
+                                });
+                              }}
+                              aria-label={`Select ${titleLabel}`}
+                            />
+                            <span className="chapterNumberBox" aria-hidden="true">
+                              <small>CH</small>
+                              <strong>{chapterIndex + 1}</strong>
+                            </span>
+                          </div>
                           <Link
                             to={`/read/${encodeURIComponent(chapter.id)}`}
                             style={{ ...styles.chapterLink, flex: 1 }}

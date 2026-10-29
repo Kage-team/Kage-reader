@@ -10113,6 +10113,275 @@ main
   border-color: color-mix(in srgb, var(--app-border) 86%, transparent);
 }
 
+/* Dense desktop series detail layout: align the page with the Yomu-style modal. */
+@media (min-width: 681px) {
+  .seriesPage {
+    padding: 28px 34px 48px !important;
+  }
+
+  .seriesPage > section {
+    width: min(900px, 100%) !important;
+    max-width: 900px !important;
+    margin: 0 auto !important;
+    border: 1px solid #252a2a !important;
+    border-radius: 24px !important;
+    background: #080909 !important;
+    overflow: hidden;
+  }
+
+  .seriesPage > section > header {
+    min-height: 56px !important;
+    padding: 12px 24px !important;
+    border-bottom: 1px solid #202424 !important;
+  }
+
+  .seriesPage .seriesHero {
+    display: grid !important;
+    grid-template-columns: 148px minmax(0, 1fr) !important;
+    align-items: center !important;
+    column-gap: 24px !important;
+    min-height: 232px !important;
+    padding: 28px 28px 30px !important;
+    background: #080909 !important;
+  }
+
+  .seriesPage .seriesHero > .seriesCover {
+    width: 148px !important;
+    height: 198px !important;
+    border-radius: 14px !important;
+    margin: 0 !important;
+  }
+
+  .seriesPage .seriesHero > div:nth-child(2) {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    min-width: 0 !important;
+  }
+
+  .seriesPage .seriesHero > div:nth-child(2) > h1 {
+    margin: 0 !important;
+    max-width: 100% !important;
+    font-size: 26px !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.04em !important;
+  }
+
+  .seriesPage .seriesHero > div:nth-child(2) > p {
+    margin: 0 !important;
+    font-size: 11px !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase;
+  }
+
+  .seriesPage .seriesHero > div:nth-child(2) > div {
+    margin: 0 !important;
+    font-size: 12px !important;
+  }
+
+  .seriesPage .seriesHero > div:nth-child(2) > a[href^="/read/"] {
+    min-height: 40px !important;
+    margin-top: 4px !important;
+    padding: 0 16px !important;
+    border-radius: 10px !important;
+    font-size: 12px !important;
+  }
+
+  .seriesPage .seriesChapterSection {
+    border-top: 1px solid #202424 !important;
+    padding: 0 28px 28px !important;
+    background: #080909 !important;
+  }
+
+  .seriesPage .seriesChapterHeader {
+    min-height: 68px !important;
+    padding: 16px 0 !important;
+  }
+
+  .seriesPage .seriesChapterHeading {
+    font-size: 20px !important;
+    letter-spacing: -0.03em !important;
+  }
+
+  .seriesPage .seriesChapterTools {
+    display: grid !important;
+    grid-template-columns: auto minmax(180px, 1fr) auto !important;
+    align-items: center !important;
+    gap: 0 !important;
+    padding: 8px !important;
+    margin-bottom: 14px !important;
+    border: 1px solid #252a2a !important;
+    border-radius: 10px !important;
+    background: #111111 !important;
+  }
+
+  .seriesPage .seriesChapterSelectAll {
+    height: 38px !important;
+    padding: 0 14px !important;
+    border: 0 !important;
+    border-right: 1px solid #252a2a !important;
+    border-radius: 0 !important;
+  }
+
+  .seriesPage .seriesChapterSearch {
+    width: auto !important;
+    min-width: 0 !important;
+    height: 38px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+
+  .seriesPage .seriesChapterSearch input {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 13px !important;
+  }
+
+  .seriesPage .seriesChapterSortControl {
+    display: flex !important;
+    height: 38px !important;
+    border-left: 1px solid #252a2a !important;
+  }
+
+  .seriesPage .seriesChapterSortControl button {
+    height: 38px !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+  }
+
+  .seriesPage .chapterVolumeGroup {
+    padding: 10px 4px 6px !important;
+    font-size: 10px !important;
+    letter-spacing: 0.12em !important;
+  }
+
+  .seriesPage .seriesChapterItem {
+    margin-bottom: 8px !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  .seriesPage .seriesChapterRow {
+    display: grid !important;
+    grid-template-columns: 48px minmax(0, 1fr) 40px !important;
+    align-items: center !important;
+    gap: 16px !important;
+    min-height: 72px !important;
+    padding: 12px 16px !important;
+    border: 1px solid #252a2a !important;
+    border-radius: 14px !important;
+    background: #111111 !important;
+    transition: background 150ms ease, border-color 150ms ease !important;
+  }
+
+  .seriesPage .seriesChapterRow:hover {
+    background: #1a1a1a !important;
+    border-color: #3b4242 !important;
+  }
+
+  .seriesPage .seriesChapterSelectCell {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .seriesPage .seriesChapterCheckbox {
+    position: absolute !important;
+    width: 16px !important;
+    height: 16px !important;
+    opacity: 0 !important;
+  }
+
+  .seriesPage .seriesChapterSelectCell:focus-within {
+    outline: 2px solid #12b89a;
+    outline-offset: 2px;
+    border-radius: 10px;
+  }
+
+  .seriesPage .chapterNumberBox {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+    background: #1b1d1d !important;
+    color: #879393 !important;
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+  }
+
+  .seriesPage .chapterNumberBox small {
+    font-size: 8px !important;
+    letter-spacing: 0.08em;
+  }
+
+  .seriesPage .chapterNumberBox strong {
+    color: #d9dfdf !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+  }
+
+  .seriesPage .seriesChapterSelectCell:hover .chapterNumberBox {
+    background: #f4f5f5 !important;
+    color: #101313 !important;
+  }
+
+  .seriesPage .seriesChapterSelectCell:hover .chapterNumberBox strong {
+    color: #101313 !important;
+  }
+
+  .seriesPage .seriesChapterRow > a {
+    min-width: 0 !important;
+    padding: 0 !important;
+  }
+
+  .seriesPage .chapterTitleLine strong {
+    display: block !important;
+    overflow: hidden !important;
+    font-size: 14px !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .seriesPage .chapterPageCount {
+    display: block !important;
+    margin-top: 3px !important;
+    color: #718080 !important;
+    font-size: 11px !important;
+  }
+
+  .seriesPage .chapterStatusToggle {
+    width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    border: 1px solid #252a2a !important;
+    border-radius: 999px !important;
+    font-size: 0 !important;
+  }
+
+  .seriesPage .chapterStatusToggle::after {
+    content: "›";
+    color: #c8d0d0;
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .seriesPage .chapterStatusActionText {
+    display: none !important;
+  }
+
+  .seriesPage .seriesChapterProgress {
+    display: none !important;
+  }
+}
+
 @media (max-width: 680px) {
   main .seriesPage,
   main .seriesPage > section.seriesChapterSection {
@@ -10151,11 +10420,25 @@ main
     align-items: center;
   }
 
-  .seriesChapterRow > .seriesChapterCheckbox {
+  .seriesChapterRow > .seriesChapterSelectCell {
     grid-area: check;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .seriesChapterRow > .seriesChapterSelectCell .seriesChapterCheckbox {
+    position: static !important;
+    opacity: 1 !important;
     width: 20px;
     height: 20px;
     margin: 0 !important;
+  }
+
+  .seriesChapterRow > .seriesChapterSelectCell .chapterNumberBox {
+    display: none !important;
   }
 
   .seriesChapterRow > a {
