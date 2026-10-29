@@ -10962,6 +10962,121 @@ main
   }
 }
 
+/* Final dense series controls and safe cover sizing. */
+.seriesPage .seriesCover {
+  flex: 0 0 auto !important;
+  overflow: hidden !important;
+  border-radius: 12px !important;
+  aspect-ratio: 2 / 3 !important;
+}
+
+.seriesPage .seriesCoverImage {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 2 / 3 !important;
+  object-fit: cover !important;
+}
+
+.seriesPage .seriesChapterSortControl {
+  position: relative !important;
+  display: block !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 150px !important;
+  border: 0 !important;
+}
+
+.seriesPage .seriesChapterSortControl select {
+  appearance: none !important;
+  width: 100% !important;
+  height: 38px !important;
+  padding: 0 30px 0 12px !important;
+  border: 1px solid #303737 !important;
+  border-radius: 10px !important;
+  background: #111111 !important;
+  color: #d7dddd !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+
+.seriesPage .seriesChapterSortControl::after {
+  content: "⌄";
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  color: #9ba7a7;
+  pointer-events: none;
+}
+
+@media (min-width: 681px) {
+  .seriesPage .seriesChapterTools {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px !important;
+    background: #111111 !important;
+  }
+
+  .seriesPage .seriesChapterSelectAll {
+    flex: 0 0 auto !important;
+    min-height: 38px !important;
+    border-right: 1px solid #2b3131 !important;
+    border-radius: 0 !important;
+  }
+
+  .seriesPage .seriesChapterSearch {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .seriesPage .seriesChapterSortControl {
+    min-width: 158px !important;
+  }
+
+  .seriesPage .seriesChapterRow {
+    grid-template-columns: 48px minmax(0, 1fr) 40px !important;
+    gap: 10px !important;
+    min-height: 64px !important;
+    padding: 10px 14px !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .seriesPage .seriesChapterTools {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px !important;
+  }
+
+  .seriesPage .seriesChapterSearch {
+    order: 1 !important;
+    flex: 1 1 calc(100% - 48px) !important;
+    min-width: 0 !important;
+  }
+
+  .seriesPage .seriesChapterSelectAll {
+    order: 2 !important;
+    flex: 0 0 auto !important;
+    min-height: 36px !important;
+  }
+
+  .seriesPage .seriesChapterSortControl {
+    order: 3 !important;
+    min-width: 0 !important;
+    flex: 1 1 150px !important;
+  }
+
+  .seriesPage .seriesChapterSortControl select {
+    height: 36px !important;
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }

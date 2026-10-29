@@ -572,11 +572,12 @@ export function SeriesPage() {
         <section style={styles.seriesHero}>
           <div className="seriesCover" style={styles.seriesCover}>
             {coverPreviewUrl || coverUrl ? (
-              <img
-                src={coverPreviewUrl || coverUrl}
-                alt={`${series.title} cover`}
-                style={styles.seriesCoverImage}
-              />
+                    <img
+                      className="seriesCoverImage"
+                      src={coverPreviewUrl || coverUrl}
+                      alt={`${series.title} cover`}
+                      style={styles.seriesCoverImage}
+                    />
             ) : (
               <span style={styles.seriesCoverFallback}>
                 <BookOpen size={36} />
@@ -994,40 +995,15 @@ export function SeriesPage() {
                     <button type="button" onClick={() => void markSelectedChapters(false)}>Mark unread</button>
                   </div>
                 ) : null}
-                <div className="seriesChapterSortControl" role="group" aria-label="Chapter order">
-                  <button
-                    type="button"
-                    className={chapterSortMode === "oldest" ? "is-active" : ""}
-                    aria-pressed={chapterSortMode === "oldest"}
-                    onClick={() => setChapterSortMode("oldest")}
-                  >
-                    Ascending
-                  </button>
-                  <button
-                    type="button"
-                    className={chapterSortMode === "newest" ? "is-active" : ""}
-                    aria-pressed={chapterSortMode === "newest"}
-                    onClick={() => setChapterSortMode("newest")}
-                  >
-                    Descending
-                  </button>
-                  <button
-                    type="button"
-                    className={chapterSortMode === "unread" ? "is-active" : ""}
-                    aria-pressed={chapterSortMode === "unread"}
-                    onClick={() => setChapterSortMode("unread")}
-                  >
-                    Unread
-                  </button>
-                  <button
-                    type="button"
-                    className={chapterSortMode === "completed" ? "is-active" : ""}
-                    aria-pressed={chapterSortMode === "completed"}
-                    onClick={() => setChapterSortMode("completed")}
-                  >
-                    Completed
-                  </button>
-                </div>
+                <label className="seriesChapterSortControl">
+                  <span className="sr-only">Sort chapters</span>
+                  <select value={chapterSortMode} onChange={(event) => setChapterSortMode(event.currentTarget.value as typeof chapterSortMode)}>
+                    <option value="oldest">Sort: Ascending</option>
+                    <option value="newest">Sort: Descending</option>
+                    <option value="unread">Sort: Unread</option>
+                    <option value="completed">Sort: Completed</option>
+                  </select>
+                </label>
               </div>
               {visibleChapters.length === 0 ? (
                 <div className="seriesEmptyState">
