@@ -83,6 +83,7 @@ async function saveArchiveAsChapter(
   source: ArchiveSource,
   targetSeriesId?: string,
   reportStage?: (message: string, progress?: number) => void,
+  targetSeriesTitle?: string,
 ): Promise<ImportedChapterSummary> {
   const bundle = await extractArchiveBundleInWorker(source, (message) =>
     reportStage?.(message, 2),
@@ -112,9 +113,9 @@ async function saveArchiveAsChapter(
   if (targetSeriesId && !existingSeries) {
     throw new Error("The selected series no longer exists.");
   }
-  const seriesTitle = targetSeriesId
+  const seriesTitle = targetSeriesTitle ?? (targetSeriesId
     ? (existingSeries?.title ?? derivedSeriesTitle)
-    : derivedSeriesTitle;
+    : derivedSeriesTitle);
   const existingChapters = await listChapters(seriesId);
   const previousSourceChapters = existingChapters.filter(
     (chapter) => chapter.sourceName === source.name,
@@ -355,6 +356,14 @@ function isSupportedArchiveName(name: string): boolean {
   );
 }
 
+function archiveSeriesStem(name: string): string {
+  return name
+    .replace(/\.[^.]+$/, "")
+    .replace(/\s*(?:issue|chapter|ch\.?|episode|ep\.?|volume|vol\.?)\s*#?\s*\d+.*$/i, "")
+    .replace(/[\s._-]+$/, "")
+    .trim();
+}
+
 export async function importArchiveSources(
   sources: ArchiveSource[],
   onProgress?: (event: ImportProgressEvent) => void,
@@ -366,6 +375,12 @@ export async function importArchiveSources(
   const normalizedSources = await packageLooseImageSources(sources);
   if (targetSeriesId) {
     normalizedSources.sort((left, right) => naturalSort(left.name, right.name));
+  }
+
+  const archiveStemCounts = new Map<string, number>();
+  for (const source of normalizedSources) {
+    const stem = archiveSeriesStem(source.name);
+    archiveStemCounts.set(stem, (archiveStemCounts.get(stem) ?? 0) + 1);
   }
 
   for (const [index, source] of normalizedSources.entries()) {
@@ -407,9 +422,14 @@ export async function importArchiveSources(
     });
 
     try {
+      const stem = archiveSeriesStem(source.name);
+      const batchSeriesId =
+        !targetSeriesId && (archiveStemCounts.get(stem) ?? 0) > 1
+          ? deriveSeriesId(`${stem}.cbz`, { tags: [] })
+          : undefined;
       const summary = await saveArchiveAsChapter(
         source,
-        targetSeriesId,
+        targetSeriesId ?? batchSeriesId,
         (message, progress) =>
           onProgress?.({
             ...progressBase,
@@ -417,6 +437,7 @@ export async function importArchiveSources(
             progress,
             message,
           }),
+        batchSeriesId ? stem : undefined,
       );
       if (summary.pageCount > 0) {
         imported.push(summary);
