@@ -10326,6 +10326,93 @@ main
     min-height: 36px !important;
     border-radius: 11px !important;
   }
+
+  /* Minimal reading detail surface: one calm card, one clear action hierarchy. */
+  .seriesPage {
+    min-height: 100dvh;
+    background: #050606 !important;
+  }
+
+  .seriesPage > section {
+    width: calc(100% - 24px) !important;
+    margin: 12px !important;
+    border: 1px solid #242929 !important;
+    border-radius: 22px !important;
+    background: #080a0a !important;
+    overflow: hidden;
+  }
+
+  .seriesPage > section > header {
+    min-height: 52px !important;
+    padding: 10px 16px !important;
+    border-bottom: 1px solid #202525;
+  }
+
+  .seriesPage .seriesHero {
+    display: grid !important;
+    grid-template-columns: 128px minmax(0, 1fr) !important;
+    align-items: end !important;
+    gap: 16px !important;
+    padding: 20px 16px 24px !important;
+    background: #080a0a !important;
+  }
+
+  .seriesPage .seriesCover {
+    width: 128px !important;
+    height: 180px !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+  }
+
+  .seriesPage .seriesHeroContent {
+    min-width: 0 !important;
+    gap: 9px !important;
+  }
+
+  .seriesPage .seriesHeroContent .kicker {
+    margin: 0 !important;
+    font-size: 10px !important;
+    letter-spacing: 0.12em !important;
+  }
+
+  .seriesPage .seriesHeroContent h1 {
+    margin: 0 !important;
+    font-size: 25px !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.04em !important;
+  }
+
+  .seriesPage .seriesHeroContent .heroFacts {
+    font-size: 12px !important;
+  }
+
+  .seriesPage .seriesHeroContent .primaryAction,
+  .seriesPage .seriesHeroContent .seriesReadButton {
+    width: 100% !important;
+    min-height: 42px !important;
+    border-radius: 12px !important;
+  }
+
+  .seriesPage .seriesChapterSection {
+    width: 100% !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-top: 1px solid #202525 !important;
+    border-radius: 0 !important;
+  }
+
+  .seriesPage .seriesChapterTools {
+    grid-template-columns: 94px minmax(0, 1fr) !important;
+    padding: 12px !important;
+  }
+
+  .seriesPage .seriesChapterSearch input::placeholder {
+    color: #718080;
+  }
+
+  .seriesPage .seriesChapterItem {
+    padding: 9px 12px !important;
+  }
 }
 
 .librarySearchFilter:focus-within {
