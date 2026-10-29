@@ -11234,6 +11234,250 @@ main
   }
 }
 
+/* Dense desktop-first series detail treatment. */
+.seriesPage {
+  max-width: 1040px !important;
+  padding: 12px 20px 24px !important;
+}
+
+.seriesPage > section {
+  max-width: none !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.seriesPage .seriesHero {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 16px !important;
+  padding: 12px 0 16px !important;
+}
+
+.seriesPage .seriesCover {
+  width: 128px !important;
+  height: 192px !important;
+  flex: 0 0 128px !important;
+  border-radius: 8px !important;
+}
+
+.seriesPage .seriesHeroContent {
+  min-width: 0 !important;
+  gap: 6px !important;
+  padding: 0 !important;
+}
+
+.seriesPage .seriesHeroContent h1,
+.seriesPage h1 {
+  max-width: 100% !important;
+  font-size: 20px !important;
+  line-height: 1.15 !important;
+}
+
+.seriesPage .kicker,
+.seriesPage .heroFacts,
+.seriesPage .heroFacts span {
+  font-size: 12px !important;
+}
+
+.seriesPage .seriesSynopsis,
+.seriesPage .seriesNotes,
+.seriesPage .seriesHeroContent > ul {
+  margin-block: 4px !important;
+}
+
+.seriesPage .startReadingButton,
+.seriesPage .seriesEditButton {
+  width: fit-content !important;
+  min-height: 32px !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+}
+
+.seriesPage .seriesChapterSection {
+  margin-top: 4px !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.seriesPage .seriesChapterHeader {
+  min-height: 34px !important;
+  padding: 0 0 8px !important;
+}
+
+.seriesPage .seriesChapterHeader h2 {
+  font-size: 18px !important;
+}
+
+.seriesPage .seriesChapterTools {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  margin-bottom: 8px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.seriesPage .seriesChapterSearch {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 36px !important;
+}
+
+.seriesPage .seriesChapterSortControl,
+.seriesPage .seriesChapterSelectAll {
+  flex: 0 0 auto !important;
+  height: 36px !important;
+}
+
+.seriesPage .seriesChapterList {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  padding: 0 !important;
+}
+
+.seriesPage .seriesChapterItem {
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.seriesPage .seriesChapterRow {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 42px !important;
+  padding: 8px 12px !important;
+  border: 1px solid #252b2b !important;
+  border-radius: 8px !important;
+  background: #101212 !important;
+}
+
+.seriesPage .seriesChapterSelectCell {
+  flex: 0 0 16px !important;
+  width: 16px !important;
+}
+
+.seriesPage .seriesChapterRow .chapterLink {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  gap: 8px !important;
+}
+
+.seriesPage .chapterTitleLine {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  gap: 8px !important;
+}
+
+.seriesPage .chapterTitleLine strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.seriesPage .chapterPageCount {
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  color: var(--app-muted) !important;
+  font-size: 12px !important;
+}
+
+.seriesPage .chapterNumberBox {
+  width: auto !important;
+  height: auto !important;
+  min-width: 32px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--app-muted) !important;
+  font-size: 11px !important;
+}
+
+.seriesPage .chapterStatusToggle {
+  flex: 0 0 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-width: 20px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--app-muted) !important;
+}
+
+.seriesPage .chapterStatusActionText {
+  display: none !important;
+}
+
+.seriesEditorDialog {
+  max-width: 720px !important;
+  padding: 16px !important;
+}
+
+.seriesEditorDetails,
+.seriesEditorForm,
+.seriesEditorSection {
+  gap: 12px !important;
+}
+
+@media (max-width: 680px) {
+  .seriesPage {
+    padding: 8px 12px 72px !important;
+  }
+
+  .seriesPage .seriesHero {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 8px 0 12px !important;
+    text-align: center !important;
+  }
+
+  .seriesPage .seriesCover {
+    width: 96px !important;
+    height: 144px !important;
+    flex-basis: 96px !important;
+  }
+
+  .seriesPage .seriesHeroContent {
+    width: 100% !important;
+    align-items: center !important;
+  }
+
+  .seriesPage .seriesChapterTools {
+    flex-wrap: wrap !important;
+    height: auto !important;
+    min-height: 36px !important;
+  }
+
+  .seriesPage .seriesChapterSearch {
+    flex-basis: calc(100% - 44px) !important;
+  }
+
+  .seriesPage .seriesChapterRow {
+    min-height: 40px !important;
+    padding: 7px 9px !important;
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
