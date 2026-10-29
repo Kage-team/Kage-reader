@@ -36,8 +36,12 @@ function stripChapterSuffix(name: string): string {
   ];
 
   let result = name;
-  for (const pattern of patterns) {
-    result = result.replace(pattern, "").trim();
+  let previous = "";
+  while (result !== previous) {
+    previous = result;
+    for (const pattern of patterns) {
+      result = result.replace(pattern, "").trim();
+    }
   }
 
   return result.replace(/[\s._-]+$/u, "").trim();

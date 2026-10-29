@@ -584,7 +584,7 @@ export function ReaderPage() {
       frame.scrollHeight > frame.clientHeight + 1;
 
     const startAutoScroll = () => {
-      if (isDisposed || !hasScrollableContent()) return;
+      if (isDisposed) return;
       resizeObserver?.disconnect();
 
       if (readerPreferences.readerAutoScrollMode === "jump") {
@@ -2331,6 +2331,7 @@ export function ReaderPage() {
         height: "auto",
         maxWidth: `${fitWidth}px`,
         maxHeight: "none",
+        display: "block",
         ...(pageRotation ? { transform: `rotate(${pageRotation}deg)` } : {}),
         transformOrigin: "center",
       };
@@ -2804,6 +2805,7 @@ export function ReaderPage() {
                             key={page.id}
                             className="readerContinuousPage"
                             data-reader-page-index={page.index}
+                            style={{ lineHeight: 0 }}
                           >
                             {renderComicPage(
                               page,
@@ -2826,8 +2828,10 @@ export function ReaderPage() {
                     return url ? (
                       <div
                         key={page.id}
-                        className="readerContinuousPage"
-                        data-reader-page-index={index}
+                      className="readerContinuousPage"
+                      data-reader-page-index={index}
+                      style={{ lineHeight: 0 }}
+
                       >
                         {renderComicPage(
                           page,
@@ -3131,7 +3135,7 @@ export function ReaderPage() {
                 updateNovelProgressDisplay(progress);
                 frame.scrollTo({
                   top: progress * (frame.scrollHeight - frame.clientHeight),
-                  behavior: "instant",
+                  behavior: "auto",
                 });
               } else {
                 selectReaderPage(Number(event.currentTarget.value), "instant");
@@ -3263,7 +3267,7 @@ export function ReaderPage() {
                   updateNovelProgressDisplay(progress);
                   frame.scrollTo({
                     top: progress * (frame.scrollHeight - frame.clientHeight),
-                    behavior: "instant",
+                    behavior: "auto",
                   });
                 }}
               />
@@ -4264,7 +4268,7 @@ export function ReaderPage() {
                         id="reader-creep-speed"
                         aria-label="Creep speed"
                         type="range"
-                        min={0}
+                        min={1}
                         max={100}
                         value={readerPreferences.readerAutoScrollCreepSpeed}
                         onChange={(event) =>
