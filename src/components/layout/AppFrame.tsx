@@ -33,19 +33,19 @@ export function AppFrame({ children }: PropsWithChildren) {
       <aside className="appSidebar" aria-label="Primary navigation">
         <nav className="appNavGroup" aria-label="Workspace">
           <p className="appNavLabel">Workspace</p>
-          <Link to="/?view=all" className={navClass(false)} data-active={activeTab === "library"}>
+          <Link to="/?view=all" className={navClass(activeTab === "library")} aria-current={activeTab === "library" ? "page" : undefined} data-active={activeTab === "library"}>
             <BookOpen size={17} />
             <span>Library</span>
           </Link>
-          <Link to="/import" className={navClass(activeTab === "add")} data-active={activeTab === "add"}>
+          <Link to="/import" className={navClass(activeTab === "add")} aria-current={activeTab === "add" ? "page" : undefined} data-active={activeTab === "add"}>
             <FileUp size={17} />
             <span>Add</span>
           </Link>
-          <Link to="/?view=saved" className={navClass(activeTab === "saved")} data-active={activeTab === "saved"}>
+          <Link to="/?view=saved" className={navClass(activeTab === "saved")} aria-current={activeTab === "saved" ? "page" : undefined} data-active={activeTab === "saved"}>
             <Heart size={17} />
             <span>Saved</span>
           </Link>
-          <Link to="/?view=history" className={navClass(activeTab === "activity")} data-active={activeTab === "activity"}>
+          <Link to="/?view=history" className={navClass(activeTab === "activity")} aria-current={activeTab === "activity" ? "page" : undefined} data-active={activeTab === "activity"}>
             <History size={17} />
             <span>Activity</span>
           </Link>
@@ -53,7 +53,7 @@ export function AppFrame({ children }: PropsWithChildren) {
 
         <nav className="appNavGroup" aria-label="Application">
           <p className="appNavLabel">Application</p>
-          <Link to="/settings" className={navClass(activeTab === "more")} data-active={activeTab === "more"}>
+          <Link to="/settings" className={navClass(activeTab === "more")} aria-current={activeTab === "more" ? "page" : undefined} data-active={activeTab === "more"}>
             <Settings size={17} />
             <span>More</span>
           </Link>

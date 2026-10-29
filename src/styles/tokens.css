@@ -29,6 +29,7 @@
   --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
 
   --touch-target: 44px;
+  --app-nav-breakpoint: 900px;
   --app-muted: #a3aaa8;
 }
 

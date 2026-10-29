@@ -1413,6 +1413,44 @@ button:disabled {
   }
 }
 
+@media (max-width: 899px) {
+  .appShell {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .appSidebar {
+    display: none;
+  }
+
+  .appMobileNav {
+    display: grid;
+  }
+
+  .appView {
+    padding-bottom: calc(var(--mobile-nav-height, 64px) + env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 900px) {
+  .appShell {
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+  }
+
+  .appSidebar {
+    display: flex;
+  }
+
+  .appMobileNav {
+    display: none;
+  }
+
+  .appView {
+    padding-bottom: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .librarySelectionToolbar,
   .historyLink {
