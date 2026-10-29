@@ -1051,7 +1051,7 @@ export function SeriesPage() {
                   const progress = progressByChapter[chapter.id];
                   const previousChapter = visibleChapters[chapterIndex - 1];
                   const startsVolumeGroup = chapterIndex === 0 || previousChapter?.volume !== chapter.volume;
-                  const volumeLabel = chapter.volume !== undefined ? `Volume ${chapter.volume}` : "Other chapters";
+                  const volumeLabel = chapter.volume !== undefined ? `Volume ${chapter.volume}` : "";
   const titleLabel = getChapterDisplayTitle(chapter, chapterIndex + 1);
                     const progressPercent = progress
                       ? progress.completedAt
@@ -1065,7 +1065,7 @@ export function SeriesPage() {
                       : 0;
                     return (
                       <>
-                        {startsVolumeGroup ? <div className="chapterVolumeGroup" aria-label={volumeLabel}>{volumeLabel}</div> : null}
+                        {startsVolumeGroup && volumeLabel ? <div className="chapterVolumeGroup" aria-label={volumeLabel}>{volumeLabel}</div> : null}
                       <div className={`seriesChapterItem${mostRecentChapter?.id === chapter.id ? " is-resume" : ""}`}>
                         <div className="seriesChapterRow">
                           <div className="seriesChapterSelectCell">

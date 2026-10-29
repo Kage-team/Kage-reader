@@ -10811,6 +10811,157 @@ main
   }
 }
 
+/* Final responsive chapter treatment: no nested list shell, dense cards, mobile-safe toolbar. */
+@media (min-width: 681px) {
+  .seriesPage > section > .seriesChapterSection {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 28px 28px !important;
+  }
+
+  .seriesPage .seriesChapterList {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .seriesPage .seriesChapterItem {
+    margin-bottom: 8px !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .seriesPage .seriesChapterTools {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas: "search" "filters" !important;
+    gap: 8px !important;
+    padding: 10px !important;
+    overflow: hidden !important;
+  }
+
+  .seriesPage .seriesChapterSearch {
+    grid-area: search !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .seriesPage .seriesChapterSortControl {
+    grid-area: filters !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .seriesPage .seriesChapterSelectAll {
+    flex: 0 0 auto !important;
+    min-height: 36px !important;
+    margin-right: 8px !important;
+    padding: 0 10px !important;
+    border: 1px solid #323838 !important;
+    border-radius: 10px !important;
+  }
+
+  .seriesPage .seriesChapterSortControl button {
+    flex: 0 0 auto !important;
+    min-height: 36px !important;
+    padding-inline: 11px !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    font-size: 11px !important;
+  }
+
+  .seriesPage .seriesChapterList {
+    padding: 0 12px !important;
+  }
+
+  .seriesPage .seriesChapterItem {
+    margin-bottom: 8px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .seriesPage .seriesChapterRow {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    min-height: 64px !important;
+    padding: 10px 12px !important;
+    border: 1px solid #2a3030 !important;
+    border-radius: 12px !important;
+    background: #111111 !important;
+  }
+
+  .seriesPage .seriesChapterSelectCell {
+    flex: 0 0 16px !important;
+    width: 16px !important;
+    height: 32px !important;
+  }
+
+  .seriesPage .seriesChapterSelectCell .seriesChapterCheckbox {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .seriesPage .seriesChapterSelectCell .chapterNumberBox {
+    display: none !important;
+  }
+
+  .seriesPage .seriesChapterRow > a {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .seriesPage .chapterTitleLine strong {
+    display: flex !important;
+    min-width: 0 !important;
+    align-items: center !important;
+    gap: 5px !important;
+    font-size: 13px !important;
+  }
+
+  .seriesPage .chapterTitleText {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .seriesPage .chapterPageCount {
+    margin-top: 3px !important;
+    color: #8a9898 !important;
+    font-size: 11px !important;
+  }
+
+  .seriesPage .chapterStatusToggle {
+    flex: 0 0 32px !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    border-radius: 9px !important;
+    font-size: 0 !important;
+  }
+
+  .seriesPage .chapterStatusToggle::after {
+    content: "›";
+    color: #b7c1c1;
+    font-size: 20px;
+  }
+
+  .seriesPage .chapterStatusActionText {
+    display: none !important;
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
