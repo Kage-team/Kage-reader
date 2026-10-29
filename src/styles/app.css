@@ -9385,6 +9385,83 @@ main
   }
 }
 
+.libraryCardSelect {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 4;
+  display: grid !important;
+  width: 34px;
+  height: 34px;
+  padding: 0 !important;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 54%);
+  color: #fff;
+  backdrop-filter: blur(8px);
+}
+
+.libraryCardSelect input {
+  width: 25px;
+  height: 25px;
+  margin: 0;
+  appearance: none;
+  border: 2px solid rgb(255 255 255 / 88%);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 35%);
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.libraryCardSelect input:hover {
+  transform: scale(1.08);
+}
+
+.libraryCardSelect input:checked {
+  border-color: #bef264;
+  background: #84cc16 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12 4 4L19 6' fill='none' stroke='%2311130f' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+  box-shadow: 0 0 0 3px rgb(132 204 22 / 24%), 0 4px 14px rgb(0 0 0 / 42%);
+}
+
+.libraryCardSelectLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 899px) {
+  .librarySelectionToolbar.is-active {
+    display: grid !important;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    width: calc(100vw - 32px) !important;
+    max-width: calc(100vw - 32px) !important;
+    gap: 6px !important;
+    padding: 8px !important;
+    overflow: hidden !important;
+    border-radius: 16px !important;
+  }
+
+  .librarySelectionToolbar.is-active .librarySelectionPrimaryActions {
+    grid-column: 1 / -1;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .librarySelectionToolbar.is-active .librarySelectionPrimaryActions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .librarySelectionToolbar.is-active .libraryBulkMore {
+    justify-self: end;
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
