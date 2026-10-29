@@ -59,8 +59,24 @@ describe("packageLooseImageSources", () => {
     expect(packaged.map((source) => source.name)).toEqual(["Manga Name.cbz"]);
     const entries = await extractArchiveEntries(packaged[0]!);
     expect(entries.map((entry) => entry.name)).toEqual([
-      "Oneshot/page_1.jpg",
-      "Oneshot/page_2.jpg",
+      "pages/000001.jpg",
+      "pages/000002.jpg",
+    ]);
+  });
+
+  it("keeps issue-named images from becoming separate chapters", async () => {
+    const packaged = await packageLooseImageSources([
+      { name: "Hellboy Issue #1.jpg", blob: new Blob(["one"]) },
+      { name: "Hellboy Issue #2.jpg", blob: new Blob(["two"]) },
+      { name: "Hellboy Issue #3.jpg", blob: new Blob(["three"]) },
+    ]);
+
+    expect(packaged).toHaveLength(1);
+    const entries = await extractArchiveEntries(packaged[0]!);
+    expect(entries.map((entry) => entry.name)).toEqual([
+      "pages/000001.jpg",
+      "pages/000002.jpg",
+      "pages/000003.jpg",
     ]);
   });
 

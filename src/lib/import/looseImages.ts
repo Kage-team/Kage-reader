@@ -81,6 +81,8 @@ export async function packageLooseImageSources(
     imagePaths.every(
       (parts) => parts.length > 1 && looksLikeChapterFolder(parts[0] ?? ""),
     );
+  const preserveFolderPaths =
+    firstPartsAreChapters || imagePaths.some((parts) => parts.length > 2);
 
   for (const source of sources) {
     if (
@@ -98,15 +100,12 @@ export async function packageLooseImageSources(
       : firstPartsAreChapters
         ? "Loose Images"
         : (sharedRoot ?? (hasFolderPath ? pathParts[0] : "Loose Images"));
-    const entryPath =
-      rootIsSeries || firstPartsAreChapters
-        ? pathParts.join("/")
-        : sharedRoot && pathParts[0] === sharedRoot
-          ? pathParts.slice(1).join("/")
-          : hasFolderPath
-            ? pathParts.slice(1).join("/")
-            : (pathParts[0] ?? source.name);
     const entries = imageGroups.get(title) ?? new Map<string, ArchiveSource>();
+    const entryPath = preserveFolderPaths
+      ? sharedRoot && pathParts[0] === sharedRoot
+        ? pathParts.slice(1).join("/")
+        : pathParts.join("/")
+      : `pages/${String(entries.size + 1).padStart(6, "0")}${extensionFor(source.name)}`;
     entries.set(entryPath || source.name, source);
     imageGroups.set(title, entries);
   }
