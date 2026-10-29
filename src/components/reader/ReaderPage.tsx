@@ -1067,6 +1067,29 @@ export function ReaderPage() {
       ) {
         return;
       }
+
+      if (readerMode === "webtoon") {
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          event.preventDefault();
+          viewerFrameRef.current?.scrollBy({
+            top: event.key === "ArrowDown" ? 300 : -300,
+            behavior: "smooth",
+          });
+        }
+        return;
+      }
+
+      if (event.key === "ArrowRight" || event.key === " " || event.key === "Spacebar") {
+        event.preventDefault();
+        setCurrentPage((previous) => Math.min(previous + 1, pages.length - 1));
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        setCurrentPage((previous) => Math.max(previous - 1, 0));
+        return;
+      }
+
       setIsUiVisible(true);
       if (chromeHideTimerRef.current !== undefined) {
         window.clearTimeout(chromeHideTimerRef.current);
@@ -1131,6 +1154,7 @@ export function ReaderPage() {
   }, [
     chapterId,
     pages.length,
+    readerMode,
     readingDirection,
     isNovel,
     isImmersive,
@@ -1536,8 +1560,8 @@ export function ReaderPage() {
   }
 
   function revealReaderControls(): void {
-    setIsUiVisible(true);
-    if (chromeHideTimerRef.current !== undefined) {
+      setIsUiVisible(true);
+      if (chromeHideTimerRef.current !== undefined) {
       window.clearTimeout(chromeHideTimerRef.current);
       chromeHideTimerRef.current = undefined;
     }

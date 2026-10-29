@@ -1803,17 +1803,41 @@ button:disabled {
   }
 }
 
+.libraryEntries.is-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .libraryEntries.is-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .libraryEntries.is-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .libraryEntries.is-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
 .librarySelectionToolbar.is-active {
   position: fixed;
   top: auto;
   right: auto;
-  bottom: 32px;
+  bottom: 2rem;
   left: 50%;
   width: max-content;
   max-width: calc(100vw - 32px);
   min-height: 0;
   padding: 10px 24px;
   transform: translateX(-50%);
+  z-index: 50;
   border: 1px solid var(--app-border-strong);
   border-radius: 999px;
   background: var(--app-panel-raised);

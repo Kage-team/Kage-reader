@@ -394,11 +394,6 @@ export function LibraryPage() {
     .filter((entry) => entry.resume && entry.resume.pageCount > 0)
     .sort((left, right) => (right.resume?.updatedAt ?? 0) - (left.resume?.updatedAt ?? 0))
     .slice(0, 3);
-  const landingQueueEntries = entries
-    .filter((entry) => entry.queueOrder !== undefined)
-    .sort((left, right) => (left.queueOrder ?? 0) - (right.queueOrder ?? 0))
-    .slice(0, 6);
-  const landingFavoriteEntries = entries.filter((entry) => entry.isFavorite).slice(0, 6);
   const activityTitleCount = new Set(visibleRecentChapters.map((item) => item.seriesId)).size;
   const latestActivity = visibleRecentChapters[0];
   const pageTitle =
@@ -469,18 +464,6 @@ export function LibraryPage() {
                     </Link>
                   ))}
                 </div>
-              </section>
-            ) : null}
-            {landingQueueEntries.length > 0 ? (
-              <section className="libraryLandingSection" aria-labelledby="queue-title">
-                <div className="libraryLandingHeader"><h2 id="queue-title">Queue</h2><Link className="libraryLandingViewAll" to="/?view=queue" aria-label="View all queued items"><ArrowRight size={18} aria-hidden="true" /></Link></div>
-                <div className="libraryCompactRail">{landingQueueEntries.map((entry) => <Link className="libraryCompactCard" key={entry.id} to={`/series/${encodeURIComponent(entry.id)}`}><span>{coverUrls[entry.id] ? <img src={coverUrls[entry.id]} alt="" /> : <BookOpen size={18} />}</span><strong>{entry.title}</strong></Link>)}</div>
-              </section>
-            ) : null}
-            {landingFavoriteEntries.length > 0 ? (
-              <section className="libraryLandingSection" aria-labelledby="favorites-title">
-                <div className="libraryLandingHeader"><h2 id="favorites-title">Favorites</h2><Link className="libraryLandingViewAll" to="/?view=favorites" aria-label="View all favorite items"><ArrowRight size={18} aria-hidden="true" /></Link></div>
-                <div className="libraryCompactRail">{landingFavoriteEntries.map((entry) => <Link className="libraryCompactCard" key={entry.id} to={`/series/${encodeURIComponent(entry.id)}`}><span>{coverUrls[entry.id] ? <img src={coverUrls[entry.id]} alt="" /> : <Heart size={18} />}</span><strong>{entry.title}</strong></Link>)}</div>
               </section>
             ) : null}
           </section>
@@ -993,6 +976,17 @@ export function LibraryPage() {
                       if (suppressNextCardClick.current) {
                         event.preventDefault();
                         suppressNextCardClick.current = false;
+                        return;
+                      }
+                      if (selectionMode) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setSelectedSeriesIds((current) => {
+                          const next = new Set(current);
+                          if (next.has(entry.id)) next.delete(entry.id);
+                          else next.add(entry.id);
+                          return next;
+                        });
                       }
                     }}
                     to={
