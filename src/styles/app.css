@@ -9788,6 +9788,118 @@ main
   .seriesChapterSortControl button { flex: 0 0 auto; }
 }
 
+@media (max-width: 680px) {
+  .seriesChapterHeader {
+    align-items: flex-start !important;
+    flex-wrap: wrap;
+    gap: 10px !important;
+  }
+
+  .seriesChapterHeader h2 {
+    white-space: normal !important;
+    font-size: 19px !important;
+    line-height: 1.2;
+  }
+
+  .seriesChapterActions {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0 !important;
+  }
+
+  .seriesChapterActions .seriesAddChapters,
+  .seriesChapterActions button {
+    min-height: 42px;
+  }
+
+  .seriesChapterTools {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas:
+      "search"
+      "select"
+      "bulk"
+      "sort" !important;
+    padding: 10px !important;
+    border-radius: 10px;
+  }
+
+  .seriesChapterSelectAll {
+    width: 100%;
+    justify-content: flex-start;
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--app-border);
+    border-radius: 8px;
+  }
+
+  .seriesChapterBulkActions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .seriesChapterBulkActions button {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .seriesChapterItem {
+    padding-block: 12px !important;
+  }
+
+  .seriesChapterRow {
+    display: grid !important;
+    grid-template-columns: 28px minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "check title action"
+      ". meta action" !important;
+    gap: 5px 8px !important;
+    align-items: center;
+  }
+
+  .seriesChapterCheckbox { grid-area: check; margin: 0 !important; }
+  .seriesChapterTitle { grid-area: title; min-width: 0; }
+  .seriesChapterMeta { grid-area: meta; min-width: 0; }
+  .seriesChapterRow > button { grid-area: action; align-self: center; }
+
+  .librarySelectionToolbar {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: calc(68px + env(safe-area-inset-bottom)) !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto auto !important;
+    gap: 6px !important;
+    padding: 8px !important;
+  }
+
+  .librarySelectionToolbar .librarySelectionCount {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .librarySelectionToolbar .librarySelectionPrimaryActions {
+    display: contents !important;
+  }
+
+  .librarySelectionToolbar .libraryBulkMore,
+  .librarySelectionToolbar .libraryBulkActionDanger {
+    min-width: 42px;
+  }
+
+  .librarySelectionToolbar .libraryBulkMore summary {
+    min-width: 42px;
+    width: auto;
+    padding-inline: 10px !important;
+  }
+
+  .libraryBulkMoreMenu {
+    right: 0 !important;
+    bottom: calc(100% + 8px) !important;
+    top: auto !important;
+    max-width: calc(100vw - 32px);
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }

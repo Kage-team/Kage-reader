@@ -1016,11 +1016,12 @@ export function LibraryPage() {
                   data-revealed={
                     revealedCardId === entry.id ? "true" : undefined
                   }
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    setRevealedCardId(entry.id);
-                    setOpenCardMenuId(entry.id);
-                  }}
+  onContextMenu={(event) => {
+  event.preventDefault();
+  if ("pointerType" in event.nativeEvent && event.nativeEvent.pointerType === "touch") return;
+  setRevealedCardId(entry.id);
+  setOpenCardMenuId(entry.id);
+  }}
   onPointerDown={(event) => {
   if (event.button !== 0) return;
   selectionPressTimer.current = window.setTimeout(() => {
