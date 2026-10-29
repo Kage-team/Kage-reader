@@ -35,19 +35,225 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  }
+
+.seriesEditorBackdrop .seriesEditorForm {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100dvh;
 }
 
-:root[data-theme="midnight"] {
-  --app-bg: #101725;
-  --app-sidebar: #111b2b;
-  --app-topbar: #101725ef;
-  --app-panel: #172235;
-  --app-panel-raised: #202d42;
-  --app-border: #2b3b53;
-  --app-border-strong: #3d5270;
-  --app-text: #f1f4fa;
-  --app-muted: #9ba9bd;
+.seriesEditorBackdrop .seriesEditorForm > .seriesEditorDetails,
+.seriesEditorBackdrop .seriesEditorForm > .seriesEditorSection {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: 20px !important;
+  border-bottom: 1px solid var(--app-border);
 }
+
+.seriesEditorBackdrop .seriesCoverEditor {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 14px !important;
+}
+
+.seriesEditorBackdrop .seriesCoverEditor img,
+.seriesEditorBackdrop .seriesCoverEditor > div {
+  width: 86px !important;
+  height: 112px !important;
+  flex: 0 0 86px;
+  object-fit: cover;
+}
+
+.seriesEditorBackdrop .seriesEditorForm .metadataFields,
+.seriesEditorBackdrop .seriesEditorForm .overrideGrid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+.seriesEditorBackdrop .seriesEditorForm .field {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 6px !important;
+}
+
+.seriesEditorBackdrop textarea.seriesEditorTextarea {
+  min-height: 104px !important;
+  padding: 12px !important;
+}
+
+.seriesEditorBackdrop .tagComposer {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 44px;
+}
+
+.seriesEditorBackdrop .seriesEditorForm > .seriesEditorActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 !important;
+  padding: 14px 20px !important;
+  border-top: 1px solid var(--app-border);
+  background: #101311f2;
+}
+
+
+.seriesEditorForm > .seriesEditorDetails,
+.seriesEditorForm > .seriesEditorSection {
+  display: flex !important;
+  flex-direction: column;
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: 20px !important;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.seriesEditorForm > .seriesEditorDetails {
+  align-items: stretch;
+}
+
+.seriesCoverEditor {
+  display: flex !important;
+  align-items: center;
+  gap: 14px !important;
+  flex-direction: row !important;
+}
+
+.seriesCoverEditor img,
+.seriesCoverEditor > div {
+  width: 86px !important;
+  height: 112px !important;
+  flex: 0 0 86px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.seriesCoverEditor button {
+  width: fit-content;
+}
+
+.seriesEditorForm .metadataFields,
+.seriesEditorForm .overrideGrid {
+  display: flex !important;
+  flex-direction: column;
+  gap: 16px !important;
+}
+
+.seriesEditorForm .field {
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px !important;
+}
+
+.seriesEditorForm .fieldLabel {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.seriesEditorForm input,
+.seriesEditorForm select,
+.seriesEditorForm textarea {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.seriesEditorForm textarea.seriesEditorTextarea {
+  min-height: 104px;
+  padding: 12px !important;
+  resize: vertical;
+}
+
+.seriesEditorForm > .seriesEditorSection > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tagComposer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-panel);
+}
+
+.tagComposer:focus-within {
+  border-color: var(--app-border-strong);
+}
+
+.tagComposer input {
+  flex: 1 1 120px;
+  min-width: 120px;
+  min-height: 28px !important;
+  padding: 4px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 3px 8px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 999px;
+  background: var(--app-panel-raised);
+  color: var(--app-text);
+  font-size: 12px;
+}
+
+.seriesEditorForm .popularTags {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 4px;
+  white-space: nowrap;
+}
+
+.seriesEditorForm .popularTags > span {
+  flex: 0 0 auto;
+}
+
+.seriesEditorForm .popularTag {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.seriesEditorForm > .seriesEditorActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin: 0 !important;
+  padding: 14px 20px !important;
+  border-top: 1px solid var(--app-border);
+  background: #101311f2;
+  backdrop-filter: blur(14px);
+}
+
+.seriesEditorForm > .seriesEditorActions button {
+  min-height: 36px;
+  padding: 8px 14px;
+}
+
 
 :root[data-theme="parchment"] {
   color-scheme: light;
@@ -8670,6 +8876,73 @@ main > section > [role="alert"] {
   .settingsPagePanel > .settingsSection .backupActions > * {
     width: 100%;
   }
+}
+
+.seriesEditorBackdrop .seriesEditorForm {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100dvh;
+}
+
+.seriesEditorBackdrop .seriesEditorForm > .seriesEditorDetails,
+.seriesEditorBackdrop .seriesEditorForm > .seriesEditorSection {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: 20px !important;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.seriesEditorBackdrop .seriesCoverEditor {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 14px !important;
+}
+
+.seriesEditorBackdrop .seriesCoverEditor img,
+.seriesEditorBackdrop .seriesCoverEditor > div {
+  width: 86px !important;
+  height: 112px !important;
+  flex: 0 0 86px;
+  object-fit: cover;
+}
+
+.seriesEditorBackdrop .seriesEditorForm .metadataFields,
+.seriesEditorBackdrop .seriesEditorForm .overrideGrid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+.seriesEditorBackdrop .seriesEditorForm .field {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 6px !important;
+}
+
+.seriesEditorBackdrop textarea.seriesEditorTextarea {
+  min-height: 104px !important;
+  padding: 12px !important;
+}
+
+.seriesEditorBackdrop .tagComposer {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 44px;
+}
+
+.seriesEditorBackdrop .seriesEditorForm > .seriesEditorActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 !important;
+  padding: 14px 20px !important;
+  border-top: 1px solid var(--app-border);
+  background: #101311f2;
 }
 
 @media (prefers-reduced-motion: reduce) {

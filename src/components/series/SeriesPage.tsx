@@ -646,6 +646,7 @@ export function SeriesPage() {
                 contentClassName="seriesEditorDialog"
               >
                 <form
+                  className="seriesEditorForm"
                   style={styles.editor}
                   onKeyDown={(event) => {
                     if (event.key === "Escape") setIsEditing(false);
@@ -662,7 +663,7 @@ export function SeriesPage() {
                     </button>
                   </header>
                   <section className="seriesEditorDetails" style={styles.detailsGrid}>
-                    <div className="coverEditor" style={styles.coverEditor}>
+                    <div className="coverEditor seriesCoverEditor" style={styles.coverEditor}>
                       {coverPreviewUrl || coverUrl ? (
                         <img
                           src={coverPreviewUrl || coverUrl}
@@ -750,7 +751,8 @@ export function SeriesPage() {
                             setDraftSummary(event.currentTarget.value)
                           }
                           placeholder="Brief description or blurb"
-                          rows={3}
+                          rows={4}
+                          className="seriesEditorTextarea"
                           style={styles.textarea}
                         />
                       </label>
@@ -760,7 +762,8 @@ export function SeriesPage() {
                           value={draftNotes}
                           onChange={(event) => setDraftNotes(event.currentTarget.value)}
                           placeholder="Add reading notes, reminders, or a favorite arc"
-                          rows={3}
+                          rows={4}
+                          className="seriesEditorTextarea"
                           style={styles.textarea}
                         />
                       </label>
@@ -790,48 +793,34 @@ export function SeriesPage() {
                         Add genres to organize and filter your library.
                       </p>
                     </div>
-                    <div style={styles.tagInputRow}>
+                    <div className="tagComposer">
+                      {draftTags.map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          className="tagChip"
+                          aria-label={`Remove ${tag} tag`}
+                          onClick={() =>
+                            setDraftTags((current) =>
+                              current.filter((entry) => entry !== tag),
+                            )
+                          }
+                        >
+                          {tag} <span aria-hidden="true">×</span>
+                        </button>
+                      ))}
                       <input
                         value={tagInput}
-                        onChange={(event) =>
-                          setTagInput(event.currentTarget.value)
-                        }
+                        onChange={(event) => setTagInput(event.currentTarget.value)}
                         onKeyDown={(event) => {
-                          if (event.key === "Enter") {
+                          if (event.key === "Enter" || event.key === ",") {
                             event.preventDefault();
                             addDraftTag(tagInput);
                           }
                         }}
-                        placeholder="Type a tag and press Enter"
-                        style={styles.textInput}
+                        placeholder="Add genre..."
                       />
-                      <button
-                        type="button"
-                        style={styles.secondaryButton}
-                        onClick={() => addDraftTag(tagInput)}
-                      >
-                        <Plus size={14} /> Add
-                      </button>
                     </div>
-                    {draftTags.length > 0 ? (
-                      <div style={styles.draftTagList}>
-                        {draftTags.map((tag) => (
-                          <button
-                            key={tag}
-                            type="button"
-                            aria-label={`Remove ${tag} tag`}
-                            style={styles.draftTag}
-                            onClick={() =>
-                              setDraftTags((current) =>
-                                current.filter((entry) => entry !== tag),
-                              )
-                            }
-                          >
-                            {tag} <span aria-hidden="true">×</span>
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
                     <div style={styles.popularTags}>
                       <span style={styles.overrideDescription}>
                         Popular genres:
