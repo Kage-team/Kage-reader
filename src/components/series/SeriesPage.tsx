@@ -569,7 +569,7 @@ export function SeriesPage() {
           style={styles.hiddenInput}
         />
 
-        <section style={styles.seriesHero}>
+        <section className="seriesHero" style={{ ...styles.seriesHero, display: "flex" }}>
           <div className="seriesCover" style={styles.seriesCover}>
             {coverPreviewUrl || coverUrl ? (
                     <img
@@ -1059,11 +1059,7 @@ export function SeriesPage() {
                               }}
                               aria-label={`Select ${titleLabel}`}
                             />
-                            <span className="chapterNumberBox" aria-hidden="true">
-                              <small>CH</small>
-                              <strong>{chapterIndex + 1}</strong>
-                            </span>
-                          </div>
+  </div>
                           <Link
                             to={`/read/${encodeURIComponent(chapter.id)}`}
                             className="chapterLink"
@@ -1073,12 +1069,7 @@ export function SeriesPage() {
                               <strong>
                                 <span className="chapterTitleText" title={compactTitleLabel}>{compactTitleLabel}</span>
                                 {progress?.completedAt ? <StatusBadge status="completed" /> : progress?.pageIndex ? <StatusBadge status="in-progress" /> : mostRecentChapter?.id === chapter.id ? <StatusBadge status="in-progress" /> : <StatusBadge status="unread" />}
-                                {chapter.volume !== undefined
-                                  ? ` · Vol. ${chapter.volume}`
-                                  : ""}
-                                {chapter.number !== undefined
-                                  ? ` · #${chapter.number}`
-                                  : ""}
+
                               </strong>
                             </span>
                             <span className="chapterPageCount">

@@ -11906,6 +11906,185 @@ main
   }
 }
 
+/* Final structural contract for the Series Detail page. */
+.seriesPage .seriesChapterSection,
+.seriesPage .seriesChapterSection > .seriesChapterHeader,
+.seriesPage .seriesChapterSection > .seriesChapterTools {
+  width: 100% !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.seriesPage .seriesChapterSection > .seriesChapterHeader {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin: 0 0 12px !important;
+}
+
+.seriesPage .seriesChapterSection > .seriesChapterTools {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 0 12px !important;
+}
+
+.seriesPage .seriesChapterList {
+  width: 100% !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.seriesPage .seriesChapterRow {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 12px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(55, 65, 65, 0.6) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.seriesPage .seriesChapterSelectCell {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  margin-right: 12px !important;
+}
+
+.seriesPage .chapterLink {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  align-items: center !important;
+}
+
+.seriesPage .chapterTitleLine,
+.seriesPage .chapterTitleLine strong {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  align-items: center !important;
+}
+
+.seriesPage .chapterTitleText {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.seriesPage .chapterPageCount {
+  flex: 0 0 auto !important;
+  margin: 0 16px 0 8px !important;
+  white-space: nowrap !important;
+  font-size: 12px !important;
+}
+
+.seriesPage .chapterStatusToggle {
+  display: flex !important;
+  flex: 0 0 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.seriesPage .chapterStatusActionText,
+.seriesPage .chapterNumberBox {
+  display: none !important;
+}
+
+@media (max-width: 680px) {
+  .seriesPage .seriesHero {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 16px !important;
+    padding: 0 0 16px !important;
+    text-align: center !important;
+  }
+
+  .seriesPage .seriesCover {
+    width: 112px !important;
+    height: auto !important;
+    aspect-ratio: 2 / 3 !important;
+    border-radius: 8px !important;
+  }
+
+  .seriesPage .seriesHeroContent {
+    display: flex !important;
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px !important;
+    text-align: center !important;
+  }
+
+  .seriesPage .seriesHeroContent h1 {
+    text-align: center !important;
+    font-size: 20px !important;
+  }
+
+  .seriesPage .startReadingButton {
+    width: 100% !important;
+    max-width: 320px !important;
+    margin: 0 auto !important;
+  }
+
+  .seriesPage .seriesChapterSection > .seriesChapterTools {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .seriesPage .seriesChapterSearch,
+  .seriesPage .seriesChapterSelectAll,
+  .seriesPage .seriesChapterSortControl {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 0 0 36px !important;
+  }
+
+  .seriesPage .seriesChapterRow {
+    min-height: 48px !important;
+    padding: 10px 0 !important;
+  }
+
+  .seriesPage .seriesChapterSelectCell {
+    display: none !important;
+  }
+
+  .seriesPage .chapterLink {
+    align-items: flex-start !important;
+  }
+
+  .seriesPage .chapterTitleLine {
+    align-items: flex-start !important;
+  }
+
+  .seriesPage .chapterTitleLine strong {
+    display: block !important;
+    width: 100% !important;
+    font-size: 14px !important;
+  }
+
+  .seriesPage .chapterPageCount {
+    margin-left: 8px !important;
+    margin-right: 8px !important;
+    font-size: 11px !important;
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
@@ -11921,5 +12100,130 @@ main
   .settingsPagePanel 
  .settingsSection select {
     transition: none;
+  }
+}
+
+/* Highest-priority SeriesDetail mobile overrides. */
+@media (max-width: 680px) {
+  .seriesPage .seriesHero {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 16px !important;
+    padding: 0 0 16px !important;
+    text-align: center !important;
+  }
+
+  .seriesPage .seriesHeroContent {
+    display: flex !important;
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px !important;
+    text-align: center !important;
+  }
+
+  .seriesPage .seriesHeroContent h1,
+  .seriesPage .seriesHeroContent p,
+  .seriesPage .seriesHeroContent .heroFacts {
+    text-align: center !important;
+  }
+
+  .seriesPage .seriesCover {
+    width: 112px !important;
+    height: 168px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .seriesPage .startReadingButton {
+    width: 100% !important;
+    max-width: 320px !important;
+    margin: 0 auto !important;
+  }
+
+  .seriesPage .seriesChapterSection,
+  .seriesPage .seriesChapterHeader,
+  .seriesPage .seriesChapterTools,
+  .seriesPage .seriesChapterList,
+  .seriesPage .seriesChapterItem,
+  .seriesPage .seriesChapterRow {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .seriesPage .seriesChapterSection {
+    padding: 0 !important;
+  }
+
+  .seriesPage .seriesChapterTools {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding: 0 !important;
+  }
+
+  .seriesPage .seriesChapterSearch,
+  .seriesPage .seriesChapterSelectAll,
+  .seriesPage .seriesChapterSortControl {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 0 0 36px !important;
+  }
+
+  .seriesPage .seriesChapterRow {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    min-height: 48px !important;
+    padding: 10px 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(55, 65, 65, 0.6) !important;
+    border-radius: 0 !important;
+  }
+
+  .seriesPage .seriesChapterSelectCell,
+  .seriesPage .chapterNumberBox {
+    display: none !important;
+  }
+
+  .seriesPage .chapterLink,
+  .seriesPage .chapterTitleLine {
+    min-width: 0 !important;
+  }
+
+  .seriesPage .chapterTitleLine strong {
+    display: flex !important;
+    min-width: 0 !important;
+    align-items: center !important;
+    font-size: 14px !important;
+  }
+
+  .seriesPage .chapterLink {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    gap: 2px !important;
+  }
+
+  .seriesPage .chapterTitleLine {
+    position: static !important;
+    width: 100% !important;
+    min-height: 18px !important;
+  }
+
+  .seriesPage .chapterTitleText {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .seriesPage .chapterPageCount {
+    position: static !important;
+    display: block !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
   }
 }
