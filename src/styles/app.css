@@ -10128,6 +10128,37 @@ main
   }
 }
 
+@media (max-width: 680px) {
+  .appView > .seriesPage {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding-inline: 0 !important;
+  }
+
+  .appView > .seriesPage > header,
+  .appView > .seriesPage > section,
+  .appView > .seriesPage .seriesChapterSection {
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .appView > .seriesPage > header,
+  .appView > .seriesPage > section {
+    padding-inline: 16px !important;
+  }
+
+  .appView > .seriesPage .seriesChapterHeader {
+    padding-inline: 16px !important;
+  }
+
+  .appView > .seriesPage .seriesChapterList {
+    padding-inline: 16px !important;
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
