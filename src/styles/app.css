@@ -9613,6 +9613,48 @@ main
   }
 }
 
+.librarySelectionToolbar.is-active .libraryBulkMoreMenu {
+  display: none !important;
+}
+
+.librarySelectionToolbar.is-active .libraryBulkMore[open] .libraryBulkMoreMenu {
+  display: grid !important;
+}
+
+.librarySelectionToolbar.is-active .libraryBulkMore {
+  position: relative !important;
+  z-index: 8;
+}
+
+.librarySelectionToolbar.is-active .libraryBulkMore summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.libraryCard.is-selected {
+  border-color: #d946ef !important;
+  outline: 2px solid #d946ef !important;
+  outline-offset: 3px;
+  background: linear-gradient(180deg, rgb(217 70 239 / 12%), transparent 32%), var(--app-panel) !important;
+  box-shadow: 0 0 0 6px rgb(217 70 239 / 13%), 0 18px 44px rgb(0 0 0 / 28%) !important;
+}
+
+.libraryCard.is-selected .libraryCardSelect input {
+  border-color: #f0abfc !important;
+  background: radial-gradient(circle at center, #fff 0 22%, #c026d3 24% 100%) !important;
+  box-shadow: 0 0 0 3px rgb(217 70 239 / 24%), 0 5px 16px rgb(0 0 0 / 46%) !important;
+}
+
+@media (max-width: 680px) {
+  .librarySelectionToolbar.is-active .libraryBulkMoreMenu {
+    position: fixed !important;
+    right: 16px !important;
+    bottom: calc(var(--mobile-nav-height, 64px) + 112px) !important;
+    top: auto !important;
+    width: min(230px, calc(100vw - 32px)) !important;
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
