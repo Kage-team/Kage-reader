@@ -2331,6 +2331,7 @@ export function ReaderPage() {
         height: "auto",
         maxWidth: `${fitWidth}px`,
         maxHeight: "none",
+        display: "block",
         ...(pageRotation ? { transform: `rotate(${pageRotation}deg)` } : {}),
         transformOrigin: "center",
       };
@@ -2804,6 +2805,7 @@ export function ReaderPage() {
                             key={page.id}
                             className="readerContinuousPage"
                             data-reader-page-index={page.index}
+                            style={{ lineHeight: 0 }}
                           >
                             {renderComicPage(
                               page,
@@ -2826,8 +2828,10 @@ export function ReaderPage() {
                     return url ? (
                       <div
                         key={page.id}
-                        className="readerContinuousPage"
-                        data-reader-page-index={index}
+                      className="readerContinuousPage"
+                      data-reader-page-index={index}
+                      style={{ lineHeight: 0 }}
+
                       >
                         {renderComicPage(
                           page,
