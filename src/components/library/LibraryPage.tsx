@@ -32,7 +32,9 @@ import {
   listProgress,
   listSeries,
   deleteSeriesWithContents,
+  putChapter,
   putSeries,
+  saveBlob,
 } from "../../lib/storage/db";
 import type { Series, SeriesType } from "../../lib/storage/types";
 import { useViewMode } from "./useViewMode";
@@ -46,6 +48,95 @@ const SERIES_TYPES: SeriesType[] = [
   "oel",
   "novel",
 ];
+
+const MOCK_SERIES = [
+  {
+    id: "mock-silent-moon",
+    title: "The Silent Moon Archive",
+    type: "manga" as const,
+    writer: "Aiko Ren",
+    summary: "A quiet archivist discovers that every moonlit page reveals a forgotten future.",
+    tags: ["Fantasy", "Mystery", "Slow burn"],
+    colors: ["#172554", "#38bdf8"],
+    chapters: 28,
+  },
+  {
+    id: "mock-ember-crown",
+    title: "Ember Crown Academy",
+    type: "manhwa" as const,
+    writer: "J. Han",
+    summary: "A scholarship student enters an academy where royal blood is measured by flame.",
+    tags: ["Action", "School", "Drama"],
+    colors: ["#431407", "#fb923c"],
+    chapters: 64,
+  },
+  {
+    id: "mock-river-lanterns",
+    title: "Where River Lanterns Drift",
+    type: "manhua" as const,
+    writer: "Lin Yue",
+    summary: "Two travelers follow a river of lanterns to return a lost letter home.",
+    tags: ["Romance", "Historical", "Drama"],
+    colors: ["#3b0764", "#f472b6"],
+    chapters: 16,
+  },
+  {
+    id: "mock-last-hero",
+    title: "The Last Hero's Queue",
+    type: "oel" as const,
+    writer: "M. Carter",
+    summary: "The final hero in a world without quests takes one last delivery job.",
+    tags: ["Adventure", "Comedy"],
+    colors: ["#052e16", "#4ade80"],
+    chapters: 41,
+  },
+] as const;
+
+function buildMockCover(title: string, colors: readonly [string, string]): Blob {
+  const [background, accent] = colors;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1020" viewBox="0 0 720 1020"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${background}"/><stop offset="1" stop-color="${accent}"/></linearGradient></defs><rect width="720" height="1020" fill="url(#g)"/><circle cx="560" cy="230" r="170" fill="white" opacity=".12"/><path d="M0 760 250 500l170 150 110-120 190 210v280H0Z" fill="#000" opacity=".28"/><text x="54" y="820" fill="white" font-family="Arial,sans-serif" font-size="42" font-weight="700">${title}</text><text x="56" y="880" fill="white" opacity=".78" font-family="Arial,sans-serif" font-size="18" letter-spacing="4">KAGE READER MOCK EDITION</text></svg>`;
+  return new Blob([svg], { type: "image/svg+xml" });
+}
+
+async function seedMockLibrary(): Promise<void> {
+  const now = Date.now();
+  await Promise.all(
+    MOCK_SERIES.flatMap((mock, index) => {
+      const coverPageKey = `mock-cover:${mock.id}`;
+      const series = {
+        schemaVersion: 4,
+        id: mock.id,
+        title: mock.title,
+        type: mock.type,
+        coverPageKey,
+        writer: mock.writer,
+        summary: mock.summary,
+        tags: [...mock.tags],
+        isFavorite: index === 1,
+        queueOrder: index < 2 ? index : undefined,
+        addedAt: now - index * 86_400_000,
+        updatedAt: now - index * 86_400_000,
+      } satisfies Series;
+      const chapters = Array.from({ length: mock.chapters }, (_, chapterIndex) => ({
+        schemaVersion: 4,
+        id: `mock-chapter:${mock.id}:${chapterIndex + 1}`,
+        seriesId: mock.id,
+        title: `Chapter ${chapterIndex + 1}`,
+        number: chapterIndex + 1,
+        order: chapterIndex,
+        pageCount: 24,
+        sourceName: "Kage mock library",
+        hash: `mock-hash:${mock.id}:${chapterIndex + 1}`,
+        addedAt: now - chapterIndex * 3_600_000,
+      }));
+      return [
+        saveBlob(coverPageKey, buildMockCover(mock.title, mock.colors)),
+        putSeries(series),
+        ...chapters.map((chapter) => putChapter(chapter)),
+      ];
+    }),
+  );
+}
 const SERIES_TYPE_COLORS: Record<SeriesType, string> = {
   manga: "#a675ff",
   manhua: "#ffae42",
@@ -182,8 +273,24 @@ export function LibraryPage() {
   }
 
   useEffect(() => {
-    void loadEntries();
-  }, []);
+    let isCancelled = false;
+    void (async () => {
+      const shouldSeedMocks = searchParams.get("mock") === "1";
+      const existingSeries = shouldSeedMocks ? await listSeries() : [];
+      const hasAllMocks = MOCK_SERIES.every((mock) =>
+        existingSeries.some((series) => series.id === mock.id),
+      );
+      if (shouldSeedMocks && !hasAllMocks) {
+        await seedMockLibrary();
+      }
+      if (!isCancelled) {
+        await loadEntries();
+      }
+    })();
+    return () => {
+      isCancelled = true;
+    };
+  }, [searchParams]);
 
   useEffect(() => {
     let isCancelled = false;
