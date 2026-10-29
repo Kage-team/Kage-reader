@@ -110,7 +110,7 @@ async function saveArchiveAsChapter(
   let coverPageKey: string | undefined;
   const importedSummaries: ImportedChapterSummary[] = [];
   let existingSeries = await getSeries(seriesId);
-  if (targetSeriesId && !existingSeries) {
+  if (targetSeriesId && !existingSeries && !targetSeriesTitle) {
     throw new Error("The selected series no longer exists.");
   }
   const seriesTitle = targetSeriesTitle ?? (targetSeriesId
@@ -359,8 +359,9 @@ function isSupportedArchiveName(name: string): boolean {
 function archiveSeriesStem(name: string): string {
   return name
     .replace(/\.[^.]+$/, "")
+    .replace(/[._-]+/g, " ")
     .replace(/\s*(?:issue|chapter|ch\.?|episode|ep\.?|volume|vol\.?)\s*#?\s*\d+.*$/i, "")
-    .replace(/[\s._-]+$/, "")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
