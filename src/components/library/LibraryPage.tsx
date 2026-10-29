@@ -933,14 +933,15 @@ export function LibraryPage() {
                       <input
                         type="checkbox"
                         checked={selectedSeriesIds.has(entry.id)}
-                        onChange={(event) =>
-                          setSelectedSeriesIds((current) => {
-                            const next = new Set(current);
-                            if (event.currentTarget.checked) next.add(entry.id);
-                            else next.delete(entry.id);
-                            return next;
-                          })
-                        }
+  onChange={(event) => {
+  const checked = event.currentTarget.checked;
+  setSelectedSeriesIds((current) => {
+  const next = new Set(current);
+  if (checked) next.add(entry.id);
+  else next.delete(entry.id);
+  return next;
+  });
+  }}
                       />
                       Select
                     </label>
