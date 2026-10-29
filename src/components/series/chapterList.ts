@@ -1,5 +1,14 @@
 import type { Chapter } from "../../lib/storage/types";
 
+export function getChapterDisplayTitle(chapter: Chapter, fallbackNumber?: number): string {
+  const title = chapter.title.trim();
+  const number = chapter.number ?? fallbackNumber;
+  if (!title || /^((chapter|chap|ch|episode|ep)\s*[._#-]*\d+(?:\.\d+)?)$/i.test(title)) {
+    return number !== undefined ? `Chapter ${number}` : "Untitled chapter";
+  }
+  return title;
+}
+
 export type ChapterSortMode =
   | "oldest"
   | "newest"
@@ -34,8 +43,14 @@ export function filterAndSortChapters(
             : Number(leftCompleted) - Number(rightCompleted);
         }
       }
-      const leftOrder = left.order ?? left.number ?? 0;
-      const rightOrder = right.order ?? right.number ?? 0;
+      const leftNumber = left.number ?? Number.POSITIVE_INFINITY;
+      const rightNumber = right.number ?? Number.POSITIVE_INFINITY;
+      const numberDifference = leftNumber - rightNumber;
+      if (Number.isFinite(numberDifference) && numberDifference !== 0) {
+        return mode === "newest" || mode === "descending" ? -numberDifference : numberDifference;
+      }
+      const leftOrder = left.order ?? 0;
+      const rightOrder = right.order ?? 0;
       return mode === "newest" || mode === "descending"
         ? rightOrder - leftOrder
         : leftOrder - rightOrder;

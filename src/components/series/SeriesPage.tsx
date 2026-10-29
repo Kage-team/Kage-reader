@@ -42,7 +42,7 @@ import {
   putProgress,
 } from "../../lib/storage/db";
 import { createSeriesExport } from "../../lib/storage/export";
-import { filterAndSortChapters, type ChapterSortMode } from "./chapterList";
+import { filterAndSortChapters, getChapterDisplayTitle, type ChapterSortMode } from "./chapterList";
 
 const SERIES_TYPES: Array<{ value: SeriesType; label: string }> = [
   { value: "manga", label: "Manga" },
@@ -1052,10 +1052,7 @@ export function SeriesPage() {
                   const previousChapter = visibleChapters[chapterIndex - 1];
                   const startsVolumeGroup = chapterIndex === 0 || previousChapter?.volume !== chapter.volume;
                   const volumeLabel = chapter.volume !== undefined ? `Volume ${chapter.volume}` : "Other chapters";
-                    const chapterTitle = chapter.title.trim();
-                    const titleLabel =
-                      chapterTitle ||
-                      `Chapter ${chapter.number ?? chapterIndex + 1}`;
+  const titleLabel = getChapterDisplayTitle(chapter, chapterIndex + 1);
                     const progressPercent = progress
                       ? progress.completedAt
                         ? 100
