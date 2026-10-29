@@ -9462,6 +9462,70 @@ main
   }
 }
 
+@media (max-width: 680px) {
+  .librarySelectionToolbar.is-active {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "done count more"
+      "actions actions actions" !important;
+    align-items: center;
+    width: calc(100vw - 32px) !important;
+    min-height: 0 !important;
+    padding: 10px !important;
+    gap: 8px !important;
+    border-radius: 18px !important;
+  }
+
+  .librarySelectionToolbar.is-active .librarySelectionDone { grid-area: done; }
+  .librarySelectionToolbar.is-active .librarySelectionCount { grid-area: count; }
+  .librarySelectionToolbar.is-active .libraryBulkMore {
+    grid-area: more;
+    justify-self: end;
+  }
+
+  .librarySelectionToolbar.is-active .librarySelectionPrimaryActions {
+    grid-area: actions;
+    display: flex !important;
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    gap: 8px !important;
+    padding: 0 0 2px;
+  }
+
+  .librarySelectionToolbar.is-active .librarySelectionPrimaryActions > button {
+    flex: 1 0 142px;
+    min-height: 48px !important;
+    justify-content: center;
+  }
+
+  .librarySelectionToolbar.is-active .libraryBulkMore summary {
+    min-height: 36px;
+    padding: 8px !important;
+    border: 1px solid var(--app-border);
+    border-radius: 9px;
+    color: var(--app-muted);
+  }
+
+  .librarySelectionToolbar.is-active .libraryBulkMoreMenu {
+    position: absolute;
+    right: 8px;
+    bottom: calc(100% + 8px);
+    z-index: 4;
+    min-width: 160px;
+    padding: 6px;
+    border: 1px solid var(--app-border);
+    border-radius: 12px;
+    background: #111827;
+    box-shadow: 0 14px 32px rgb(0 0 0 / 40%);
+  }
+
+  .librarySelectionToolbar.is-active .libraryBulkMore:not([open]) .libraryBulkMoreMenu {
+    display: none;
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
