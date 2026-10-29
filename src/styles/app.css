@@ -9655,6 +9655,28 @@ main
   }
 }
 
+.librarySelectionToolbar:not(.is-active) {
+  display: none !important;
+}
+
+@media (max-width: 680px) {
+  .librarySelectionToolbar.is-active .librarySelectionPrimaryActions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100% !important;
+    overflow: visible !important;
+    gap: 8px !important;
+  }
+
+  .librarySelectionToolbar.is-active .librarySelectionPrimaryActions > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: none !important;
+    padding-inline: 6px !important;
+    font-size: 12px !important;
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
