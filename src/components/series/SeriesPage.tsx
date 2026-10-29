@@ -1028,6 +1028,7 @@ export function SeriesPage() {
                   const startsVolumeGroup = chapterIndex === 0 || previousChapter?.volume !== chapter.volume;
                   const volumeLabel = chapter.volume !== undefined ? `Volume ${chapter.volume}` : "";
   const titleLabel = getChapterDisplayTitle(chapter, chapterIndex + 1);
+                    const compactTitleLabel = titleLabel.replace(new RegExp(`^${series.title}\\s+`, "i"), "");
                     const progressPercent = progress
                       ? progress.completedAt
                         ? 100
@@ -1070,7 +1071,7 @@ export function SeriesPage() {
                           >
                             <span className="chapterTitleLine">
                               <strong>
-                                <span className="chapterTitleText" title={titleLabel}>{titleLabel}</span>
+                                <span className="chapterTitleText" title={compactTitleLabel}>{compactTitleLabel}</span>
                                 {progress?.completedAt ? <StatusBadge status="completed" /> : progress?.pageIndex ? <StatusBadge status="in-progress" /> : mostRecentChapter?.id === chapter.id ? <StatusBadge status="in-progress" /> : <StatusBadge status="unread" />}
                                 {chapter.volume !== undefined
                                   ? ` · Vol. ${chapter.volume}`
@@ -1081,7 +1082,7 @@ export function SeriesPage() {
                               </strong>
                             </span>
                             <span className="chapterPageCount">
-                              {mostRecentChapter?.id === chapter.id ? "Resume · " : ""}{chapter.pageCount} pages
+                              {chapter.pageCount} pages
                             </span>
                           </Link>
                           <button
