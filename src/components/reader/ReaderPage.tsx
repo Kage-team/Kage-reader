@@ -584,7 +584,7 @@ export function ReaderPage() {
       frame.scrollHeight > frame.clientHeight + 1;
 
     const startAutoScroll = () => {
-      if (isDisposed || !hasScrollableContent()) return;
+      if (isDisposed) return;
       resizeObserver?.disconnect();
 
       if (readerPreferences.readerAutoScrollMode === "jump") {
