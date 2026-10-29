@@ -43,8 +43,10 @@
   min-height: 100dvh;
 }
 
-.seriesEditorBackdrop .seriesEditorForm > .seriesEditorDetails,
-.seriesEditorBackdrop .seriesEditorForm > .seriesEditorSection {
+.seriesEditorBackdrop .seriesEditorForm 
+ .seriesEditorDetails,
+.seriesEditorBackdrop .seriesEditorForm 
+ .seriesEditorSection {
   display: flex !important;
   flex-direction: column !important;
   gap: 16px !important;
@@ -61,7 +63,8 @@
 }
 
 .seriesEditorBackdrop .seriesCoverEditor img,
-.seriesEditorBackdrop .seriesCoverEditor > div {
+.seriesEditorBackdrop .seriesCoverEditor 
+ div {
   width: 86px !important;
   height: 112px !important;
   flex: 0 0 86px;
@@ -94,7 +97,8 @@
   min-height: 44px;
 }
 
-.seriesEditorBackdrop .seriesEditorForm > .seriesEditorActions {
+.seriesEditorBackdrop .seriesEditorForm 
+ .seriesEditorActions {
   position: sticky;
   bottom: 0;
   z-index: 2;
@@ -152,7 +156,8 @@
   background: #4b5563;
 }
 
-.libraryCard .coverProgressTrack > span {
+.libraryCard .coverProgressTrack 
+ span {
   display: block;
   height: 100%;
   border-radius: inherit;
@@ -166,8 +171,10 @@
 }
 
 
-.seriesEditorForm > .seriesEditorDetails,
-.seriesEditorForm > .seriesEditorSection {
+.seriesEditorForm 
+ .seriesEditorDetails,
+.seriesEditorForm 
+ .seriesEditorSection {
   display: flex !important;
   flex-direction: column;
   gap: 16px !important;
@@ -176,7 +183,8 @@
   border-bottom: 1px solid var(--app-border);
 }
 
-.seriesEditorForm > .seriesEditorDetails {
+.seriesEditorForm 
+ .seriesEditorDetails {
   align-items: stretch;
 }
 
@@ -188,7 +196,8 @@
 }
 
 .seriesCoverEditor img,
-.seriesCoverEditor > div {
+.seriesCoverEditor 
+ div {
   width: 86px !important;
   height: 112px !important;
   flex: 0 0 86px;
@@ -232,7 +241,9 @@
   resize: vertical;
 }
 
-.seriesEditorForm > .seriesEditorSection > div:first-child {
+.seriesEditorForm 
+ .seriesEditorSection 
+ div:first-child {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -287,7 +298,8 @@
   white-space: nowrap;
 }
 
-.seriesEditorForm .popularTags > span {
+.seriesEditorForm .popularTags 
+ span {
   flex: 0 0 auto;
 }
 
@@ -296,7 +308,8 @@
   white-space: nowrap;
 }
 
-.seriesEditorForm > .seriesEditorActions {
+.seriesEditorForm 
+ .seriesEditorActions {
   position: sticky;
   bottom: 0;
   z-index: 2;
@@ -310,7 +323,8 @@
   backdrop-filter: blur(14px);
 }
 
-.seriesEditorForm > .seriesEditorActions button {
+.seriesEditorForm 
+ .seriesEditorActions button {
   min-height: 36px;
   padding: 8px 14px;
 }
@@ -746,7 +760,8 @@ button:disabled {
   display: none;
 }
 
-.settingsSectionNav > a {
+.settingsSectionNav 
+ a {
   flex: 0 0 auto;
 }
 
@@ -756,12 +771,14 @@ button:disabled {
   row-gap: 0;
 }
 
-.settingsPagePanel > header {
+.settingsPagePanel 
+ header {
   grid-column: 1 / -1;
   padding-bottom: 8px;
 }
 
-.settingsPagePanel > .settingsSectionNav {
+.settingsPagePanel 
+ .settingsSectionNav {
   position: sticky !important;
   top: 66px !important;
   display: flex !important;
@@ -778,7 +795,8 @@ button:disabled {
   box-shadow: none;
 }
 
-.settingsPagePanel > .settingsSectionNav .settingsTab {
+.settingsPagePanel 
+ .settingsSectionNav .settingsTab {
   min-height: 38px;
   flex: 0 0 auto;
   padding: 0 2px;
@@ -795,19 +813,23 @@ button:disabled {
     border-color var(--app-motion-fast);
 }
 
-.settingsPagePanel > .settingsSectionNav .settingsTab:hover,
-.settingsPagePanel > .settingsSectionNav .settingsTab[aria-pressed="true"] {
+.settingsPagePanel 
+ .settingsSectionNav .settingsTab:hover,
+.settingsPagePanel 
+ .settingsSectionNav .settingsTab[aria-pressed="true"] {
   border-bottom-color: transparent;
   background: color-mix(in srgb, var(--app-lime) 12%, var(--app-panel));
   color: var(--app-text);
 }
 
-.settingsPagePanel > .settingsSection {
+.settingsPagePanel 
+ .settingsSection {
   grid-column: 1;
   padding: 24px 0;
 }
 
-.settingsPagePanel > .settingsSection[hidden] {
+.settingsPagePanel 
+ .settingsSection[hidden] {
   display: none !important;
 }
 
@@ -862,7 +884,8 @@ button:disabled {
   background: transparent !important;
 }
 
-.settingsSection > label {
+.settingsSection 
+ label {
   padding: 12px 0;
   border-bottom: 1px solid var(--app-border);
 }
@@ -1174,7 +1197,8 @@ button:disabled {
   text-decoration: none;
 }
 
-.libraryCompactCard > span {
+.libraryCompactCard 
+ span {
   display: grid;
   width: 38px;
   height: 50px;
@@ -1563,7 +1587,8 @@ button:disabled {
   background: var(--app-border-strong);
 }
 
-.historyProgress > span {
+.historyProgress 
+ span {
   display: block;
   height: 100%;
   background: var(--app-lime);
@@ -1740,12 +1765,18 @@ button:disabled {
 
 .historySectionHeader,
 .libraryShelfSection,
-.libraryShelfSection > .librarySearchSortRow,
-.libraryShelfSection > .librarySecondaryControls,
-.libraryShelfSection > .librarySelectionToolbar,
-.libraryShelfSection > .libraryEntries,
-.libraryShelfSection > .libraryLoadingGrid,
-.libraryShelfSection > .libraryEmptyCard {
+.libraryShelfSection 
+ .librarySearchSortRow,
+.libraryShelfSection 
+ .librarySecondaryControls,
+.libraryShelfSection 
+ .librarySelectionToolbar,
+.libraryShelfSection 
+ .libraryEntries,
+.libraryShelfSection 
+ .libraryLoadingGrid,
+.libraryShelfSection 
+ .libraryEmptyCard {
   width: min(100%, 1280px);
   margin-inline: 0;
 }
@@ -1990,7 +2021,8 @@ button:disabled {
   padding: 9px;
 }
 
-.libraryCompactCard > span {
+.libraryCompactCard 
+ span {
   width: 48px;
   height: 62px;
   flex-basis: 48px;
@@ -2021,7 +2053,8 @@ button:disabled {
   gap: 12px;
 }
 
-.libraryTypeFilters > button {
+.libraryTypeFilters 
+ button {
   min-block-size: 36px;
   padding-inline: 12px;
   border: 1px solid var(--app-border);
@@ -2031,8 +2064,10 @@ button:disabled {
   font-size: 12px;
 }
 
-.libraryTypeFilters > button[aria-pressed="true"],
-.libraryTypeFilters > button.is-active {
+.libraryTypeFilters 
+ button[aria-pressed="true"],
+.libraryTypeFilters 
+ button.is-active {
   border-color: var(--app-border-strong);
   background: rgb(255 255 255 / 8%);
   color: var(--app-text);
@@ -2064,8 +2099,10 @@ button:disabled {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .librarySearchSortRow > .viewModeToggle,
-  .librarySearchSortRow > .librarySelectToggle {
+  .librarySearchSortRow 
+ .viewModeToggle,
+  .librarySearchSortRow 
+ .librarySelectToggle {
     grid-column: auto;
   }
 }
@@ -2263,7 +2300,8 @@ button:disabled {
   scrollbar-width: thin;
 }
 
-.libraryTypeFilters > button {
+.libraryTypeFilters 
+ button {
   flex: 0 0 auto;
   min-block-size: var(--touch-target);
 }
@@ -2366,8 +2404,10 @@ button:disabled {
     color: transparent;
   }
 
-  .libraryShelfSection > .libraryEntries,
-  .libraryShelfSection > .libraryLoadingGrid {
+  .libraryShelfSection 
+ .libraryEntries,
+  .libraryShelfSection 
+ .libraryLoadingGrid {
     padding-bottom: var(--space-6);
   }
 }
@@ -2477,7 +2517,8 @@ button:disabled {
     align-items: stretch;
   }
 
-  .libraryShelfHeader > div:first-child {
+  .libraryShelfHeader 
+ div:first-child {
     min-width: 0;
     width: 100%;
   }
@@ -2603,27 +2644,34 @@ button:disabled {
 
   .librarySearchFilter .searchField,
   .librarySortFilter .sortField,
-  .librarySearchSortRow > .viewModeToggle,
-  .librarySearchSortRow > .librarySelectToggle {
+  .librarySearchSortRow 
+ .viewModeToggle,
+  .librarySearchSortRow 
+ .librarySelectToggle {
     min-height: 44px;
     height: 44px;
   }
 
-  .librarySearchSortRow > .viewModeToggle,
-  .librarySearchSortRow > .librarySelectToggle,
-  .librarySearchSortRow > .librarySortFilter {
+  .librarySearchSortRow 
+ .viewModeToggle,
+  .librarySearchSortRow 
+ .librarySelectToggle,
+  .librarySearchSortRow 
+ .librarySortFilter {
     min-height: 40px;
     height: 40px;
   }
 
-  .librarySearchSortRow > .viewModeToggle {
+  .librarySearchSortRow 
+ .viewModeToggle {
     display: inline-flex;
     width: 88px !important;
     max-width: 88px !important;
     overflow: visible;
   }
 
-  .librarySearchSortRow > .viewModeToggle button {
+  .librarySearchSortRow 
+ .viewModeToggle button {
     width: 40px;
     min-width: 40px;
     padding-inline: 0;
@@ -2718,12 +2766,14 @@ button:disabled {
     background: var(--app-panel);
   }
 
-  .libraryEntries.is-list .libraryCard > label {
+  .libraryEntries.is-list .libraryCard 
+ label {
     grid-column: 1 / -1;
     padding: 3px 4px 6px !important;
   }
 
-  .libraryEntries.is-list .libraryCard > a {
+  .libraryEntries.is-list .libraryCard 
+ a {
     display: grid !important;
     grid-column: 1 / -1;
     grid-template-columns: 72px minmax(0, 1fr) !important;
@@ -2733,13 +2783,17 @@ button:disabled {
     padding: 0 !important;
   }
 
-  .libraryEntries.is-list .libraryCard > a > div:first-child {
+  .libraryEntries.is-list .libraryCard 
+ a 
+ div:first-child {
     width: 72px !important;
     height: 96px !important;
     aspect-ratio: auto !important;
   }
 
-  .libraryEntries.is-list .libraryCard > a > div:last-child {
+  .libraryEntries.is-list .libraryCard 
+ a 
+ div:last-child {
     min-width: 0;
     padding: 4px 2px !important;
   }
@@ -3084,7 +3138,8 @@ button:disabled {
   background: rgba(255, 255, 255, 0.35);
 }
 
-.coverProgressTrack > span {
+.coverProgressTrack 
+ span {
   display: block;
   height: 100%;
   background: var(--app-lime);
@@ -3168,23 +3223,29 @@ button:disabled {
   padding: 0;
 }
 
-.seriesEditorDialog > .seriesEditorHeader {
+.seriesEditorDialog 
+ .seriesEditorHeader {
   padding: 20px 24px;
 }
 
-.seriesEditorDialog > .seriesEditorHeader h2 {
+.seriesEditorDialog 
+ .seriesEditorHeader h2 {
   margin: 0;
   font-size: clamp(18px, 2vw, 22px);
 }
 
-.seriesEditorDialog > .seriesEditorHeader button,
+.seriesEditorDialog 
+ .seriesEditorHeader button,
 .seriesEditorDialog button {
   min-height: 44px;
 }
 
-.seriesEditorDialog > .seriesEditorDetails,
-.seriesEditorDialog > .seriesEditorSection,
-.seriesEditorDialog > .seriesEditorActions {
+.seriesEditorDialog 
+ .seriesEditorDetails,
+.seriesEditorDialog 
+ .seriesEditorSection,
+.seriesEditorDialog 
+ .seriesEditorActions {
   margin-inline: 24px;
 }
 
@@ -3263,14 +3324,19 @@ button:disabled {
 }
 
 @media (max-width: 680px) {
-  .seriesEditorDialog > .seriesEditorHeader,
-  .seriesEditorDialog > .seriesEditorDetails,
-  .seriesEditorDialog > .seriesEditorSection,
-  .seriesEditorDialog > .seriesEditorActions {
+  .seriesEditorDialog 
+ .seriesEditorHeader,
+  .seriesEditorDialog 
+ .seriesEditorDetails,
+  .seriesEditorDialog 
+ .seriesEditorSection,
+  .seriesEditorDialog 
+ .seriesEditorActions {
     margin-inline: 16px;
   }
 
-  .seriesEditorDialog > .seriesEditorHeader {
+  .seriesEditorDialog 
+ .seriesEditorHeader {
     padding: 18px 0;
   }
   .seriesEditorDetails {
@@ -3287,7 +3353,8 @@ button:disabled {
     grid-row: span 2;
     width: 104px;
   }
-  .seriesEditorDialog .coverEditor > button {
+  .seriesEditorDialog .coverEditor 
+ button {
     width: 100%;
   }
   .seriesEditorDialog .overrideGrid {
@@ -3533,9 +3600,15 @@ button:disabled {
   min-height: 34px;
 }
 
-.seriesEditorBackdrop > .seriesEditorDialog > .seriesEditorDetails,
-.seriesEditorBackdrop > .seriesEditorDialog > .seriesEditorSection,
-.seriesEditorBackdrop > .seriesEditorDialog > .seriesEditorActions {
+.seriesEditorBackdrop 
+ .seriesEditorDialog 
+ .seriesEditorDetails,
+.seriesEditorBackdrop 
+ .seriesEditorDialog 
+ .seriesEditorSection,
+.seriesEditorBackdrop 
+ .seriesEditorDialog 
+ .seriesEditorActions {
   margin-inline: 20px;
 }
 
@@ -3660,7 +3733,8 @@ button:disabled {
   font-weight: 600;
 }
 
-.importDropZone > p,
+.importDropZone 
+ p,
 .importQueueHeader p {
   margin: 0;
   color: var(--app-muted);
@@ -3745,7 +3819,8 @@ button:disabled {
   font-weight: 600;
 }
 
-.importProgressModalHeader > strong {
+.importProgressModalHeader 
+ strong {
   color: var(--app-lime);
   font-family: var(--font-display);
   font-size: 20px;
@@ -3758,7 +3833,8 @@ button:disabled {
   background: var(--app-panel-raised);
 }
 
-.importProgressTrack > span {
+.importProgressTrack 
+ span {
   display: block;
   height: 100%;
   border-radius: inherit;
@@ -3854,7 +3930,8 @@ button:disabled {
   gap: 18px;
 }
 
-.importQueueHeader > div {
+.importQueueHeader 
+ div {
   display: grid;
   gap: 5px;
 }
@@ -4054,7 +4131,8 @@ button:disabled {
 }
 
 @media (hover: none), (pointer: coarse) {
-  .importDropZone > p {
+  .importDropZone 
+ p {
     display: none;
   }
 
@@ -4109,7 +4187,8 @@ button:disabled {
     margin-top: 5px;
   }
 
-  .importActions > button {
+  .importActions 
+ button {
     width: 100%;
   }
 
@@ -4276,18 +4355,22 @@ button:disabled {
     row-gap: 14px;
   }
 
-  .settingsPagePanel > header,
-  .settingsPagePanel > .settingsSection {
+  .settingsPagePanel 
+ header,
+  .settingsPagePanel 
+ .settingsSection {
     grid-column: 1;
     box-sizing: border-box;
     padding-inline: 20px !important;
   }
 
-  .settingsPagePanel > header {
+  .settingsPagePanel 
+ header {
     padding-block: 18px;
   }
 
-  .settingsPagePanel > .settingsSectionNav {
+  .settingsPagePanel 
+ .settingsSectionNav {
     position: sticky !important;
     top: var(--settings-nav-top) !important;
     display: flex !important;
@@ -4303,15 +4386,18 @@ button:disabled {
     box-shadow: none;
   }
 
-  .settingsPagePanel > .settingsSection {
+  .settingsPagePanel 
+ .settingsSection {
     padding: 18px 16px !important;
   }
 
-  .settingsPagePanel > .settingsSectionNav {
+  .settingsPagePanel 
+ .settingsSectionNav {
     padding-inline: 16px !important;
   }
 
-  .settingsPagePanel > header a {
+  .settingsPagePanel 
+ header a {
     color: var(--app-text) !important;
     background: var(--app-panel) !important;
     border-color: var(--app-border-strong) !important;
@@ -4461,7 +4547,8 @@ button:disabled {
   background: var(--app-bg);
 }
 
-.readerPageRoot:fullscreen > section {
+.readerPageRoot:fullscreen 
+ section {
   width: 100%;
   height: 100%;
   max-width: none;
@@ -5049,8 +5136,10 @@ button:disabled {
   padding-left: 8px;
 }
 
-.readerSettingsPanel .novelSettingsAccordion > section,
-.readerSettingsPanel .novelSettingsAccordion > div {
+.readerSettingsPanel .novelSettingsAccordion 
+ section,
+.readerSettingsPanel .novelSettingsAccordion 
+ div {
   padding-right: 4px;
   padding-left: 4px;
 }
@@ -5110,7 +5199,8 @@ button:disabled {
   align-content: start;
 }
 
-.readerSettingsMenu > button,
+.readerSettingsMenu 
+ button,
 .readerSettingsMenuItem {
   display: flex;
   min-height: 56px;
@@ -5126,17 +5216,24 @@ button:disabled {
   cursor: pointer;
 }
 
-.readerSettingsMenu > button > span,
-.readerSettingsMenuItem > span {
+.readerSettingsMenu 
+ button 
+ span,
+.readerSettingsMenuItem 
+ span {
   flex: 1 1 auto;
 }
 
-.readerSettingsMenu > button > svg:first-child,
-.readerSettingsMenuItem > svg:first-child {
+.readerSettingsMenu 
+ button 
+ svg:first-child,
+.readerSettingsMenuItem 
+ svg:first-child {
   color: var(--app-muted);
 }
 
-.readerSettingsMenu > button:hover,
+.readerSettingsMenu 
+ button:hover,
 .readerSettingsMenuItem:hover {
   background: var(--app-hover);
 }
@@ -5800,7 +5897,8 @@ button:disabled {
   background: color-mix(in srgb, var(--app-text) 20%, transparent);
 }
 
-.readerHiddenProgressTrack > span {
+.readerHiddenProgressTrack 
+ span {
   display: block;
   height: 100%;
   border-radius: inherit;
@@ -6062,7 +6160,8 @@ button:disabled {
   text-decoration: none;
 }
 
-.libraryShelfSection > header[hidden] {
+.libraryShelfSection 
+ header[hidden] {
   display: none !important;
 }
 
@@ -6081,7 +6180,8 @@ button:disabled {
   background: transparent;
 }
 
-.libraryShelfSection .emptyCard > svg {
+.libraryShelfSection .emptyCard 
+ svg {
   width: 19px;
   height: 19px;
 }
@@ -6092,7 +6192,8 @@ button:disabled {
   font-weight: 600;
 }
 
-.libraryShelfSection .emptyCard > span {
+.libraryShelfSection .emptyCard 
+ span {
   font-size: 11px;
 }
 
@@ -6310,14 +6411,16 @@ button:disabled {
   margin: 0 8px 0 0;
 }
 
-.seriesChapterTools > .seriesChapterSearch {
+.seriesChapterTools 
+ .seriesChapterSearch {
   flex: 1 1 auto;
   width: auto;
   max-width: none;
   box-sizing: border-box;
 }
 
-.seriesChapterTools > .seriesChapterSort {
+.seriesChapterTools 
+ .seriesChapterSort {
   flex: 0 0 124px;
   width: 124px;
   box-sizing: border-box;
@@ -6335,7 +6438,8 @@ button:disabled {
   box-sizing: border-box;
 }
 
-.seriesChapterSearch > svg {
+.seriesChapterSearch 
+ svg {
   position: absolute;
   left: 12px;
   z-index: 1;
@@ -6343,7 +6447,8 @@ button:disabled {
   pointer-events: none;
 }
 
-.seriesChapterSearch > input {
+.seriesChapterSearch 
+ input {
   width: 100%;
   min-width: 0;
   min-height: 44px;
@@ -6424,7 +6529,8 @@ button:disabled {
 }
 
 .seriesChapterActions + ul,
-.chapterSection > ul {
+.chapterSection 
+ ul {
   margin-top: 0;
 }
 
@@ -6442,11 +6548,13 @@ button:disabled {
   padding: 3px 2px;
 }
 
-.seriesChapterRow > .chapterLink {
+.seriesChapterRow 
+ .chapterLink {
   min-width: 0;
 }
 
-.seriesChapterRow > .chapterLink .chapterTitleLine {
+.seriesChapterRow 
+ .chapterLink .chapterTitleLine {
   min-width: 0;
 }
 
@@ -6596,7 +6704,8 @@ button:disabled {
   background: color-mix(in srgb, var(--app-text) 16%, transparent);
 }
 
-.seriesChapterProgress > span {
+.seriesChapterProgress 
+ span {
   display: block;
   height: 100%;
   border-radius: inherit;
@@ -6614,7 +6723,8 @@ button:disabled {
   gap: 14px;
 }
 
-.chapterSection > .chapterHeader {
+.chapterSection 
+ .chapterHeader {
   position: sticky;
   z-index: 4;
   top: var(--app-topbar-height, 66px);
@@ -6625,7 +6735,8 @@ button:disabled {
   backdrop-filter: blur(12px);
 }
 
-.chapterSection > .chapterHeader .chapterHeading {
+.chapterSection 
+ .chapterHeader .chapterHeading {
   letter-spacing: -0.02em;
 }
 
@@ -6645,8 +6756,11 @@ button:disabled {
   height: 44px;
 }
 
-.chapterSection > [role="status"],
-main > section > [role="alert"] {
+.chapterSection 
+ [role="status"],
+main 
+ section 
+ [role="alert"] {
   margin: 0;
   padding: 11px 13px;
   border: 1px solid color-mix(in srgb, var(--app-lime) 30%, var(--app-border));
@@ -6657,7 +6771,9 @@ main > section > [role="alert"] {
   line-height: 1.45;
 }
 
-main > section > [role="alert"] {
+main 
+ section 
+ [role="alert"] {
   border-color: color-mix(in srgb, var(--app-danger) 50%, var(--app-border));
   background: color-mix(in srgb, var(--app-danger) 10%, var(--app-panel));
   color: var(--app-danger);
@@ -6721,13 +6837,16 @@ main > section > [role="alert"] {
   transform: translateY(-1px);
 }
 
-.chapterSection > ul {
+.chapterSection 
+ ul {
   display: grid;
   gap: 6px;
   padding: 0;
 }
 
-.chapterSection > ul > li {
+.chapterSection 
+ ul 
+ li {
   min-height: 44px;
   padding: 0 10px;
   border: 1px solid var(--app-border);
@@ -6784,7 +6903,8 @@ main > section > [role="alert"] {
 }
 
 @media (max-width: 640px) {
-  .seriesPage > section {
+  .seriesPage 
+ section {
     padding: 12px !important;
   }
 
@@ -6823,7 +6943,8 @@ main > section > [role="alert"] {
     min-height: 44px;
   }
 
-  .chapterSection > .chapterHeader {
+  .chapterSection 
+ .chapterHeader {
     top: var(--app-topbar-height, 58px);
     padding-top: 8px;
     padding-bottom: 8px;
@@ -6914,7 +7035,8 @@ main > section > [role="alert"] {
   white-space: nowrap;
 }
 
-.readerChapterTitleTrigger > svg {
+.readerChapterTitleTrigger 
+ svg {
   flex: 0 0 auto;
   color: var(--app-muted);
 }
@@ -7014,12 +7136,14 @@ main > section > [role="alert"] {
   cursor: pointer;
 }
 
-.readerChapterList button > span {
+.readerChapterList button 
+ span {
   color: var(--app-muted);
   font-size: 10px;
 }
 
-.readerChapterList button > strong {
+.readerChapterList button 
+ strong {
   overflow: hidden;
   font-size: 11px;
   font-weight: 550;
@@ -7064,7 +7188,8 @@ main > section > [role="alert"] {
   border-bottom: 1px solid var(--app-border);
 }
 
-.readerSettingsPanel .novelSettingsAccordion > summary {
+.readerSettingsPanel .novelSettingsAccordion 
+ summary {
   color: var(--app-text);
   font-size: 16px;
   font-weight: 600;
@@ -7072,12 +7197,15 @@ main > section > [role="alert"] {
   list-style-position: inside;
 }
 
-.readerSettingsPanel .novelSettingsAccordion[open] > summary {
+.readerSettingsPanel .novelSettingsAccordion[open] 
+ summary {
   color: var(--app-lime);
 }
 
-.readerSettingsPanel .novelSettingsAccordion > section,
-.readerSettingsPanel .novelSettingsAccordion > div {
+.readerSettingsPanel .novelSettingsAccordion 
+ section,
+.readerSettingsPanel .novelSettingsAccordion 
+ div {
   min-width: 0;
 }
 
@@ -7149,8 +7277,10 @@ main > section > [role="alert"] {
   gap: 7px;
 }
 
-.readerSettingsPanel .novelControlGrid > .novelSettingGroup,
-.readerSettingsPanel .novelControlGrid > label.novelSettingGroup {
+.readerSettingsPanel .novelControlGrid 
+ .novelSettingGroup,
+.readerSettingsPanel .novelControlGrid 
+ label.novelSettingGroup {
   grid-template-columns: 92px minmax(0, 1fr);
   align-items: center;
 }
@@ -7360,7 +7490,8 @@ main > section > [role="alert"] {
     box-sizing: border-box;
   }
 
-  .seriesChapterSearch > svg {
+  .seriesChapterSearch 
+ svg {
     position: absolute;
     left: 12px;
     color: var(--app-muted);
@@ -7407,14 +7538,18 @@ main > section > [role="alert"] {
   --settings-control-height: 44px;
 }
 
-.settingsPagePanel > header,
-.settingsPagePanel > .settingsSectionNav,
-.settingsPagePanel > .settingsSection {
+.settingsPagePanel 
+ header,
+.settingsPagePanel 
+ .settingsSectionNav,
+.settingsPagePanel 
+ .settingsSection {
   box-sizing: border-box;
   padding-inline: clamp(20px, 3vw, 32px);
 }
 
-.settingsPagePanel > .settingsSectionNav {
+.settingsPagePanel 
+ .settingsSectionNav {
   margin-inline: 0;
   gap: 8px;
 }
@@ -7760,7 +7895,8 @@ main > section > [role="alert"] {
   box-shadow: none;
 }
 
-.overlayShellContent.readerContentsPanel > section {
+.overlayShellContent.readerContentsPanel 
+ section {
   height: 100%;
 }
 
@@ -7901,7 +8037,8 @@ main > section > [role="alert"] {
 .confirmDialog h2 {
   font-size: 18px;
 }
-.confirmDialog > p {
+.confirmDialog 
+ p {
   margin-top: 10px;
   color: var(--app-muted);
   line-height: 1.55;
@@ -7979,7 +8116,8 @@ main > section > [role="alert"] {
   font-weight: 700;
 }
 
-.settingsPagePanel > .settingsSectionNav {
+.settingsPagePanel 
+ .settingsSectionNav {
   position: sticky;
   z-index: 3;
   top: var(--settings-nav-top, 66px);
@@ -7995,11 +8133,13 @@ main > section > [role="alert"] {
   );
 }
 
-.settingsPagePanel > .settingsSectionNav::-webkit-scrollbar {
+.settingsPagePanel 
+ .settingsSectionNav::-webkit-scrollbar {
   display: none;
 }
 
-.settingsPagePanel > .settingsSectionNav .settingsTab {
+.settingsPagePanel 
+ .settingsSectionNav .settingsTab {
   min-width: max-content;
   min-height: var(--settings-control-height);
   padding: 0 14px;
@@ -8012,12 +8152,14 @@ main > section > [role="alert"] {
     transform 180ms ease;
 }
 
-.settingsPagePanel > .settingsSectionNav .settingsTab:hover {
+.settingsPagePanel 
+ .settingsSectionNav .settingsTab:hover {
   color: var(--app-text);
   background: color-mix(in srgb, var(--app-panel) 72%, transparent);
 }
 
-.settingsPagePanel > .settingsSectionNav .settingsTab[aria-pressed="true"] {
+.settingsPagePanel 
+ .settingsSectionNav .settingsTab[aria-pressed="true"] {
   border-color: color-mix(in srgb, var(--app-lime) 60%, var(--app-border));
   background: color-mix(in srgb, var(--app-lime) 14%, var(--app-panel));
   color: var(--app-text);
@@ -8025,49 +8167,65 @@ main > section > [role="alert"] {
   box-shadow: inset 0 -2px 0 var(--app-lime);
 }
 
-.settingsPagePanel > .settingsSection {
+.settingsPagePanel 
+ .settingsSection {
   display: grid;
   align-content: start;
   gap: 20px;
 }
 
-.settingsPagePanel > .settingsSection > div:first-child {
+.settingsPagePanel 
+ .settingsSection 
+ div:first-child {
   display: grid;
   gap: 7px;
 }
 
-.settingsPagePanel > .settingsSection h2 {
+.settingsPagePanel 
+ .settingsSection h2 {
   margin: 0;
   letter-spacing: -0.02em;
 }
 
-.settingsPagePanel > .settingsSection label,
-.settingsPagePanel > .settingsSection button,
-.settingsPagePanel > .settingsSection select,
+.settingsPagePanel 
+ .settingsSection label,
+.settingsPagePanel 
+ .settingsSection button,
+.settingsPagePanel 
+ .settingsSection select,
 .settingsPagePanel
-  > .settingsSection
+  
+ .settingsSection
   input:not([type="range"]):not([type="checkbox"]) {
   min-height: var(--settings-control-height);
 }
 
-.settingsPagePanel > .settingsSection > label,
-.settingsPagePanel > .settingsSection .toggleRow,
-.settingsPagePanel > .settingsSection .field {
+.settingsPagePanel 
+ .settingsSection 
+ label,
+.settingsPagePanel 
+ .settingsSection .toggleRow,
+.settingsPagePanel 
+ .settingsSection .field {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
 }
 
-.settingsPagePanel > .settingsSection .description {
+.settingsPagePanel 
+ .settingsSection .description {
   line-height: 1.55;
 }
 
-.settingsPagePanel > .settingsSection .storageGrid {
+.settingsPagePanel 
+ .settingsSection .storageGrid {
   gap: 10px;
 }
 
-.settingsPagePanel > .settingsSection .storageGrid > div {
+.settingsPagePanel 
+ .settingsSection .storageGrid 
+ div {
   min-height: 76px;
   padding: 14px;
   border: 1px solid var(--app-border);
@@ -8075,7 +8233,8 @@ main > section > [role="alert"] {
   background: color-mix(in srgb, var(--app-panel) 80%, transparent);
 }
 
-.settingsPagePanel > .settingsSection .storageValue {
+.settingsPagePanel 
+ .settingsSection .storageValue {
   margin-top: 8px;
   color: var(--app-text);
 }
@@ -8327,7 +8486,8 @@ main > section > [role="alert"] {
     grid-template-columns: 1fr 1fr;
     width: 100%;
   }
-  .homeHeroActions > a {
+  .homeHeroActions 
+ a {
     width: 100%;
   }
   .homePrimaryAction {
@@ -8697,24 +8857,33 @@ main > section > [role="alert"] {
 }
 
 /* Shared Kage workspace framing across every screen. */
-.appView > main,
-.appView > .seriesPage,
-.appView > .settingsPage,
-.appView > .importPage {
+.appView 
+ main,
+.appView 
+ .seriesPage,
+.appView 
+ .settingsPage,
+.appView 
+ .importPage {
   width: min(100%, 1120px);
   margin-inline: auto;
   padding-inline: clamp(16px, 3vw, 42px);
 }
 
-.appView > .importPage,
-.appView > .settingsPage,
-.appView > .seriesPage {
+.appView 
+ .importPage,
+.appView 
+ .settingsPage,
+.appView 
+ .seriesPage {
   padding-top: clamp(22px, 4vw, 48px);
 }
 
 .importHeader,
-.settingsPagePanel > header,
-.seriesPage > header {
+.settingsPagePanel 
+ header,
+.seriesPage 
+ header {
   padding-bottom: 20px;
   border-bottom: 1px solid var(--app-border);
 }
@@ -8796,15 +8965,20 @@ main > section > [role="alert"] {
     display: none;
   }
 
-  .appView > main,
-  .appView > .seriesPage,
-  .appView > .settingsPage,
-  .appView > .importPage {
+  .appView 
+ main,
+  .appView 
+ .seriesPage,
+  .appView 
+ .settingsPage,
+  .appView 
+ .importPage {
     padding-inline: 14px;
   }
 
   .importHeader,
-  .settingsPagePanel > header {
+  .settingsPagePanel 
+ header {
     align-items: flex-start;
     gap: 14px;
   }
@@ -8827,7 +9001,8 @@ main > section > [role="alert"] {
   }
 }
 
-.settingsPagePanel > .settingsSection [role="status"] {
+.settingsPagePanel 
+ .settingsSection [role="status"] {
   margin: 0;
   padding: 12px 14px;
   border: 1px solid color-mix(in srgb, var(--app-lime) 34%, var(--app-border));
@@ -8836,18 +9011,23 @@ main > section > [role="alert"] {
 }
 
 .settingsPagePanel
-  > .settingsSection[aria-labelledby="backup-heading"]
-  > div:first-child
-  > p[role="status"] {
+  
+ .settingsSection[aria-labelledby="backup-heading"]
+  
+ div:first-child
+  
+ p[role="status"] {
   border-color: color-mix(in srgb, var(--app-danger) 36%, var(--app-border));
   background: color-mix(in srgb, var(--app-danger) 9%, var(--app-panel));
 }
 
 .settingsPagePanel
-  > .settingsSection[aria-labelledby="backup-heading"]
+  
+ .settingsSection[aria-labelledby="backup-heading"]
   .backupActions,
 .settingsPagePanel
-  > .settingsSection[aria-labelledby="adult-access-heading"]
+  
+ .settingsSection[aria-labelledby="adult-access-heading"]
   .backupActions {
   position: relative;
   display: flex;
@@ -8857,10 +9037,12 @@ main > section > [role="alert"] {
 }
 
 .settingsPagePanel
-  > .settingsSection[aria-labelledby="backup-heading"]
+  
+ .settingsSection[aria-labelledby="backup-heading"]
   .backupActions::before,
 .settingsPagePanel
-  > .settingsSection[aria-labelledby="adult-access-heading"]
+  
+ .settingsSection[aria-labelledby="adult-access-heading"]
   .backupActions::before {
   position: absolute;
   top: 0;
@@ -8874,11 +9056,13 @@ main > section > [role="alert"] {
 }
 
 .settingsPagePanel
-  > .settingsSection[aria-labelledby="backup-heading"]
+  
+ .settingsSection[aria-labelledby="backup-heading"]
   .backupActions
   button:last-child,
 .settingsPagePanel
-  > .settingsSection[aria-labelledby="adult-access-heading"]
+  
+ .settingsSection[aria-labelledby="adult-access-heading"]
   .backupActions
   button:last-child {
   border-color: color-mix(
@@ -8894,9 +9078,12 @@ main > section > [role="alert"] {
   color: var(--app-danger) !important;
 }
 
-.settingsPagePanel > .settingsSection button,
-.settingsPagePanel > .settingsSection label,
-.settingsPagePanel > .settingsSection select {
+.settingsPagePanel 
+ .settingsSection button,
+.settingsPagePanel 
+ .settingsSection label,
+.settingsPagePanel 
+ .settingsSection select {
   transition:
     color 180ms ease,
     opacity 180ms ease,
@@ -8905,36 +9092,46 @@ main > section > [role="alert"] {
     background-color 180ms ease;
 }
 
-.settingsPagePanel > .settingsSection input[type="range"] {
+.settingsPagePanel 
+ .settingsSection input[type="range"] {
   transition: none;
 }
 
 @media (max-width: 680px) {
-  .settingsPagePanel > .settingsSectionNav {
+  .settingsPagePanel 
+ .settingsSectionNav {
     width: calc(100vw - 32px);
     margin-inline: -16px;
     padding-inline: 12px;
   }
 
-  .settingsPagePanel > .settingsSectionNav .settingsTab {
+  .settingsPagePanel 
+ .settingsSectionNav .settingsTab {
     padding-inline: 12px;
   }
 
-  .settingsPagePanel > .settingsSection {
+  .settingsPagePanel 
+ .settingsSection {
     gap: 16px;
   }
 
-  .settingsPagePanel > .settingsSection > label,
-  .settingsPagePanel > .settingsSection .field {
+  .settingsPagePanel 
+ .settingsSection 
+ label,
+  .settingsPagePanel 
+ .settingsSection .field {
     align-items: flex-start;
   }
 
-  .settingsPagePanel > .settingsSection .backupActions {
+  .settingsPagePanel 
+ .settingsSection .backupActions {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .settingsPagePanel > .settingsSection .backupActions > * {
+  .settingsPagePanel 
+ .settingsSection .backupActions 
+ * {
     width: 100%;
   }
 }
@@ -8945,8 +9142,10 @@ main > section > [role="alert"] {
   min-height: 100dvh;
 }
 
-.seriesEditorBackdrop .seriesEditorForm > .seriesEditorDetails,
-.seriesEditorBackdrop .seriesEditorForm > .seriesEditorSection {
+.seriesEditorBackdrop .seriesEditorForm 
+ .seriesEditorDetails,
+.seriesEditorBackdrop .seriesEditorForm 
+ .seriesEditorSection {
   display: flex !important;
   flex-direction: column !important;
   gap: 16px !important;
@@ -8963,7 +9162,8 @@ main > section > [role="alert"] {
 }
 
 .seriesEditorBackdrop .seriesCoverEditor img,
-.seriesEditorBackdrop .seriesCoverEditor > div {
+.seriesEditorBackdrop .seriesCoverEditor 
+ div {
   width: 86px !important;
   height: 112px !important;
   flex: 0 0 86px;
@@ -8996,7 +9196,8 @@ main > section > [role="alert"] {
   min-height: 44px;
 }
 
-.seriesEditorBackdrop .seriesEditorForm > .seriesEditorActions {
+.seriesEditorBackdrop .seriesEditorForm 
+ .seriesEditorActions {
   position: sticky;
   bottom: 0;
   z-index: 2;
@@ -9054,7 +9255,8 @@ main > section > [role="alert"] {
   background: #4b5563;
 }
 
-.libraryCard .coverProgressTrack > span {
+.libraryCard .coverProgressTrack 
+ span {
   display: block;
   height: 100%;
   border-radius: inherit;
@@ -9067,11 +9269,65 @@ main > section > [role="alert"] {
   }
 }
 
+.librarySelectionToolbar.is-active {
+  width: max-content !important;
+  max-width: calc(100vw - 48px) !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  padding: 8px 12px !important;
+  border-radius: 16px !important;
+}
+
+.librarySelectionToolbar.is-active .librarySelectionPrimaryActions {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.librarySelectionToolbar.is-active button,
+.librarySelectionToolbar.is-active summary {
+  min-height: 36px !important;
+  padding: 8px 11px !important;
+  border-radius: 9px !important;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.librarySelectionToolbar.is-active .librarySelectionDone {
+  padding-inline: 8px !important;
+  border: 0 !important;
+  background: transparent !important;
+  font-size: 14px;
+}
+
+.librarySelectionToolbar.is-active .librarySelectionCount {
+  padding-inline: 4px;
+  white-space: nowrap;
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 899px) {
+  .librarySelectionToolbar.is-active {
+    width: calc(100vw - 32px) !important;
+    max-width: none !important;
+    overflow-x: auto;
+    border-radius: 14px !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .settingsPagePanel > .settingsSectionNav .settingsTab,
-  .settingsPagePanel > .settingsSection button,
-  .settingsPagePanel > .settingsSection label,
-  .settingsPagePanel > .settingsSection select {
+  .settingsPagePanel 
+ .settingsSectionNav .settingsTab,
+  .settingsPagePanel 
+ .settingsSection button,
+  .settingsPagePanel 
+ .settingsSection label,
+  .settingsPagePanel 
+ .settingsSection select {
     transition: none;
   }
 }
