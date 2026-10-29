@@ -5,9 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   BookOpen,
-  Grid2X2,
   Heart,
-  List,
   ListChecks,
   MoreHorizontal,
   Plus,
@@ -101,7 +99,6 @@ export function LibraryPage() {
   const adultAccessUnlocked = true;
   const [preferences, setPreferences] = useState<Preferences>(getPreferences);
   const [libraryViewMode, setLibraryViewMode] = useViewMode("kage-library-view-mode");
-  const [historyViewMode, setHistoryViewMode] = useViewMode("kage-history-view-mode");
   const requestedView = searchParams.get("view");
   const normalizedView = requestedView === "saved" ? "favorites" : requestedView;
   const view =
@@ -554,13 +551,9 @@ export function LibraryPage() {
             ) : null}
             <div className="historySectionHeader">
               <h2 style={styles.sectionTitle}>Recently read</h2>
-              <div className="viewModeToggle" role="group" aria-label="History view">
-                <button type="button" className={historyViewMode === "grid" ? "is-active" : ""} aria-label="History grid view" aria-pressed={historyViewMode === "grid"} onClick={() => setHistoryViewMode("grid")}><Grid2X2 size={15} /></button>
-                <button type="button" className={historyViewMode === "list" ? "is-active" : ""} aria-label="History list view" aria-pressed={historyViewMode === "list"} onClick={() => setHistoryViewMode("list")}><List size={15} /></button>
-              </div>
             </div>
             {visibleRecentChapters.length > 0 ? (
-              <ul className={`historyEntries ${historyViewMode === "grid" ? "is-grid" : "is-list"}`} style={styles.list}>
+              <ul className="historyEntries is-list" style={styles.list}>
                 {visibleRecentChapters.map((item) => (
                   <li key={item.id} style={styles.listItem}>
                     <Link

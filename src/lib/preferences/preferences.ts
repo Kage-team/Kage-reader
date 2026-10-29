@@ -431,7 +431,7 @@ function normalizePreferences(value: unknown): Preferences {
     )
       ? Math.min(
           100,
-          Math.max(0, Math.round(Number(candidate.readerAutoScrollCreepSpeed))),
+          Math.max(1, Math.round(Number(candidate.readerAutoScrollCreepSpeed))),
         )
       : DEFAULT_PREFERENCES.readerAutoScrollCreepSpeed,
     readerAutoScrollJumpDelay: Number.isFinite(

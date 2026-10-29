@@ -3135,7 +3135,7 @@ export function ReaderPage() {
                 updateNovelProgressDisplay(progress);
                 frame.scrollTo({
                   top: progress * (frame.scrollHeight - frame.clientHeight),
-                  behavior: "instant",
+                  behavior: "auto",
                 });
               } else {
                 selectReaderPage(Number(event.currentTarget.value), "instant");
@@ -3267,7 +3267,7 @@ export function ReaderPage() {
                   updateNovelProgressDisplay(progress);
                   frame.scrollTo({
                     top: progress * (frame.scrollHeight - frame.clientHeight),
-                    behavior: "instant",
+                    behavior: "auto",
                   });
                 }}
               />
@@ -4268,7 +4268,7 @@ export function ReaderPage() {
                         id="reader-creep-speed"
                         aria-label="Creep speed"
                         type="range"
-                        min={0}
+                        min={1}
                         max={100}
                         value={readerPreferences.readerAutoScrollCreepSpeed}
                         onChange={(event) =>
