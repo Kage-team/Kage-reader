@@ -242,11 +242,12 @@ async function saveArchiveAsChapter(
         ) ||
         chapterGroup.title ||
         seriesTitle,
-      number:
-        chapterGroup.number ??
-        (chapterGroups.length === 1 && comicInfo.number
-          ? Number.parseFloat(comicInfo.number) || undefined
-          : undefined),
+        number:
+          chapterGroup.number ??
+          (chapterGroups.length === 1
+            ? sourceIssueNumber(source.name) ??
+              (comicInfo.number ? Number.parseFloat(comicInfo.number) || undefined : undefined)
+            : undefined),
       volume:
         chapterGroup.volume ??
         (chapterGroups.length === 1 ? comicInfo.volume : undefined),
@@ -357,12 +358,20 @@ function isSupportedArchiveName(name: string): boolean {
 }
 
 function archiveSeriesStem(name: string): string {
-  return name
+  const basename = name.replaceAll("\\", "/").split("/").pop() ?? name;
+  return basename
     .replace(/\.[^.]+$/, "")
     .replace(/[._-]+/g, " ")
     .replace(/\s*(?:issue|chapter|ch\.?|episode|ep\.?|volume|vol\.?)\s*#?\s*\d+.*$/i, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function sourceIssueNumber(name: string): number | undefined {
+  const basename = name.replaceAll("\\", "/").split("/").pop() ?? name;
+  const match = basename.match(/(?:issue|chapter|ch\.?|episode|ep\.?|volume|vol\.?)\s*#?\s*0*(\d+(?:\.\d+)?)/i)
+    ?? basename.match(/#\s*0*(\d+(?:\.\d+)?)/);
+  return match?.[1] ? Number(match[1]) : undefined;
 }
 
 export async function importArchiveSources(
@@ -374,9 +383,7 @@ export async function importArchiveSources(
   const imported: ImportedChapterSummary[] = [];
   const errors: string[] = [];
   const normalizedSources = await packageLooseImageSources(sources);
-  if (targetSeriesId) {
-    normalizedSources.sort((left, right) => naturalSort(left.name, right.name));
-  }
+  normalizedSources.sort((left, right) => naturalSort(left.name, right.name));
 
   const archiveStemCounts = new Map<string, number>();
   for (const source of normalizedSources) {
