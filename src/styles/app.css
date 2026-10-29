@@ -10202,6 +10202,130 @@ main
   .seriesChapterProgress {
     margin: 5px 116px 0 36px !important;
   }
+
+  /* Yomu-inspired compact mobile chapter controls. */
+  .seriesPage > section {
+    padding-inline: 0 !important;
+  }
+
+  .seriesPage .seriesHero {
+    width: calc(100% - 24px) !important;
+    margin-inline: 12px !important;
+    padding: 16px 0 20px !important;
+    gap: 14px !important;
+  }
+
+  .seriesPage .seriesChapterSection {
+    width: calc(100% - 24px) !important;
+    margin-inline: 12px !important;
+    border: 1px solid var(--app-border);
+    border-radius: 18px;
+    overflow: hidden;
+    background: #090a0a;
+  }
+
+  .seriesPage .seriesChapterHeader {
+    min-height: 76px !important;
+    padding: 14px 16px !important;
+    background: #0c0e0e;
+  }
+
+  .seriesPage .seriesChapterHeading {
+    font-size: 20px !important;
+    letter-spacing: -0.03em;
+  }
+
+  .seriesPage .seriesChapterTools {
+    display: grid !important;
+    grid-template-columns: 94px minmax(0, 1fr) !important;
+    grid-template-areas:
+      "select search"
+      "sort sort" !important;
+    gap: 10px !important;
+    padding: 14px 12px !important;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  .seriesPage .seriesChapterSelectAll {
+    grid-area: select;
+    min-height: 38px !important;
+    justify-content: center;
+    padding: 0 8px !important;
+    border: 1px solid var(--app-border);
+    border-radius: 12px;
+    background: transparent;
+  }
+
+  .seriesPage .seriesChapterSearch {
+    grid-area: search;
+    min-width: 0 !important;
+    width: auto !important;
+    height: 38px !important;
+    border-radius: 12px !important;
+  }
+
+  .seriesPage .seriesChapterSearch input {
+    min-width: 0 !important;
+    width: 100% !important;
+    font-size: 13px !important;
+  }
+
+  .seriesPage .seriesChapterSortControl {
+    grid-area: sort;
+    display: flex !important;
+    width: 100% !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border: 1px solid var(--app-border);
+    border-radius: 12px;
+  }
+
+  .seriesPage .seriesChapterSortControl::-webkit-scrollbar {
+    display: none;
+  }
+
+  .seriesPage .seriesChapterSortControl button {
+    flex: 1 0 auto;
+    min-height: 36px !important;
+    padding: 0 14px !important;
+    font-size: 12px !important;
+  }
+
+  .seriesPage .chapterVolumeGroup {
+    padding: 16px 12px 7px !important;
+    font-size: 11px !important;
+    letter-spacing: 0.12em;
+  }
+
+  .seriesPage .seriesChapterItem {
+    padding: 10px 12px !important;
+  }
+
+  .seriesPage .seriesChapterRow {
+    grid-template-columns: 24px minmax(0, 1fr) 96px !important;
+    gap: 8px !important;
+    min-height: 54px !important;
+  }
+
+  .seriesPage .seriesChapterRow > a .chapterTitleLine strong {
+    font-size: 14px !important;
+  }
+
+  .seriesPage .seriesChapterRow > a .chapterTitleText {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+    white-space: nowrap;
+  }
+
+  .seriesPage .seriesChapterRow > .chapterStatusToggle {
+    width: 96px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    border-radius: 11px !important;
+  }
 }
 
 .librarySearchFilter:focus-within {
