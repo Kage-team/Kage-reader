@@ -10327,6 +10327,73 @@ main
     border-radius: 11px !important;
   }
 
+  /* Correct selectors for the existing inline-styled hero markup. */
+  .seriesPage .seriesHero > .seriesCover {
+    width: 128px !important;
+    height: 180px !important;
+    margin: 0 !important;
+    border-radius: 15px !important;
+  }
+
+  .seriesPage .seriesHero > div:nth-child(2) {
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 9px !important;
+  }
+
+  .seriesPage .seriesHero > div:nth-child(2) > h1 {
+    margin: 0 !important;
+    font-size: 25px !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.04em !important;
+  }
+
+  .seriesPage .seriesHero > div:nth-child(2) > p {
+    margin: 0 !important;
+    font-size: 10px !important;
+    letter-spacing: 0.11em !important;
+    text-transform: uppercase;
+  }
+
+  .seriesPage .seriesHero > div:nth-child(2) > div {
+    margin: 0 !important;
+    font-size: 12px !important;
+  }
+
+  .seriesPage .seriesHero > div:nth-child(2) > a[href^="/read/"] {
+    width: 100% !important;
+    min-height: 42px !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+    margin-top: 4px !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+  }
+
+  .seriesPage > section > header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    min-height: 54px !important;
+    padding: 10px 14px !important;
+  }
+
+  .seriesPage .seriesMaintenanceActions {
+    gap: 6px !important;
+  }
+
+  .seriesPage .seriesEditButton,
+  .seriesPage .seriesActionsMenu > button {
+    min-height: 36px !important;
+    border-radius: 11px !important;
+    padding-inline: 10px !important;
+    font-size: 11px !important;
+  }
+}
+
+@media (max-width: 680px) {
   /* Minimal reading detail surface: one calm card, one clear action hierarchy. */
   .seriesPage {
     min-height: 100dvh;
