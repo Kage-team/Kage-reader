@@ -58,6 +58,22 @@ function commonFolderName(paths: string[][]): string | undefined {
   return firstParts[0];
 }
 
+function inferSeriesTitle(paths: string[][]): string | undefined {
+  const labels = paths.map((parts) => parts[0]?.replace(/\.[^.]+$/, "") ?? "");
+  if (labels.length < 2) return undefined;
+  const normalized = labels.map((label) =>
+    label
+      .replace(/\s*(?:issue|chapter|ch\.?|episode|ep\.?|volume|vol\.?)\s*#?\s*\d+.*$/i, "")
+      .replace(/[\s._-]+$/, "")
+      .trim(),
+  );
+  if (!normalized.every(Boolean)) return undefined;
+  if (new Set(normalized.map((value) => value.toLowerCase())).size !== 1) {
+    return undefined;
+  }
+  return normalized[0];
+}
+
 export async function packageLooseImageSources(
   sources: ArchiveSource[],
 ): Promise<ArchiveSource[]> {
@@ -70,6 +86,7 @@ export async function packageLooseImageSources(
   );
   const imagePaths = imageSources.map((source) => archiveSafePath(source.name));
   const sharedRoot = commonFolderName(imagePaths);
+  const inferredSeriesTitle = inferSeriesTitle(imagePaths);
   const rootFolderName = imageSources[0]?.rootFolderName;
   const rootIsSeries =
     Boolean(rootFolderName) &&
@@ -81,7 +98,7 @@ export async function packageLooseImageSources(
       (parts) => parts.length > 1 && looksLikeChapterFolder(parts[0] ?? ""),
     );
   const preserveFolderPaths =
-    firstPartsAreChapters || imagePaths.some((parts) => parts.length > 2);
+    firstPartsAreChapters || Boolean(inferredSeriesTitle) || imagePaths.some((parts) => parts.length > 2);
 
   for (const source of sources) {
     if (
@@ -98,7 +115,7 @@ export async function packageLooseImageSources(
       ? rootFolderName!
       : firstPartsAreChapters
         ? "Loose Images"
-        : (sharedRoot ?? (hasFolderPath ? pathParts[0] : "Loose Images"));
+        : (sharedRoot ?? inferredSeriesTitle ?? (hasFolderPath ? pathParts[0] : "Loose Images"));
     const entries = imageGroups.get(title) ?? new Map<string, ArchiveSource>();
     const entryPath = preserveFolderPaths
       ? sharedRoot && pathParts[0] === sharedRoot
