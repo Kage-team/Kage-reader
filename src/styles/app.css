@@ -10113,6 +10113,91 @@ main
   border-color: color-mix(in srgb, var(--app-border) 86%, transparent);
 }
 
+@media (max-width: 680px) {
+  .seriesPage,
+  .seriesPage > section.seriesChapterSection {
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
+    padding-inline: 0 !important;
+  }
+
+  .seriesChapterSection {
+    overflow: hidden;
+  }
+
+  .seriesChapterHeader,
+  .seriesChapterTools {
+    padding-inline: 12px !important;
+  }
+
+  .seriesChapterItem {
+    padding: 8px 12px !important;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  .seriesChapterRow {
+    display: grid !important;
+    grid-template-columns: 28px minmax(0, 1fr) 108px !important;
+    grid-template-areas: "check title action" !important;
+    gap: 8px !important;
+    min-height: 58px;
+    align-items: center;
+  }
+
+  .seriesChapterRow > .seriesChapterCheckbox {
+    grid-area: check;
+    width: 20px;
+    height: 20px;
+    margin: 0 !important;
+  }
+
+  .seriesChapterRow > a {
+    grid-area: title;
+    display: grid !important;
+    grid-template-rows: auto auto;
+    gap: 5px;
+    min-width: 0;
+    padding: 0 !important;
+    align-items: start;
+  }
+
+  .seriesChapterRow > a .chapterTitleLine,
+  .seriesChapterRow > a .chapterPageCount {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .seriesChapterRow > a .chapterTitleLine strong {
+    display: block;
+    overflow: hidden;
+    font-size: 14px !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .seriesChapterRow > a .chapterPageCount {
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .seriesChapterRow > .chapterStatusToggle {
+    grid-area: action;
+    width: 108px !important;
+    min-width: 0 !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 8px !important;
+    font-size: 11px;
+  }
+
+  .seriesChapterProgress {
+    margin: 5px 116px 0 36px !important;
+  }
+}
+
 .librarySearchFilter:focus-within {
   border-color: #12b89a;
   box-shadow: 0 0 0 3px rgb(18 184 154 / 12%);
