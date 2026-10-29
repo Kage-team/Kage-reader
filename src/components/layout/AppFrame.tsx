@@ -80,7 +80,7 @@ export function AppFrame({ children }: PropsWithChildren) {
           <Heart size={18} />
           <span>Saved</span>
         </Link>
-        <Link to="/import" className={`appMobileAdd${activeTab === "add" ? " appNavLinkActive" : ""}`} aria-current={activeTab === "add" ? "page" : undefined} aria-label="Add to library">
+        <Link to="/import" className={`appNavLink appMobileAdd${activeTab === "add" ? " appNavLinkActive" : ""}`} aria-current={activeTab === "add" ? "page" : undefined} aria-label="Add to library">
           <FileUp size={18} />
           <span>Add</span>
         </Link>

@@ -11077,6 +11077,163 @@ main
   }
 }
 
+/* Mobile structural repair: keep every action inside its card and give text room. */
+.seriesPage > section {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.seriesPage .seriesChapterItem {
+  overflow: hidden !important;
+}
+
+.seriesPage .seriesChapterRow {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.seriesPage .seriesChapterRow > a {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.seriesPage .chapterStatusToggle {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 32px !important;
+  max-width: 40px !important;
+  margin-left: 8px !important;
+  padding: 8px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+}
+
+@media (max-width: 680px) {
+  .seriesPage .seriesHero {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 14px !important;
+    padding: 18px 16px 20px !important;
+    text-align: center !important;
+  }
+
+  .seriesPage .seriesHero > .seriesCover {
+    width: 128px !important;
+    height: 180px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .seriesPage .seriesHeroContent,
+  .seriesPage .seriesHero > div:nth-child(2) {
+    display: flex !important;
+    width: 100% !important;
+    align-items: center !important;
+    min-width: 0 !important;
+    gap: 8px !important;
+    text-align: center !important;
+  }
+
+  .seriesPage .seriesHero > div:nth-child(2) > h1 {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    font-size: 22px !important;
+  }
+
+  .seriesPage .seriesHero > div:nth-child(2) > a[href^="/read/"] {
+    width: 100% !important;
+    max-width: 320px !important;
+    margin-top: 4px !important;
+  }
+
+  .seriesPage .seriesChapterRow {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    min-height: 58px !important;
+    padding: 9px 10px !important;
+  }
+
+  .seriesPage .seriesChapterSelectCell {
+    display: none !important;
+  }
+
+  .seriesPage .seriesChapterRow > a {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+  }
+
+  .seriesPage .chapterTitleLine {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    align-items: center !important;
+  }
+
+  .seriesPage .chapterTitleLine strong,
+  .seriesPage .chapterTitleText {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .seriesPage .chapterTitleLine .chapterStatus,
+  .seriesPage .chapterTitleLine [class*="badge"],
+  .seriesPage .chapterTitleLine .statusBadge {
+    display: none !important;
+  }
+
+  .seriesPage .chapterPageCount {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 11px !important;
+  }
+
+  .seriesPage .chapterStatusToggle {
+    flex: 0 0 32px !important;
+    width: 32px !important;
+    max-width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    margin-left: 8px !important;
+    padding: 7px !important;
+  }
+
+  .appMobileNav .appMobileAdd {
+    width: auto !important;
+    height: auto !important;
+    min-height: 52px !important;
+    border-radius: var(--app-radius-control) !important;
+    background: transparent !important;
+    color: var(--app-muted) !important;
+    box-shadow: none !important;
+  }
+
+  .appMobileNav .appMobileAdd svg,
+  .appMobileNav .appMobileAdd span {
+    color: inherit !important;
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
