@@ -1,21 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowDownWideNarrow,
   ArrowDown,
   ArrowUp,
   BookOpen,
-  Check,
-  Grid2X2,
   Heart,
-  List,
-  ListChecks,
   MoreHorizontal,
-  FolderPlus,
   Plus,
   Search,
-  Tag,
-  Trash2,
 } from "lucide-react";
 import {
   getPreferences,
@@ -64,10 +57,7 @@ const SERIES_TYPE_LABELS: Record<SeriesType, string> = {
 };
 
 function formatHistoryAge(timestamp: number): string {
-  const elapsedMinutes = Math.max(
-    0,
-    Math.floor((Date.now() - timestamp) / 60000),
-  );
+  const elapsedMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
   if (elapsedMinutes < 1) return "Just now";
   if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
   const elapsedHours = Math.floor(elapsedMinutes / 60);
@@ -99,23 +89,38 @@ export function LibraryPage() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [revealedCardId, setRevealedCardId] = useState<string | null>(null);
   const [openCardMenuId, setOpenCardMenuId] = useState<string | null>(null);
+  const selectionPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressNextCardClick = useRef(false);
   const [selectedSeriesIds, setSelectedSeriesIds] = useState<Set<string>>(
     () => new Set(),
   );
   const [bulkMessage, setBulkMessage] = useState("");
+
+  useEffect(() => {
+    if (!openCardMenuId) return;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (!target?.closest(".seriesCardMenu, .seriesCardMenuTrigger")) {
+        setOpenCardMenuId(null);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenCardMenuId(null);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [openCardMenuId]);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [favoriteError, setFavoriteError] = useState("");
   const adultAccessUnlocked = true;
   const [preferences, setPreferences] = useState<Preferences>(getPreferences);
-  const [libraryViewMode, setLibraryViewMode] = useViewMode(
-    "kage-library-view-mode",
-  );
-  const [historyViewMode, setHistoryViewMode] = useViewMode(
-    "kage-history-view-mode",
-  );
+  const [libraryViewMode, setLibraryViewMode] = useViewMode("kage-library-view-mode");
   const requestedView = searchParams.get("view");
-  const normalizedView =
-    requestedView === "saved" ? "favorites" : requestedView;
+  const normalizedView = requestedView === "saved" ? "favorites" : requestedView;
   const view =
     normalizedView === "favorites" ||
     normalizedView === "continue" ||
@@ -143,9 +148,7 @@ export function LibraryPage() {
         progress
           .flatMap((record) => {
             const chapter = chapterById.get(record.chapterId);
-            const owner = chapter
-              ? seriesById.get(chapter.seriesId)
-              : undefined;
+            const owner = chapter ? seriesById.get(chapter.seriesId) : undefined;
             return chapter && owner
               ? [
                   {
@@ -167,9 +170,7 @@ export function LibraryPage() {
     } catch {
       setEntries([]);
       setRecentChapters([]);
-      setFavoriteError(
-        "Could not load your library. Please reload and try again.",
-      );
+      setFavoriteError("Could not load your library. Please reload and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -386,21 +387,14 @@ export function LibraryPage() {
   );
   const landingContinueEntries = entries
     .filter((entry) => entry.resume && entry.resume.pageCount > 0)
-    .sort(
-      (left, right) =>
-        (right.resume?.updatedAt ?? 0) - (left.resume?.updatedAt ?? 0),
-    )
+    .sort((left, right) => (right.resume?.updatedAt ?? 0) - (left.resume?.updatedAt ?? 0))
     .slice(0, 3);
   const landingQueueEntries = entries
     .filter((entry) => entry.queueOrder !== undefined)
     .sort((left, right) => (left.queueOrder ?? 0) - (right.queueOrder ?? 0))
     .slice(0, 6);
-  const landingFavoriteEntries = entries
-    .filter((entry) => entry.isFavorite)
-    .slice(0, 6);
-  const activityTitleCount = new Set(
-    visibleRecentChapters.map((item) => item.seriesId),
-  ).size;
+  const landingFavoriteEntries = entries.filter((entry) => entry.isFavorite).slice(0, 6);
+  const activityTitleCount = new Set(visibleRecentChapters.map((item) => item.seriesId)).size;
   const latestActivity = visibleRecentChapters[0];
   const pageTitle =
     view === "adult"
@@ -411,8 +405,8 @@ export function LibraryPage() {
           ? "Continue reading"
           : view === "queue"
             ? "Reading queue"
-            : view === "history"
-              ? "Activity"
+              : view === "history"
+                ? "Activity"
               : view === "insights"
                 ? "Reading insights"
                 : "Your library";
@@ -431,56 +425,22 @@ export function LibraryPage() {
           style={styles.headerRow}
         >
           {!["favorites", "continue", "queue"].includes(view) ? (
-            <div className="libraryHeaderCopy">
-              <h1
-                className={view === "all" ? "sr-only" : undefined}
-                style={styles.title}
-              >
-                {pageTitle}
-              </h1>
+              <div className="libraryHeaderCopy">
+              <h1 className={view === "all" ? "sr-only" : undefined} style={styles.title}>{pageTitle}</h1>
             </div>
           ) : null}
-          {view === "favorites" ||
-          view === "queue" ||
-          view === "history" ||
-          view === "insights" ? (
-            <div
-              className="libraryHeaderActions libraryContextActions"
-              style={styles.headerActions}
-            >
+          {view === "favorites" || view === "queue" || view === "history" || view === "insights" ? (
+            <div className="libraryHeaderActions libraryContextActions" style={styles.headerActions}>
               {view === "favorites" || view === "queue" ? (
-                <div
-                  className="librarySavedSegmented"
-                  aria-label="Saved library views"
-                >
-                  <Link
-                    className={view === "favorites" ? "is-active" : ""}
-                    to="/?view=favorites"
-                  >
-                    Favorites
-                  </Link>
-                  <Link
-                    className={view === "queue" ? "is-active" : ""}
-                    to="/?view=queue"
-                  >
-                    Queue
-                  </Link>
+                <div className="librarySavedSegmented" aria-label="Saved library views">
+                  <Link className={view === "favorites" ? "is-active" : ""} to="/?view=favorites">Favorites</Link>
+                  <Link className={view === "queue" ? "is-active" : ""} to="/?view=queue">Queue</Link>
                 </div>
               ) : null}
               {view === "history" || view === "insights" ? (
                 <nav className="activitySegmented" aria-label="Activity views">
-                  <Link
-                    className={view === "history" ? "is-active" : ""}
-                    to="/?view=history"
-                  >
-                    History
-                  </Link>
-                  <Link
-                    className={view === "insights" ? "is-active" : ""}
-                    to="/?view=insights"
-                  >
-                    Insights
-                  </Link>
+                  <Link className={view === "history" ? "is-active" : ""} to="/?view=history">History</Link>
+                  <Link className={view === "insights" ? "is-active" : ""} to="/?view=insights">Insights</Link>
                 </nav>
               ) : null}
             </div>
@@ -490,113 +450,31 @@ export function LibraryPage() {
         {view === "all" && !isLoading ? (
           <section className="libraryLanding" aria-label="Library overview">
             {landingContinueEntries.length > 0 ? (
-              <section
-                className="libraryLandingSection"
-                aria-labelledby="continue-reading-title"
-              >
+              <section className="libraryLandingSection" aria-labelledby="continue-reading-title">
                 <div className="libraryLandingHeader">
-                  <div>
-                    <p className="libraryLandingEyebrow">
-                      Pick up where you left off
-                    </p>
-                    <h2 id="continue-reading-title">Continue reading</h2>
-                  </div>
+                  <div><p className="libraryLandingEyebrow">Pick up where you left off</p><h2 id="continue-reading-title">Continue reading</h2></div>
                   <Link to="/?view=continue">View all</Link>
                 </div>
                 <div className="libraryContinueRail">
                   {landingContinueEntries.map((entry) => (
-                    <Link
-                      className="libraryContinueCard"
-                      key={entry.id}
-                      to={`/read/${encodeURIComponent(entry.resume!.chapterId)}`}
-                    >
-                      <span className="libraryContinueCover">
-                        {coverUrls[entry.id] ? (
-                          <img src={coverUrls[entry.id]} alt="" />
-                        ) : (
-                          <BookOpen size={20} />
-                        )}
-                      </span>
-                      <span className="libraryContinueCopy">
-                        <strong>{entry.title}</strong>
-                        <span>{entry.resume!.chapterTitle}</span>
-                        <span className="libraryRailProgress">
-                          <i
-                            style={{
-                              width: `${Math.min(100, ((entry.resume!.pageIndex + 1) / entry.resume!.pageCount) * 100)}%`,
-                            }}
-                          />
-                        </span>
-                        <small>
-                          Page{" "}
-                          {Math.min(
-                            entry.resume!.pageIndex + 1,
-                            entry.resume!.pageCount,
-                          )}{" "}
-                          of {entry.resume!.pageCount}
-                        </small>
-                      </span>
+                    <Link className="libraryContinueCard" key={entry.id} to={`/read/${encodeURIComponent(entry.resume!.chapterId)}`}>
+                      <span className="libraryContinueCover">{coverUrls[entry.id] ? <img src={coverUrls[entry.id]} alt="" /> : <BookOpen size={20} />}</span>
+                      <span className="libraryContinueCopy"><strong>{entry.title}</strong><span>{entry.resume!.chapterTitle}</span><span className="libraryRailProgress"><i style={{ width: `${Math.min(100, ((entry.resume!.pageIndex + 1) / entry.resume!.pageCount) * 100)}%` }} /></span><small>Page {Math.min(entry.resume!.pageIndex + 1, entry.resume!.pageCount)} of {entry.resume!.pageCount}</small></span>
                     </Link>
                   ))}
                 </div>
               </section>
             ) : null}
             {landingQueueEntries.length > 0 ? (
-              <section
-                className="libraryLandingSection"
-                aria-labelledby="queue-title"
-              >
-                <div className="libraryLandingHeader">
-                  <h2 id="queue-title">Queue</h2>
-                  <Link to="/?view=queue">View all</Link>
-                </div>
-                <div className="libraryCompactRail">
-                  {landingQueueEntries.map((entry) => (
-                    <Link
-                      className="libraryCompactCard"
-                      key={entry.id}
-                      to={`/series/${encodeURIComponent(entry.id)}`}
-                    >
-                      <span>
-                        {coverUrls[entry.id] ? (
-                          <img src={coverUrls[entry.id]} alt="" />
-                        ) : (
-                          <BookOpen size={18} />
-                        )}
-                      </span>
-                      <strong>{entry.title}</strong>
-                    </Link>
-                  ))}
-                </div>
+              <section className="libraryLandingSection" aria-labelledby="queue-title">
+                <div className="libraryLandingHeader"><h2 id="queue-title">Queue</h2><Link to="/?view=queue">View all</Link></div>
+                <div className="libraryCompactRail">{landingQueueEntries.map((entry) => <Link className="libraryCompactCard" key={entry.id} to={`/series/${encodeURIComponent(entry.id)}`}><span>{coverUrls[entry.id] ? <img src={coverUrls[entry.id]} alt="" /> : <BookOpen size={18} />}</span><strong>{entry.title}</strong></Link>)}</div>
               </section>
             ) : null}
             {landingFavoriteEntries.length > 0 ? (
-              <section
-                className="libraryLandingSection"
-                aria-labelledby="favorites-title"
-              >
-                <div className="libraryLandingHeader">
-                  <h2 id="favorites-title">Favorites</h2>
-                  <Link to="/?view=favorites">View all</Link>
-                </div>
-                <div className="libraryCompactRail">
-                  {landingFavoriteEntries.map((entry) => (
-                    <Link
-                      className="libraryCompactCard"
-                      key={entry.id}
-                      to={`/series/${encodeURIComponent(entry.id)}`}
-                    >
-                      <span>
-                        {coverUrls[entry.id] ? (
-                          <img src={coverUrls[entry.id]} alt="" />
-                        ) : (
-                          <Heart size={18} />
-                        )}
-                      </span>
-                      <strong>{entry.title}</strong>
-                    </Link>
-                  ))}
-                </div>
+              <section className="libraryLandingSection" aria-labelledby="favorites-title">
+                <div className="libraryLandingHeader"><h2 id="favorites-title">Favorites</h2><Link to="/?view=favorites">View all</Link></div>
+                <div className="libraryCompactRail">{landingFavoriteEntries.map((entry) => <Link className="libraryCompactCard" key={entry.id} to={`/series/${encodeURIComponent(entry.id)}`}><span>{coverUrls[entry.id] ? <img src={coverUrls[entry.id]} alt="" /> : <Heart size={18} />}</span><strong>{entry.title}</strong></Link>)}</div>
               </section>
             ) : null}
           </section>
@@ -675,10 +553,7 @@ export function LibraryPage() {
               <div className="activitySummary" aria-label="Activity summary">
                 <div className="activitySummaryStat">
                   <strong>{activityTitleCount}</strong>
-                  <span>
-                    recently read{" "}
-                    {activityTitleCount === 1 ? "title" : "titles"}
-                  </span>
+                  <span>recently read {activityTitleCount === 1 ? "title" : "titles"}</span>
                 </div>
                 <time
                   className="activitySummaryTime"
@@ -696,36 +571,9 @@ export function LibraryPage() {
             ) : null}
             <div className="historySectionHeader">
               <h2 style={styles.sectionTitle}>Recently read</h2>
-              <div
-                className="viewModeToggle"
-                role="group"
-                aria-label="History view"
-              >
-                <button
-                  type="button"
-                  className={historyViewMode === "grid" ? "is-active" : ""}
-                  aria-label="History grid view"
-                  aria-pressed={historyViewMode === "grid"}
-                  onClick={() => setHistoryViewMode("grid")}
-                >
-                  <Grid2X2 size={15} />
-                </button>
-                <button
-                  type="button"
-                  className={historyViewMode === "list" ? "is-active" : ""}
-                  aria-label="History list view"
-                  aria-pressed={historyViewMode === "list"}
-                  onClick={() => setHistoryViewMode("list")}
-                >
-                  <List size={15} />
-                </button>
-              </div>
             </div>
             {visibleRecentChapters.length > 0 ? (
-              <ul
-                className={`historyEntries ${historyViewMode === "grid" ? "is-grid" : "is-list"}`}
-                style={styles.list}
-              >
+              <ul className="historyEntries is-list" style={styles.list}>
                 {visibleRecentChapters.map((item) => (
                   <li key={item.id} style={styles.listItem}>
                     <Link
@@ -744,9 +592,8 @@ export function LibraryPage() {
                         <span className="historyMeta">
                           {item.number !== undefined
                             ? `Chapter ${item.number}`
-                            : item.title}{" "}
-                          · Page {Math.min(item.pageIndex + 1, item.pageCount)}{" "}
-                          of {item.pageCount}
+                            : item.title} · Page {Math.min(item.pageIndex + 1, item.pageCount)} of{" "}
+                          {item.pageCount}
                         </span>
                         <span className="historyProgress" aria-hidden="true">
                           <span
@@ -801,9 +648,7 @@ export function LibraryPage() {
                         ? "Reading queue"
                         : "Series Library"}
               </h2>
-              <span className="librarySeriesCount">
-                {visibleEntries.length} series
-              </span>
+              <span className="librarySeriesCount">{visibleEntries.length} series</span>
               {hasActiveFilters ? (
                 <p style={styles.sectionDescription}>
                   {visibleEntries.length} matching titles
@@ -850,25 +695,6 @@ export function LibraryPage() {
               onChange={setLibraryViewMode}
               label="Library view"
             />
-            <button
-              type="button"
-              className="librarySelectToggle"
-              aria-label={
-                selectionMode ? "Done selecting series" : "Select series"
-              }
-              aria-pressed={selectionMode}
-              title={selectionMode ? "Done selecting" : "Select series"}
-              onClick={() => {
-                setSelectionMode((current) => !current);
-                setSelectedSeriesIds(new Set());
-                setBulkMessage("");
-              }}
-            >
-              <ListChecks size={16} />
-              <span className="librarySelectToggleLabel">
-                {selectionMode ? "Done" : "Select"}
-              </span>
-            </button>
           </div>
 
           <div className="librarySecondaryControls">
@@ -884,9 +710,7 @@ export function LibraryPage() {
                   onClick={() => setSelectedType("all")}
                   style={{
                     ...styles.categoryChip,
-                    ...(selectedType === "all"
-                      ? styles.categoryChipActive
-                      : {}),
+                    ...(selectedType === "all" ? styles.categoryChipActive : {}),
                   }}
                 >
                   All types <span>{accessibleEntries.length}</span>
@@ -925,65 +749,58 @@ export function LibraryPage() {
             </div>
           </div>
 
-          <div
-            className={`librarySelectionToolbar${selectionMode ? " is-active" : ""}${selectedSeriesIds.size > 0 ? " has-selection" : ""}`}
-          >
+          <div className={`librarySelectionToolbar${selectionMode ? " is-active" : ""}`}>
             {selectionMode ? (
               <>
-                <div className="librarySelectionHeader">
+                <button
+                  type="button"
+                  className="librarySelectionDone"
+                  onClick={() => {
+                    setSelectionMode(false);
+                    setSelectedSeriesIds(new Set());
+                    setBulkMessage("");
+                  }}
+                >
+                  Done
+                </button>
+                <span className="librarySelectionCount" aria-live="polite">
+                  {selectedSeriesIds.size} selected
+                </span>
+                <div className="librarySelectionPrimaryActions">
                   <button
                     type="button"
-                    className="librarySelectionDone"
-                    onClick={() => {
-                      setSelectionMode(false);
-                      setSelectedSeriesIds(new Set());
-                      setBulkMessage("");
-                    }}
+                    className="libraryBulkAction libraryBulkActionPrimary"
+                    style={styles.secondaryButton}
+                    onClick={() =>
+                      setSelectedSeriesIds(
+                        new Set(visibleEntries.map((entry) => entry.id)),
+                      )
+                    }
                   >
-                    Done
+                    Select visible
                   </button>
-                  <span className="librarySelectionCount" aria-live="polite">
-                    {selectedSeriesIds.size} selected
-                  </span>
-                  {selectedSeriesIds.size === 0 ? (
-                    <button
-                      type="button"
-                      className="libraryBulkAction libraryBulkActionPrimary librarySelectVisibleAction"
-                      style={styles.secondaryButton}
-                      disabled={visibleEntries.length === 0}
-                      onClick={() =>
-                        setSelectedSeriesIds(
-                          new Set(visibleEntries.map((entry) => entry.id)),
-                        )
-                      }
-                    >
-                      Select visible
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    className="libraryBulkAction"
+                    style={styles.secondaryButton}
+                    disabled={selectedSeriesIds.size === 0}
+                    onClick={() => void bulkAddTag()}
+                  >
+                    Add tag
+                  </button>
+                  <button
+                    type="button"
+                    className="libraryBulkAction"
+                    style={styles.secondaryButton}
+                    onClick={() => setSelectedSeriesIds(new Set())}
+                    disabled={selectedSeriesIds.size === 0}
+                  >
+                    Clear selection
+                  </button>
                 </div>
-                {selectedSeriesIds.size > 0 ? (
-                  <div className="librarySelectionActions">
-                    <button
-                      type="button"
-                      className="libraryBulkAction libraryBulkActionPrimary"
-                      style={styles.secondaryButton}
-                      onClick={() =>
-                        setSelectedSeriesIds(
-                          new Set(visibleEntries.map((entry) => entry.id)),
-                        )
-                      }
-                    >
-                      Select visible
-                    </button>
-                    <button
-                      type="button"
-                      className="libraryBulkAction"
-                      style={styles.secondaryButton}
-                      disabled={selectedSeriesIds.size === 0}
-                      onClick={() => void bulkAddTag()}
-                    >
-                      <Tag size={15} /> Add tag
-                    </button>
+                <details className="libraryBulkMore">
+                  <summary>More</summary>
+                  <div className="libraryBulkMoreMenu">
                     <button
                       type="button"
                       className="libraryBulkAction"
@@ -991,7 +808,7 @@ export function LibraryPage() {
                       disabled={selectedSeriesIds.size === 0}
                       onClick={() => void bulkToggleFavorite()}
                     >
-                      <Heart size={15} /> Toggle favorites
+                      Toggle favorites ({selectedSeriesIds.size})
                     </button>
                     <button
                       type="button"
@@ -1000,20 +817,19 @@ export function LibraryPage() {
                       disabled={selectedSeriesIds.size === 0}
                       onClick={() => void bulkAddCollection()}
                     >
-                      <FolderPlus size={15} /> Add to shelf
+                      Add to shelf
                     </button>
                   </div>
-                ) : null}
-                {selectedSeriesIds.size > 0 ? (
-                  <button
-                    type="button"
-                    className="libraryBulkAction libraryBulkActionDanger"
-                    style={styles.dangerButton}
-                    onClick={() => setIsBulkDeleteDialogOpen(true)}
-                  >
-                    <Trash2 size={15} /> Delete selected
-                  </button>
-                ) : null}
+                </details>
+                <button
+                  type="button"
+                  className="libraryBulkAction libraryBulkActionDanger"
+                  style={styles.dangerButton}
+                  disabled={selectedSeriesIds.size === 0}
+      onClick={() => setIsBulkDeleteDialogOpen(true)}
+      >
+      Delete selected
+                </button>
               </>
             ) : null}
             {hasActiveFilters ? (
@@ -1029,11 +845,7 @@ export function LibraryPage() {
           {bulkMessage ? <p role="status">{bulkMessage}</p> : null}
 
           {isLoading ? (
-            <div
-              className="libraryLoadingGrid"
-              aria-label="Loading library"
-              aria-busy="true"
-            >
+            <div className="libraryLoadingGrid" aria-label="Loading library" aria-busy="true">
               {Array.from({ length: 6 }, (_, index) => (
                 <div className="librarySkeletonCard" key={index}>
                   <div className="librarySkeletonCover" />
@@ -1075,43 +887,29 @@ export function LibraryPage() {
                 </span>
               ) : null}
               <div className="libraryEmptyActions">
-                {view === "favorites" ||
-                view === "continue" ||
-                view === "adult" ? (
+                {view === "favorites" || view === "continue" || view === "adult" ? (
                   <Link to="/?view=all" className="libraryEmptyAction">
                     Browse library
                   </Link>
                 ) : null}
-                {view !== "all" &&
-                view !== "favorites" &&
-                view !== "continue" &&
-                view !== "adult" ? (
-                  <button
-                    type="button"
-                    className="libraryEmptyAction"
-                    onClick={clearFilters}
-                  >
+                {view !== "all" && view !== "favorites" && view !== "continue" && view !== "adult" ? (
+                  <button type="button" className="libraryEmptyAction" onClick={clearFilters}>
                     Clear filters
                   </button>
                 ) : null}
                 {view === "continue" || view === "all" ? (
-                  <Link
-                    to="/import"
-                    className="libraryEmptyAction libraryEmptyActionPrimary"
-                  >
+                  <Link to="/import" className="libraryEmptyAction libraryEmptyActionPrimary">
                     Import books
                   </Link>
                 ) : null}
               </div>
             </div>
           ) : (
-            <div
-              className={`libraryEntries ${libraryViewMode === "list" ? "is-list" : "is-grid"}`}
-            >
+            <div className={`libraryEntries ${libraryViewMode === "list" ? "is-list" : "is-grid"}`}>
               {visibleEntries.map((entry) => (
                 <article
                   key={entry.id}
-                  className={`libraryCard${selectionMode ? " is-selectable" : ""}${selectedSeriesIds.has(entry.id) ? " is-selected" : ""}${entry.resume ? " has-resume" : ""}`}
+                  className={`libraryCard${selectedSeriesIds.has(entry.id) ? " is-selected" : ""}${entry.resume ? " has-resume" : ""}`}
                   style={styles.cardShell}
                   data-card-index={visibleEntries.indexOf(entry)}
                   data-revealed={
@@ -1122,32 +920,69 @@ export function LibraryPage() {
                     setRevealedCardId(entry.id);
                     setOpenCardMenuId(entry.id);
                   }}
+  onPointerDown={(event) => {
+  if (event.button !== 0) return;
+  selectionPressTimer.current = window.setTimeout(() => {
+                      suppressNextCardClick.current = true;
+                      setSelectionMode(true);
+                      setSelectedSeriesIds((current) => {
+                        const next = new Set(current);
+                        next.add(entry.id);
+                        return next;
+                      });
+                    }, 500);
+                  }}
+                  onPointerUp={() => {
+                    if (selectionPressTimer.current !== null) {
+                      window.clearTimeout(selectionPressTimer.current);
+                      selectionPressTimer.current = null;
+                    }
+                  }}
+                  onPointerCancel={() => {
+                    if (selectionPressTimer.current !== null) {
+                      window.clearTimeout(selectionPressTimer.current);
+                      selectionPressTimer.current = null;
+                    }
+                  }}
                   onKeyDown={(event) => {
                     if (event.key === "Escape") setOpenCardMenuId(null);
                   }}
                 >
-                  {selectionMode ? (
-                    <button
-                      type="button"
-                      className="libraryCardSelection"
-                      aria-label={`${selectedSeriesIds.has(entry.id) ? "Deselect" : "Select"} ${entry.title}`}
-                      aria-pressed={selectedSeriesIds.has(entry.id)}
-                      title={`${selectedSeriesIds.has(entry.id) ? "Deselect" : "Select"} ${entry.title}`}
-                      onClick={() =>
-                        setSelectedSeriesIds((current) => {
-                          const next = new Set(current);
-                          if (next.has(entry.id)) next.delete(entry.id);
-                          else next.add(entry.id);
-                          return next;
-                        })
-                      }
+                  <label
+                    className="libraryCardSelect"
+                    title="Select series"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 7,
+                        padding: "8px 12px 0",
+                        color: "var(--app-muted)",
+                        fontSize: 12,
+                      }}
                     >
-                      {selectedSeriesIds.has(entry.id) ? (
-                        <Check size={16} strokeWidth={3} />
-                      ) : null}
-                    </button>
-                  ) : null}
+                      <input
+                        type="checkbox"
+                        checked={selectedSeriesIds.has(entry.id)}
+  onChange={(event) => {
+  setSelectionMode(true);
+  const checked = event.currentTarget.checked;
+  setSelectedSeriesIds((current) => {
+  const next = new Set(current);
+  if (checked) next.add(entry.id);
+  else next.delete(entry.id);
+  return next;
+  });
+  }}
+                      />
+                      Select
+                    </label>
                   <Link
+                    onClick={(event) => {
+                      if (suppressNextCardClick.current) {
+                        event.preventDefault();
+                        suppressNextCardClick.current = false;
+                      }
+                    }}
                     to={
                       view === "continue" && entry.resume
                         ? `/read/${encodeURIComponent(entry.resume.chapterId)}`
@@ -1170,7 +1005,7 @@ export function LibraryPage() {
                           </span>
                         </span>
                       )}
-                      <span className="libraryTypePill" style={styles.typePill}>
+                      <span style={styles.typePill}>
                         {entry.type === "manhwa" ? "Manga" : entry.type}
                       </span>
                       <span className="coverChapterBadge">
