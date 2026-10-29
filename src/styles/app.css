@@ -1078,6 +1078,44 @@ button:disabled {
   min-height: 44px;
 }
 
+.libraryCardSelect {
+  position: absolute;
+  z-index: 4;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 6px 9px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--app-panel-raised) 92%, transparent);
+  color: var(--app-text);
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity var(--app-motion-fast), border-color var(--app-motion-fast);
+}
+
+.libraryCard:hover .libraryCardSelect,
+.libraryCard:focus-within .libraryCardSelect,
+.libraryCard.is-selected .libraryCardSelect {
+  opacity: 1;
+}
+
+.libraryCardSelect input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--app-lime);
+}
+
+@media (max-width: 720px) {
+  .libraryCardSelect {
+    opacity: 1;
+  }
+}
+
 .libraryCard:nth-child(-n + 6) {
   animation: library-card-in 200ms ease both;
   animation-delay: calc(min(var(--library-card-index, 0), 5) * 24ms);

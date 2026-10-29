@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowDownWideNarrow,
@@ -6,7 +6,6 @@ import {
   ArrowUp,
   BookOpen,
   Heart,
-  ListChecks,
   MoreHorizontal,
   Plus,
   Search,
@@ -90,6 +89,8 @@ export function LibraryPage() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [revealedCardId, setRevealedCardId] = useState<string | null>(null);
   const [openCardMenuId, setOpenCardMenuId] = useState<string | null>(null);
+  const selectionPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressNextCardClick = useRef(false);
   const [selectedSeriesIds, setSelectedSeriesIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -675,21 +676,6 @@ export function LibraryPage() {
               onChange={setLibraryViewMode}
               label="Library view"
             />
-            <button
-              type="button"
-              className="librarySelectToggle"
-              aria-label={selectionMode ? "Done selecting series" : "Select series"}
-              aria-pressed={selectionMode}
-              title={selectionMode ? "Done selecting" : "Select series"}
-              onClick={() => {
-                setSelectionMode((current) => !current);
-                setSelectedSeriesIds(new Set());
-                setBulkMessage("");
-              }}
-            >
-              <ListChecks size={16} />
-              <span className="librarySelectToggleLabel">{selectionMode ? "Done" : "Select"}</span>
-            </button>
           </div>
 
           <div className="librarySecondaryControls">
@@ -915,12 +901,37 @@ export function LibraryPage() {
                     setRevealedCardId(entry.id);
                     setOpenCardMenuId(entry.id);
                   }}
+                  onPointerDown={(event) => {
+                    if (event.pointerType !== "touch") return;
+                    selectionPressTimer.current = window.setTimeout(() => {
+                      suppressNextCardClick.current = true;
+                      setSelectionMode(true);
+                      setSelectedSeriesIds((current) => {
+                        const next = new Set(current);
+                        next.add(entry.id);
+                        return next;
+                      });
+                    }, 500);
+                  }}
+                  onPointerUp={() => {
+                    if (selectionPressTimer.current !== null) {
+                      window.clearTimeout(selectionPressTimer.current);
+                      selectionPressTimer.current = null;
+                    }
+                  }}
+                  onPointerCancel={() => {
+                    if (selectionPressTimer.current !== null) {
+                      window.clearTimeout(selectionPressTimer.current);
+                      selectionPressTimer.current = null;
+                    }
+                  }}
                   onKeyDown={(event) => {
                     if (event.key === "Escape") setOpenCardMenuId(null);
                   }}
                 >
-                  {selectionMode ? (
-                    <label
+                  <label
+                    className="libraryCardSelect"
+                    title="Select series"
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -934,6 +945,7 @@ export function LibraryPage() {
                         type="checkbox"
                         checked={selectedSeriesIds.has(entry.id)}
   onChange={(event) => {
+  setSelectionMode(true);
   const checked = event.currentTarget.checked;
   setSelectedSeriesIds((current) => {
   const next = new Set(current);
@@ -945,8 +957,13 @@ export function LibraryPage() {
                       />
                       Select
                     </label>
-                  ) : null}
                   <Link
+                    onClick={(event) => {
+                      if (suppressNextCardClick.current) {
+                        event.preventDefault();
+                        suppressNextCardClick.current = false;
+                      }
+                    }}
                     to={
                       view === "continue" && entry.resume
                         ? `/read/${encodeURIComponent(entry.resume.chapterId)}`
