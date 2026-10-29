@@ -948,9 +948,8 @@ export function SeriesPage() {
       ) : null}
           {exportMessage ? <p role="status">{exportMessage}</p> : null}
           <header className="seriesChapterHeader" style={styles.chapterHeader}>
-            <h2 className="seriesChapterHeading" style={styles.chapterHeading}>Chapters · {chapters.length}</h2>
+            <h2 className="seriesChapterHeading" style={styles.chapterHeading}>Chapters ({chapters.length})</h2>
             <div className="seriesChapterActions">
-              <span style={styles.chapterCount}>{visibleChapters.length} of {chapters.length}</span>
               <button
                 type="button"
                 className="seriesAddChapters"
@@ -1066,6 +1065,7 @@ export function SeriesPage() {
                           </div>
                           <Link
                             to={`/read/${encodeURIComponent(chapter.id)}`}
+                            className="chapterLink"
                             style={{ ...styles.chapterLink, flex: 1 }}
                           >
                             <span className="chapterTitleLine">

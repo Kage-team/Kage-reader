@@ -11478,6 +11478,284 @@ main
   }
 }
 
+/* Strict compact series detail rules. */
+.seriesPage .seriesChapterHeader {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.seriesPage .seriesChapterHeading {
+  margin: 0 !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+.seriesPage .seriesChapterActions {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.seriesPage .seriesAddChapters {
+  display: flex !important;
+  width: 32px !important;
+  height: 32px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: #9ca3af !important;
+}
+
+.seriesPage .seriesChapterTools {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  height: auto !important;
+  min-height: 32px !important;
+  margin: 0 0 8px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.seriesPage .seriesChapterSearch {
+  flex: 1 1 180px !important;
+  height: 32px !important;
+  min-width: 0 !important;
+  border: 1px solid #303737 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+}
+
+.seriesPage .seriesChapterSearch input,
+.seriesPage .seriesChapterSortControl select {
+  height: 30px !important;
+  font-size: 12px !important;
+}
+
+.seriesPage .seriesChapterSelectAll {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  height: 32px !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 0 8px !important;
+  border: 1px solid #303737 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: #aeb8b8 !important;
+  font-size: 12px !important;
+}
+
+.seriesPage .seriesChapterSortControl {
+  flex: 0 0 150px !important;
+  height: 32px !important;
+  min-width: 150px !important;
+}
+
+.seriesPage .seriesChapterSortControl select {
+  height: 32px !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+}
+
+.seriesPage .seriesChapterList {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+.seriesPage .seriesChapterItem {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.seriesPage .seriesChapterRow {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 48px !important;
+  padding: 8px 4px !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(55, 65, 65, 0.5) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.seriesPage .seriesChapterRow > .chapterLink {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  align-items: center !important;
+}
+
+.seriesPage .chapterTitleLine {
+  display: flex !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+
+.seriesPage .chapterTitleLine strong {
+  display: flex !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.seriesPage .chapterTitleText {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.seriesPage .chapterPageCount {
+  flex: 0 0 auto !important;
+  margin: 0 0 0 8px !important;
+  font-size: 11px !important;
+  color: #8e9a9a !important;
+}
+
+.seriesPage .seriesChapterSelectCell {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.seriesPage .chapterNumberBox {
+  min-width: 28px !important;
+  font-size: 11px !important;
+}
+
+.seriesPage .chapterStatusToggle {
+  flex: 0 0 24px !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-width: 24px !important;
+  margin-left: 0 !important;
+  padding: 0 !important;
+}
+
+.seriesPage .chapterStatusActionText {
+  display: none !important;
+}
+
+@media (max-width: 680px) {
+  .seriesPage .seriesHero {
+    display: grid !important;
+    grid-template-columns: 96px minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 12px !important;
+    padding: 8px 0 12px !important;
+    text-align: left !important;
+  }
+
+  .seriesPage .seriesCover {
+    width: 96px !important;
+    height: 144px !important;
+    grid-row: span 2 !important;
+  }
+
+  .seriesPage .seriesHeroContent {
+    display: flex !important;
+    min-width: 0 !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+  }
+
+  .seriesPage .seriesHeroContent h1 {
+    overflow-wrap: anywhere !important;
+    font-size: 18px !important;
+  }
+
+  .seriesPage .startReadingButton {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-height: 32px !important;
+    margin-top: 0 !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+
+  .seriesPage .seriesChapterTools {
+    display: flex !important;
+    gap: 6px !important;
+  }
+
+  .seriesPage .seriesChapterSearch {
+    flex: 1 1 100% !important;
+    order: 1 !important;
+  }
+
+  .seriesPage .seriesChapterSelectAll {
+    order: 2 !important;
+    height: 32px !important;
+  }
+
+  .seriesPage .seriesChapterSortControl {
+    order: 3 !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .seriesPage .seriesChapterRow {
+    min-height: 54px !important;
+    padding: 7px 2px !important;
+  }
+
+  .seriesPage .seriesChapterSelectCell {
+    display: none !important;
+  }
+
+  .seriesPage .seriesChapterRow > .chapterLink {
+    align-items: flex-start !important;
+  }
+
+  .seriesPage .chapterTitleLine strong {
+    display: block !important;
+    width: 100% !important;
+    font-size: 14px !important;
+  }
+
+  .seriesPage .chapterTitleText {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .seriesPage .chapterPageCount {
+    position: absolute !important;
+    margin-top: 19px !important;
+    margin-left: 0 !important;
+  }
+
+  .seriesPage .semanticStatusBadge {
+    display: none !important;
+  }
+
+  .seriesPage .chapterStatusToggle {
+    flex-basis: 24px !important;
+    width: 24px !important;
+    max-width: 24px !important;
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
