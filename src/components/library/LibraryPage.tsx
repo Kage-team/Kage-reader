@@ -1138,8 +1138,8 @@ export function LibraryPage() {
                         </span>
                       </div>
                     </div>
-                    <div style={styles.cardBody}>
-                      <h2 style={styles.seriesTitle}>{entry.title}</h2>
+                    <div className="seriesCardBody" style={styles.cardBody}>
+                      <h2 className="seriesCardTitle" style={styles.seriesTitle}>{entry.title}</h2>
                     </div>
                   </Link>
                   <button
