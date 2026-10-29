@@ -82,6 +82,7 @@ export function SeriesPage() {
   const [coverUrl, setCoverUrl] = useState("");
   const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
   const [isSeriesActionsOpen, setIsSeriesActionsOpen] = useState(false);
   const [isAppending, setIsAppending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -569,7 +570,7 @@ export function SeriesPage() {
         />
 
         <section style={styles.seriesHero}>
-          <div style={styles.seriesCover}>
+          <div className="seriesCover" style={styles.seriesCover}>
             {coverPreviewUrl || coverUrl ? (
               <img
                 src={coverPreviewUrl || coverUrl}
@@ -610,10 +611,16 @@ export function SeriesPage() {
               </ul>
             ) : null}
             {series.summary ? (
-              <details className="seriesSynopsis">
-                <summary><span className="seriesSynopsisPreview">{series.summary}</span><span className="seriesSynopsisReadMore" aria-hidden="true"> · Read more</span></summary>
-                <p style={styles.seriesSummary}>{series.summary}</p>
-              </details>
+              <div className="seriesSynopsis">
+                <p className={isSynopsisExpanded ? "" : "line-clamp-3"} style={styles.seriesSummary}>{series.summary}</p>
+                <button
+                  type="button"
+                  className="seriesSynopsisToggle"
+                  onClick={() => setIsSynopsisExpanded((current) => !current)}
+                >
+                  {isSynopsisExpanded ? "Show less" : "Show more"}
+                </button>
+              </div>
             ) : null}
             {featuredChapter ? (
               <Link
@@ -951,7 +958,7 @@ export function SeriesPage() {
       ) : null}
           {exportMessage ? <p role="status">{exportMessage}</p> : null}
           <header className="seriesChapterHeader" style={styles.chapterHeader}>
-            <h2 style={styles.chapterHeading}>Chapters · {chapters.length}</h2>
+            <h2 className="seriesChapterHeading" style={styles.chapterHeading}>Chapters · {chapters.length}</h2>
             <div className="seriesChapterActions">
               <span style={styles.chapterCount}>{visibleChapters.length} of {chapters.length}</span>
               <button
