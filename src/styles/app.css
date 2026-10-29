@@ -267,12 +267,10 @@ button:disabled {
   opacity: 0.52;
 }
 
-.appShell {
-  display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
-  min-height: 100vh;
-  background: var(--app-bg);
-}
+  .appShell {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
 
 .appSidebar {
   position: sticky;
@@ -1435,7 +1433,7 @@ button:disabled {
 @media (min-width: 900px) {
   .appShell {
     display: grid;
-    grid-template-columns: 248px minmax(0, 1fr);
+    grid-template-columns: 240px minmax(0, 1fr);
   }
 
   .appSidebar {
@@ -1459,6 +1457,20 @@ button:disabled {
 }
 
 /* Shared library/history view controls and content rhythm. */
+.appView {
+  padding-inline: 32px;
+}
+
+.appTopbarBrandGroup {
+  min-width: 0;
+}
+
+@media (min-width: 900px) {
+  .appTopbarBrandGroup {
+    visibility: hidden;
+  }
+}
+
 .historySectionHeader,
 .libraryShelfSection,
 .libraryShelfSection > .librarySearchSortRow,
@@ -1467,8 +1479,18 @@ button:disabled {
 .libraryShelfSection > .libraryEntries,
 .libraryShelfSection > .libraryLoadingGrid,
 .libraryShelfSection > .libraryEmptyCard {
-  width: min(100%, 960px);
-  margin-inline: auto;
+  width: min(100%, 1280px);
+  margin-inline: 0;
+}
+
+.libraryEntries {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+@media (max-width: 899px) {
+  .appView {
+    padding-inline: 16px;
+  }
 }
 
 .historySectionHeader {

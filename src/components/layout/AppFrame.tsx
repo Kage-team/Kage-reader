@@ -31,6 +31,10 @@ export function AppFrame({ children }: PropsWithChildren) {
     <div className="appShell">
       <a className="skipLink" href="#main-content">Skip to content</a>
       <aside className="appSidebar" aria-label="Primary navigation">
+        <Link to="/?view=all" className="appBrand" aria-label="Kage Reader home">
+          <span className="appBrandMark"><BookOpenCheck size={20} /></span>
+          <span className="appBrandName">Kage<span>Reader</span></span>
+        </Link>
         <nav className="appNavGroup" aria-label="Workspace">
           <p className="appNavLabel">Workspace</p>
           <Link to="/?view=all" className={navClass(activeTab === "library")} aria-current={activeTab === "library" ? "page" : undefined} data-active={activeTab === "library"}>
@@ -92,40 +96,20 @@ export function AppFrame({ children }: PropsWithChildren) {
 
       <div className="appMainShell">
         <header className="appTopbar">
-          <div className="appTopbarBrandGroup">
-            <Link to="/?view=all" className="appTopbarBrand" aria-label="Kage Reader home">
-              <span className="appBrandMark"><BookOpenCheck size={18} /></span>
-              <strong>Kage</strong>
-            </Link>
-          </div>
+          <div className="appTopbarBrandGroup" aria-hidden="true" />
           <div className="appTopbarStatus">
-            <button type="button" className="appTopbarSearch" onClick={() => window.dispatchEvent(new Event("kage:open-search"))} aria-label="Search everywhere" title="Search everywhere (/)">
-              <Search size={16} />
-              <span>Search</span>
-              <kbd>/</kbd>
-            </button>
-            <div className="appTopbarUtilities">
-              <Link
-                to="/import"
-                className="appTopbarUtility"
-                aria-label="Import books"
-                title="Import books"
-              >
-                <FileUp size={17} />
-              </Link>
-              <Link
-                to="/settings"
-                className="appTopbarUtility"
-                aria-label="Settings"
-                title="Settings"
-              >
-                <Settings size={17} />
-              </Link>
-            </div>
-            <span className="appStatusText">
-              <span className="appLocalDot" /> Offline-ready library
+            {activeTab === "activity" || activeTab === "more" ? (
+              <button type="button" className="appTopbarSearch" onClick={() => window.dispatchEvent(new Event("kage:open-search"))} aria-label="Search everywhere" title="Search everywhere (/)">
+                <Search size={16} />
+                <span>Search</span>
+                <kbd>/</kbd>
+              </button>
+            ) : null}
+            <span className="appStatusText" title="Stored on this device" aria-label="Stored on this device">
+              <span className="appLocalDot" />
             </span>
           </div>
+
         </header>
         <div className="appView" id="main-content">{children}</div>
         <GlobalCommandCenter />
