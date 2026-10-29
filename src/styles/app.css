@@ -9526,6 +9526,49 @@ main
   }
 }
 
+@media (max-width: 680px) {
+  .librarySelectionToolbar.is-active {
+    grid-template-columns: auto minmax(0, 1fr) auto auto !important;
+    grid-template-areas:
+      "done count more danger"
+      "actions actions actions actions" !important;
+    gap: 8px !important;
+    padding: 9px !important;
+  }
+
+  .librarySelectionToolbar.is-active .libraryBulkActionDanger {
+    grid-area: danger;
+    width: 38px !important;
+    min-width: 38px !important;
+    min-height: 36px !important;
+    padding: 8px !important;
+    border: 1px solid rgb(248 113 113 / 22%) !important;
+    border-radius: 9px !important;
+    background: rgb(127 29 29 / 18%) !important;
+  }
+
+  .librarySelectionToolbar.is-active .libraryBulkActionDanger span {
+    display: none;
+  }
+
+  .librarySelectionToolbar.is-active .libraryBulkMoreMenu {
+    right: 0;
+    bottom: calc(100% + 8px);
+  }
+
+  .libraryCardSelect input:checked {
+    border-color: #c084fc;
+    background: radial-gradient(circle at center, #fff 0 23%, #9333ea 25% 100%);
+    box-shadow: 0 0 0 3px rgb(168 85 247 / 26%), 0 5px 16px rgb(0 0 0 / 46%);
+  }
+
+  .libraryCard:has(.libraryCardSelect input:checked) {
+    outline: 2px solid #a855f7;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 6px rgb(168 85 247 / 12%), 0 18px 44px rgb(0 0 0 / 32%);
+  }
+}
+
 @keyframes seriesSheetIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
