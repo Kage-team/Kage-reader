@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowDownWideNarrow,
   ArrowDown,
+  ArrowRight,
   ArrowUp,
   BookOpen,
   Check,
@@ -93,7 +94,7 @@ export function LibraryPage() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [revealedCardId, setRevealedCardId] = useState<string | null>(null);
   const [openCardMenuId, setOpenCardMenuId] = useState<string | null>(null);
-  const selectionPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectionPressTimer = useRef<number | null>(null);
   const suppressNextCardClick = useRef(false);
   const [selectedSeriesIds, setSelectedSeriesIds] = useState<Set<string>>(
     () => new Set(),
@@ -457,13 +458,14 @@ export function LibraryPage() {
               <section className="libraryLandingSection" aria-labelledby="continue-reading-title">
                 <div className="libraryLandingHeader">
                   <div><p className="libraryLandingEyebrow">Pick up where you left off</p><h2 id="continue-reading-title">Continue reading</h2></div>
-                  <Link to="/?view=continue">View all</Link>
+                  <Link className="libraryLandingViewAll" to="/?view=continue" aria-label="View all continue reading items"><ArrowRight size={18} aria-hidden="true" /></Link>
                 </div>
                 <div className="libraryContinueRail">
                   {landingContinueEntries.map((entry) => (
                     <Link className="libraryContinueCard" key={entry.id} to={`/read/${encodeURIComponent(entry.resume!.chapterId)}`}>
                       <span className="libraryContinueCover">{coverUrls[entry.id] ? <img src={coverUrls[entry.id]} alt="" /> : <BookOpen size={20} />}</span>
-                      <span className="libraryContinueCopy"><strong>{entry.title}</strong><span>{entry.resume!.chapterTitle}</span><span className="libraryRailProgress"><i style={{ width: `${Math.min(100, ((entry.resume!.pageIndex + 1) / entry.resume!.pageCount) * 100)}%` }} /></span><small>Page {Math.min(entry.resume!.pageIndex + 1, entry.resume!.pageCount)} of {entry.resume!.pageCount}</small></span>
+                      <span className="libraryContinueCopy"><strong>{entry.title}</strong><span>{entry.resume!.chapterTitle}</span><small>Page {Math.min(entry.resume!.pageIndex + 1, entry.resume!.pageCount)} of {entry.resume!.pageCount}</small></span>
+                      <span className="libraryRailProgress" aria-hidden="true"><i style={{ width: `${Math.min(100, ((entry.resume!.pageIndex + 1) / entry.resume!.pageCount) * 100)}%` }} /></span>
                     </Link>
                   ))}
                 </div>
@@ -471,13 +473,13 @@ export function LibraryPage() {
             ) : null}
             {landingQueueEntries.length > 0 ? (
               <section className="libraryLandingSection" aria-labelledby="queue-title">
-                <div className="libraryLandingHeader"><h2 id="queue-title">Queue</h2><Link to="/?view=queue">View all</Link></div>
+                <div className="libraryLandingHeader"><h2 id="queue-title">Queue</h2><Link className="libraryLandingViewAll" to="/?view=queue" aria-label="View all queued items"><ArrowRight size={18} aria-hidden="true" /></Link></div>
                 <div className="libraryCompactRail">{landingQueueEntries.map((entry) => <Link className="libraryCompactCard" key={entry.id} to={`/series/${encodeURIComponent(entry.id)}`}><span>{coverUrls[entry.id] ? <img src={coverUrls[entry.id]} alt="" /> : <BookOpen size={18} />}</span><strong>{entry.title}</strong></Link>)}</div>
               </section>
             ) : null}
             {landingFavoriteEntries.length > 0 ? (
               <section className="libraryLandingSection" aria-labelledby="favorites-title">
-                <div className="libraryLandingHeader"><h2 id="favorites-title">Favorites</h2><Link to="/?view=favorites">View all</Link></div>
+                <div className="libraryLandingHeader"><h2 id="favorites-title">Favorites</h2><Link className="libraryLandingViewAll" to="/?view=favorites" aria-label="View all favorite items"><ArrowRight size={18} aria-hidden="true" /></Link></div>
                 <div className="libraryCompactRail">{landingFavoriteEntries.map((entry) => <Link className="libraryCompactCard" key={entry.id} to={`/series/${encodeURIComponent(entry.id)}`}><span>{coverUrls[entry.id] ? <img src={coverUrls[entry.id]} alt="" /> : <Heart size={18} />}</span><strong>{entry.title}</strong></Link>)}</div>
               </section>
             ) : null}
@@ -1589,12 +1591,13 @@ const styles: Record<string, React.CSSProperties> = {
   },
   typePill: {
     position: "absolute",
-    top: 9,
-    left: 9,
-    padding: "4px 7px",
+    top: 8,
+    left: 8,
+    padding: "3px 6px",
     border: "1px solid #ffffff26",
-    borderRadius: 4,
-    background: "#101311dc",
+    borderRadius: 6,
+    background: "#00000099",
+    backdropFilter: "blur(10px)",
     color: "var(--app-text)",
     fontSize: 9,
     fontWeight: 700,
@@ -1626,8 +1629,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 172px), 1fr))",
-    gap: 16,
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    gap: 24,
   },
   seriesCard: {
     display: "grid",
@@ -1635,11 +1638,12 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
     overflow: "hidden",
     background: "transparent",
-    border: 0,
+    border: "1px solid #ffffff1a",
+    borderRadius: 14,
     textDecoration: "none",
     color: "inherit",
     transition:
-      "transform 150ms ease, border-color 150ms ease, background 150ms ease",
+      "transform 180ms ease, border-color 180ms ease, background 180ms ease",
   },
   coverPlaceholder: {
     position: "relative",
@@ -1647,6 +1651,7 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: "hidden",
     display: "grid",
     placeItems: "center",
+    borderRadius: 13,
     background: "var(--app-panel-raised)",
     color: "var(--app-text)",
   },
