@@ -258,6 +258,18 @@ export function groupArchiveEntries(
 ): ChapterGroup[] {
   if (entries.length === 0) return [];
 
+  // Loose image folders are packaged under pages/ so filenames such as
+  // "Issue #12" cannot be mistaken for separate chapters.
+  if (entries.every((entry) => /^pages\/\d{6}\.[^/]+$/i.test(entry.name))) {
+    return [
+      {
+        key: "",
+        title: "",
+        entries: [...entries].sort((left, right) => naturalSort(left.name, right.name)),
+      },
+    ];
+  }
+
   if (isNovel) {
     const textEntries = entries.filter(
       (entry) =>
