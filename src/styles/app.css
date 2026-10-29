@@ -1097,8 +1097,6 @@ button:disabled {
   transition: opacity var(--app-motion-fast), border-color var(--app-motion-fast);
 }
 
-.libraryCard:hover .libraryCardSelect,
-.libraryCard:focus-within .libraryCardSelect,
 .libraryCard.is-selected .libraryCardSelect {
   opacity: 1;
 }
@@ -1110,11 +1108,6 @@ button:disabled {
   accent-color: var(--app-lime);
 }
 
-@media (max-width: 720px) {
-  .libraryCardSelect {
-    opacity: 1;
-  }
-}
 
 .libraryCard:nth-child(-n + 6) {
   animation: library-card-in 200ms ease both;

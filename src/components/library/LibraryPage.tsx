@@ -95,6 +95,25 @@ export function LibraryPage() {
     () => new Set(),
   );
   const [bulkMessage, setBulkMessage] = useState("");
+
+  useEffect(() => {
+    if (!openCardMenuId) return;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (!target?.closest(".seriesCardMenu, .seriesCardMenuTrigger")) {
+        setOpenCardMenuId(null);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenCardMenuId(null);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [openCardMenuId]);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [favoriteError, setFavoriteError] = useState("");
   const adultAccessUnlocked = true;
@@ -901,9 +920,9 @@ export function LibraryPage() {
                     setRevealedCardId(entry.id);
                     setOpenCardMenuId(entry.id);
                   }}
-                  onPointerDown={(event) => {
-                    if (event.pointerType !== "touch") return;
-                    selectionPressTimer.current = window.setTimeout(() => {
+  onPointerDown={(event) => {
+  if (event.button !== 0) return;
+  selectionPressTimer.current = window.setTimeout(() => {
                       suppressNextCardClick.current = true;
                       setSelectionMode(true);
                       setSelectedSeriesIds((current) => {
