@@ -9319,7 +9319,8 @@ main
   }
 }
 
-.librarySelectionToolbar.is-active > * {
+.librarySelectionToolbar.is-active 
+ * {
   flex: 0 0 auto !important;
 }
 
@@ -9368,19 +9369,23 @@ main
     backdrop-filter: blur(14px);
   }
 
-  .seriesEditorBackdrop .seriesEditorForm > .seriesEditorDetails,
-  .seriesEditorBackdrop .seriesEditorForm > .seriesEditorSection {
+  .seriesEditorBackdrop .seriesEditorForm 
+ .seriesEditorDetails,
+  .seriesEditorBackdrop .seriesEditorForm 
+ .seriesEditorSection {
     padding: 16px !important;
   }
 
   .seriesEditorBackdrop .seriesCoverEditor img,
-  .seriesEditorBackdrop .seriesCoverEditor > div {
+  .seriesEditorBackdrop .seriesCoverEditor 
+ div {
     width: 72px !important;
     height: 94px !important;
     flex-basis: 72px;
   }
 
-  .seriesEditorBackdrop .seriesEditorForm > .seriesEditorActions {
+  .seriesEditorBackdrop .seriesEditorForm 
+ .seriesEditorActions {
     padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) !important;
   }
 }
@@ -9494,7 +9499,8 @@ main
     padding: 0 0 2px;
   }
 
-  .librarySelectionToolbar.is-active .librarySelectionPrimaryActions > button {
+  .librarySelectionToolbar.is-active .librarySelectionPrimaryActions 
+ button {
     flex: 1 0 142px;
     min-height: 48px !important;
     justify-content: center;
@@ -9566,6 +9572,44 @@ main
     outline: 2px solid #a855f7;
     outline-offset: 3px;
     box-shadow: 0 0 0 6px rgb(168 85 247 / 12%), 0 18px 44px rgb(0 0 0 / 32%);
+  }
+}
+
+.librarySelectionToolbar.is-active .libraryBulkMore {
+  position: static !important;
+}
+
+@media (max-width: 680px) {
+  .librarySelectionToolbar.is-active .libraryBulkMoreMenu {
+    position: fixed !important;
+    right: 16px !important;
+    bottom: calc(var(--mobile-nav-height, 64px) + 112px) !important;
+    top: auto !important;
+    left: auto !important;
+    z-index: 100 !important;
+    width: min(230px, calc(100vw - 32px)) !important;
+    padding: 8px !important;
+    border: 1px solid rgb(148 163 184 / 24%) !important;
+    border-radius: 14px !important;
+    background: #111827 !important;
+    box-shadow: 0 18px 46px rgb(0 0 0 / 48%) !important;
+  }
+
+  .librarySelectionToolbar.is-active .libraryBulkMoreMenu button {
+    width: 100% !important;
+    min-height: 42px !important;
+    justify-content: flex-start !important;
+  }
+
+  .libraryCardSelect input:checked {
+    border-color: #f0abfc !important;
+    background: radial-gradient(circle at center, #fff 0 22%, #c026d3 24% 100%) !important;
+    box-shadow: 0 0 0 3px rgb(217 70 239 / 24%), 0 5px 16px rgb(0 0 0 / 46%) !important;
+  }
+
+  .libraryCard:has(.libraryCardSelect input:checked) {
+    outline-color: #d946ef !important;
+    box-shadow: 0 0 0 6px rgb(217 70 239 / 12%), 0 18px 44px rgb(0 0 0 / 32%) !important;
   }
 }
 
