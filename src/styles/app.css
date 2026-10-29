@@ -9902,7 +9902,7 @@ main
 
 @media (max-width: 680px) {
   .libraryPage {
-    padding: 0 12px 92px !important;
+    padding: 24px 12px 92px !important;
   }
 
   .libraryHeader {
@@ -9997,6 +9997,86 @@ main
 
   .libraryEntries.is-grid .libraryCardSelectLabel {
     display: none;
+  }
+}
+
+/* Reference-inspired library polish: calmer surfaces, stronger hierarchy, and useful card affordances. */
+.libraryShelfSection {
+  border-color: color-mix(in srgb, var(--app-border) 72%, transparent);
+}
+
+.libraryEntries.is-grid .libraryCard {
+  border-color: color-mix(in srgb, var(--app-border) 82%, transparent);
+  background: #090a0b;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 18%);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.libraryEntries.is-grid .libraryCard:hover,
+.libraryEntries.is-grid .libraryCard:focus-within {
+  border-color: color-mix(in srgb, #12b89a 60%, var(--app-border));
+  box-shadow: 0 16px 36px rgb(0 0 0 / 30%), 0 0 0 1px rgb(18 184 154 / 10%);
+  transform: translateY(-3px);
+}
+
+.libraryEntries.is-grid .seriesCardBody {
+  display: flex;
+  align-items: center;
+  min-height: 68px;
+  padding: 14px 14px 15px !important;
+  background: #090a0b !important;
+}
+
+.libraryEntries.is-grid .seriesCardTitle {
+  color: #f4f5f5;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.libraryEntries.is-grid .coverProgressOverlay {
+  background: linear-gradient(180deg, transparent 8%, rgb(0 0 0 / 82%) 100%);
+  padding: 38px 12px 10px;
+}
+
+.libraryEntries.is-grid .coverProgressTrack {
+  background: rgb(255 255 255 / 24%);
+}
+
+.libraryEntries.is-grid .coverProgressTrack > span {
+  background: #12b89a;
+}
+
+.libraryEntries.is-grid .coverChapterBadge {
+  border: 1px solid rgb(255 255 255 / 28%);
+  background: rgb(7 8 9 / 88%);
+  border-radius: 7px;
+}
+
+.libraryEntries.is-grid .typePill {
+  background: #08a98e !important;
+  color: #f3fffc !important;
+  box-shadow: 0 5px 16px rgb(8 169 142 / 24%);
+}
+
+.librarySearchFilter,
+.librarySortFilter,
+.viewModeToggle,
+.librarySelectToggle {
+  border-color: color-mix(in srgb, var(--app-border) 86%, transparent);
+}
+
+.librarySearchFilter:focus-within {
+  border-color: #12b89a;
+  box-shadow: 0 0 0 3px rgb(18 184 154 / 12%);
+}
+
+@media (min-width: 900px) {
+  .libraryEntries.is-grid {
+    gap: 18px !important;
+  }
+
+  .libraryEntries.is-grid .libraryCard > a > div:first-child {
+    aspect-ratio: 0.69;
   }
 }
 
