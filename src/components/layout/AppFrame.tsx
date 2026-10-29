@@ -98,13 +98,11 @@ export function AppFrame({ children }: PropsWithChildren) {
         <header className="appTopbar">
           <div className="appTopbarBrandGroup" aria-hidden="true" />
           <div className="appTopbarStatus">
-            {activeTab === "activity" || activeTab === "more" ? (
-              <button type="button" className="appTopbarSearch" onClick={() => window.dispatchEvent(new Event("kage:open-search"))} aria-label="Search everywhere" title="Search everywhere (/)">
-                <Search size={16} />
-                <span>Search</span>
-                <kbd>/</kbd>
-              </button>
-            ) : null}
+            <button type="button" className="appTopbarSearch" onClick={() => window.dispatchEvent(new Event("kage:open-search"))} aria-label="Search everywhere" title="Search everywhere (/)">
+              <Search size={16} />
+              <span>Search</span>
+              <kbd>/</kbd>
+            </button>
             <span className="appStatusText" title="Stored on this device" aria-label="Stored on this device">
               <span className="appLocalDot" />
             </span>
