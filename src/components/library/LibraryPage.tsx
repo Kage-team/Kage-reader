@@ -5,9 +5,13 @@ import {
   ArrowDown,
   ArrowUp,
   BookOpen,
+  Check,
   Heart,
   MoreHorizontal,
   Plus,
+  Tag,
+  Trash2,
+  X,
   Search,
 } from "lucide-react";
 import {
@@ -761,7 +765,8 @@ export function LibraryPage() {
                     setBulkMessage("");
                   }}
                 >
-                  Done
+                  <X size={16} aria-hidden="true" />
+                  <span>Done</span>
                 </button>
                 <span className="librarySelectionCount" aria-live="polite">
                   {selectedSeriesIds.size} selected
@@ -777,7 +782,8 @@ export function LibraryPage() {
                       )
                     }
                   >
-                    Select visible
+                    <Check size={15} aria-hidden="true" />
+                    <span>Select visible</span>
                   </button>
                   <button
                     type="button"
@@ -786,7 +792,8 @@ export function LibraryPage() {
                     disabled={selectedSeriesIds.size === 0}
                     onClick={() => void bulkAddTag()}
                   >
-                    Add tag
+                    <Tag size={15} aria-hidden="true" />
+                    <span>Add tag</span>
                   </button>
                   <button
                     type="button"
@@ -795,11 +802,12 @@ export function LibraryPage() {
                     onClick={() => setSelectedSeriesIds(new Set())}
                     disabled={selectedSeriesIds.size === 0}
                   >
-                    Clear selection
+                    <X size={15} aria-hidden="true" />
+                    <span>Clear selection</span>
                   </button>
                 </div>
-                <details className="libraryBulkMore">
-                  <summary>More</summary>
+                  <details className="libraryBulkMore">
+                  <summary><MoreHorizontal size={16} aria-hidden="true" /> More</summary>
                   <div className="libraryBulkMoreMenu">
                     <button
                       type="button"
@@ -827,8 +835,9 @@ export function LibraryPage() {
                   style={styles.dangerButton}
                   disabled={selectedSeriesIds.size === 0}
       onClick={() => setIsBulkDeleteDialogOpen(true)}
-      >
-      Delete selected
+                  >
+                    <Trash2 size={15} aria-hidden="true" />
+                    <span>Delete selected</span>
                 </button>
               </>
             ) : null}
@@ -963,6 +972,7 @@ export function LibraryPage() {
                       <input
                         type="checkbox"
                         checked={selectedSeriesIds.has(entry.id)}
+                        aria-label={`Select ${entry.title}`}
   onChange={(event) => {
   setSelectionMode(true);
   const checked = event.currentTarget.checked;
@@ -974,7 +984,7 @@ export function LibraryPage() {
   });
   }}
                       />
-                      Select
+                      <span className="libraryCardSelectLabel">Select</span>
                     </label>
                   <Link
                     onClick={(event) => {

@@ -1493,6 +1493,195 @@ button:disabled {
   }
 }
 
+.librarySelectionToolbar {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  min-height: 48px;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0;
+  background: var(--app-panel);
+  border: 0;
+}
+
+.librarySelectionToolbar.is-active {
+  display: flex;
+}
+
+.librarySelectionToolbar button,
+.librarySelectionToolbar summary {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: var(--app-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.librarySelectionDone {
+  color: var(--app-text) !important;
+  font-weight: 700;
+}
+
+.librarySelectionCount {
+  white-space: nowrap;
+  font-weight: 700;
+  color: var(--app-text);
+}
+
+.librarySelectionPrimaryActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.librarySelectionPrimaryActions button:hover,
+.librarySelectionToolbar summary:hover {
+  color: var(--app-text);
+}
+
+.libraryBulkActionDanger {
+  color: var(--app-danger) !important;
+}
+
+.libraryBulkMore {
+  position: relative;
+}
+
+.libraryBulkMore summary {
+  list-style: none;
+}
+
+.libraryBulkMore summary::-webkit-details-marker {
+  display: none;
+}
+
+.libraryBulkMoreMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  display: grid;
+  min-width: 190px;
+  padding: 6px;
+  background: var(--app-panel-raised);
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  box-shadow: var(--app-shadow-soft);
+}
+
+.libraryBulkMoreMenu button {
+  justify-content: flex-start;
+  padding: 0 10px;
+}
+
+.libraryCardSelect {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  padding: 0 !important;
+  justify-content: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--app-panel) 88%, transparent);
+  color: var(--app-text) !important;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 20%);
+}
+
+.libraryCardSelect input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.libraryCardSelect::before {
+  content: "";
+  width: 17px;
+  height: 17px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.libraryCardSelect:has(input:checked)::before {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+  box-shadow: inset 0 0 0 3px var(--app-panel);
+}
+
+.libraryCardSelectLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.libraryCard.is-selected {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 3px;
+}
+
+.libraryShelfSection:has(.librarySelectionToolbar.is-active) {
+  padding-bottom: 72px;
+}
+
+@media (max-width: 899px) {
+  .librarySelectionToolbar.is-active {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--mobile-nav-height, 64px) + env(safe-area-inset-bottom));
+    top: auto;
+    z-index: 30;
+    min-height: 64px;
+    padding: 8px 16px;
+    gap: 8px;
+    box-shadow: 0 -8px 24px rgb(0 0 0 / 16%);
+  }
+
+  .librarySelectionPrimaryActions {
+    gap: 0;
+  }
+
+  .librarySelectionPrimaryActions button {
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
+  }
+
+  .librarySelectionCount {
+    font-size: 12px;
+  }
+
+  .librarySelectionDone span,
+  .libraryBulkActionDanger span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .librarySelectionToolbar .libraryBulkActionDanger {
+    width: 44px;
+    padding: 0;
+  }
+}
+
 .historySectionHeader {
   display: flex;
   align-items: center;
