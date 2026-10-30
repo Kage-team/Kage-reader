@@ -981,35 +981,39 @@ export function SeriesPage() {
             </div>
           ) : (
             <>
-              <div className="seriesChapterTools seriesMobileToolbar">
-                <label className="seriesChapterSelectAll seriesMobileSelect">
+              <div className="flex flex-row items-center gap-2 w-full mb-4 seriesMobileToolbar">
+                <div className="flex-1 relative seriesMobileSearch">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
                   <input
-                    type="checkbox"
-                    checked={visibleChapters.length > 0 && visibleChapters.every((chapter) => selectedChapterIds.has(chapter.id))}
-                    onChange={(event) => setSelectedChapterIds(event.currentTarget.checked ? new Set(visibleChapters.map((chapter) => chapter.id)) : new Set())}
+                    type="text"
+                    value={chapterQuery}
+                    onChange={(event) => setChapterQuery(event.currentTarget.value)}
+                    placeholder="Search..."
+                    aria-label="Search chapters"
+                    className="w-full h-9 bg-transparent border border-gray-700 rounded-md pl-8 pr-2 text-sm text-white focus:outline-none focus:border-gray-500"
                   />
-                  <span>Select</span>
-                </label>
-                <label className="seriesChapterSearch seriesMobileSearch">
-                  <Search size={15} aria-hidden="true" />
-                  <span className="sr-only">Search chapters</span>
-                  <input value={chapterQuery} onChange={(event) => setChapterQuery(event.currentTarget.value)} placeholder="Search chapters" />
-                </label>
-                {selectedChapterIds.size > 0 ? (
-                  <div className="seriesChapterBulkActions">
-                    <button type="button" onClick={() => void markSelectedChapters(true)}>Mark read</button>
-                    <button type="button" onClick={() => void markSelectedChapters(false)}>Mark unread</button>
-                  </div>
-                ) : null}
-                <label className="seriesChapterSortControl seriesMobileSort">
-                  <span className="sr-only">Sort chapters</span>
-                  <select value={chapterSortMode} onChange={(event) => setChapterSortMode(event.currentTarget.value as typeof chapterSortMode)}>
-                    <option value="oldest">Sort: Ascending</option>
-                    <option value="newest">Sort: Descending</option>
-                    <option value="unread">Sort: Unread</option>
-                    <option value="completed">Sort: Completed</option>
-                  </select>
-                </label>
+                </div>
+                <button
+                  type="button"
+                  className="h-9 w-9 flex items-center justify-center border border-gray-700 rounded-md shrink-0 seriesMobileSelect"
+                  aria-label="Select all visible chapters"
+                  aria-pressed={visibleChapters.length > 0 && visibleChapters.every((chapter) => selectedChapterIds.has(chapter.id))}
+                  onClick={() => {
+                    const allSelected = visibleChapters.length > 0 && visibleChapters.every((chapter) => selectedChapterIds.has(chapter.id));
+                    setSelectedChapterIds(allSelected ? new Set() : new Set(visibleChapters.map((chapter) => chapter.id)));
+                  }}
+                >
+                  <span className="text-gray-400 text-sm" aria-hidden="true">□</span>
+                </button>
+                <button
+                  type="button"
+                  className="h-9 px-3 flex items-center justify-between border border-gray-700 rounded-md shrink-0 text-xs text-gray-300 seriesMobileSort"
+                  aria-label="Change chapter sort"
+                  onClick={() => setChapterSortMode(chapterSortMode === "oldest" ? "newest" : "oldest")}
+                >
+                  <span>Sort</span>
+                  <span className="ml-1" aria-hidden="true">⌄</span>
+                </button>
               </div>
               {visibleChapters.length === 0 ? (
                 <div className="seriesEmptyState">
@@ -1082,21 +1086,23 @@ const compactTitleLabel = titleLabel.replace(new RegExp(`^${displaySeriesTitle}\
 
                               </strong>
                             </span>
-                            <span className="chapterPageCount">
-                              {chapter.pageCount} pages
-                            </span>
-                            {progress ? (
-                              <div
-                                className="seriesChapterProgress"
-                                role="progressbar"
-                                aria-label={`${titleLabel} reading progress`}
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                                aria-valuenow={Math.round(progressPercent)}
-                              >
-                                <span style={{ width: `${progressPercent}%` }} />
-                              </div>
-                            ) : null}
+                            <div className="flex items-center gap-2 mt-1 chapterMetaLine">
+                              <span className="chapterPageCount text-xs text-gray-400">
+                                {chapter.pageCount} pages
+                              </span>
+                              {progress ? (
+                                <div
+                                  className="w-16 h-1 bg-gray-800 rounded-full overflow-hidden seriesChapterProgress"
+                                  role="progressbar"
+                                  aria-label={`${titleLabel} reading progress`}
+                                  aria-valuemin={0}
+                                  aria-valuemax={100}
+                                  aria-valuenow={Math.round(progressPercent)}
+                                >
+                                  <span className="block h-full bg-white" style={{ width: `${progressPercent}%` }} />
+                                </div>
+                              ) : null}
+                            </div>
                           </Link>
                           <button
                             type="button"
