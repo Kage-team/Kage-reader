@@ -71,7 +71,7 @@ export function AppFrame({ children }: PropsWithChildren) {
         </div>
       </aside>
 
-      <nav className="appMobileNav" aria-label="Primary navigation">
+      <nav className="fixed bottom-0 w-full bg-black border-t border-gray-800 z-50 appMobileNav" aria-label="Primary navigation">
         <Link to="/?view=all" className={navClass(activeTab === "library")} aria-current={activeTab === "library" ? "page" : undefined} aria-label="Library">
           <BookOpen size={18} />
           <span>Library</span>
@@ -109,7 +109,7 @@ export function AppFrame({ children }: PropsWithChildren) {
           </div>
 
         </header>
-        <div className="appView" id="main-content">{children}</div>
+        <div className="appView pb-20" id="main-content">{children}</div>
         <GlobalCommandCenter />
         </div>
     </div>

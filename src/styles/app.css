@@ -695,9 +695,9 @@ button:disabled {
   min-height: calc(64px + env(safe-area-inset-bottom));
   padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--app-border);
-  background: color-mix(in srgb, var(--app-sidebar) 94%, transparent);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.18);
+  background: #000;
+  border-top: 1px solid #1f2937;
+  box-shadow: none;
 }
 
 .appMobileNav .appNavLink {
@@ -12738,4 +12738,20 @@ main
     width: 96px !important;
     flex-basis: 96px !important;
   }
+}
+
+.seriesPage .seriesChapterSection > .flex.flex-row.items-center.gap-2.w-full.mb-4 input {
+  background: #000 !important;
+  color: #fff !important;
+  border: 1px solid #1f2937 !important;
+}
+
+.seriesPage .seriesChapterSection > .flex.flex-row.items-center.gap-2.w-full.mb-4 button {
+  background: #000 !important;
+  color: #d1d5db !important;
+  border: 1px solid #1f2937 !important;
+}
+
+.seriesPage .seriesChapterSection > .flex.flex-row.items-center.gap-2.w-full.mb-4 button svg {
+  color: #9ca3af !important;
 }
