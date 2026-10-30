@@ -458,6 +458,10 @@ export function SeriesPage() {
     );
   }
 
+  const displaySeriesTitle = series.title
+    .replace(/\s+(?:(?:chapter|chap|ch|episode|ep)\s*[._#-]*\d+(?:\.\d+)?\s*)+$/i, "")
+    .trim();
+
   const mostRecentChapter = chapters
     .map((chapter) => ({ chapter, progress: progressByChapter[chapter.id] }))
     .filter((entry) => entry.progress)
@@ -575,7 +579,7 @@ export function SeriesPage() {
                     <img
                       className="seriesCoverImage"
                       src={coverPreviewUrl || coverUrl}
-                      alt={`${series.title} cover`}
+                      alt={`${displaySeriesTitle} cover`}
                       onError={(event) => {
                         event.currentTarget.style.display = "none";
                       }}
@@ -592,7 +596,7 @@ export function SeriesPage() {
               {series.type} <span aria-hidden="true">/</span> {chapters.length}{" "}
               chapters
             </p>
-            <h1 style={styles.title} title={series.title}>{series.title}</h1>
+            <h1 style={styles.title} title={displaySeriesTitle}>{displaySeriesTitle}</h1>
             <div style={styles.heroFacts}>
               {series.writer ? <span>{series.writer}</span> : null}
               {series.ageRating ? <span>{series.ageRating}</span> : null}
@@ -1031,7 +1035,7 @@ export function SeriesPage() {
                   const startsVolumeGroup = chapterIndex === 0 || previousChapter?.volume !== chapter.volume;
                   const volumeLabel = chapter.volume !== undefined ? `Volume ${chapter.volume}` : "";
   const titleLabel = getChapterDisplayTitle(chapter, chapterIndex + 1);
-const compactTitleLabel = titleLabel.replace(new RegExp(`^${series.title}\\s+`, "i"), "").trim();
+const compactTitleLabel = titleLabel.replace(new RegExp(`^${displaySeriesTitle}\\s+`, "i"), "").trim();
   const displayTitle = /^(?:(?:chapter|chap|ch|episode|ep)\\s*[._#-]*\\d+(?:\\.\\d+)?\\s*)+$/i.test(compactTitleLabel)
   ? `Chapter ${chapter.number ?? chapterIndex + 1}`
   : compactTitleLabel;
