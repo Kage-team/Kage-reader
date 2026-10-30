@@ -3,7 +3,10 @@ import type { Chapter } from "../../lib/storage/types";
 export function getChapterDisplayTitle(chapter: Chapter, fallbackNumber?: number): string {
   const title = chapter.title.trim();
   const number = chapter.number ?? fallbackNumber;
-  if (!title || /^((chapter|chap|ch|episode|ep)\s*[._#-]*\d+(?:\.\d+)?)$/i.test(title)) {
+  if (
+    !title ||
+    /^(?:(chapter|chap|ch|episode|ep)\s*[._#-]*\d+(?:\.\d+)?\s*)+$/i.test(title)
+  ) {
     return number !== undefined ? `Chapter ${number}` : "Untitled chapter";
   }
   return title;
