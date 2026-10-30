@@ -1031,9 +1031,10 @@ export function SeriesPage() {
                   const startsVolumeGroup = chapterIndex === 0 || previousChapter?.volume !== chapter.volume;
                   const volumeLabel = chapter.volume !== undefined ? `Volume ${chapter.volume}` : "";
   const titleLabel = getChapterDisplayTitle(chapter, chapterIndex + 1);
-                    const compactTitleLabel = /^(?:(?:chapter|chap|ch|episode|ep)\\s*[._#-]*\\d+(?:\\.\\d+)?\\s*)+$/i.test(titleLabel)
-                      ? `Chapter ${chapter.number ?? chapterIndex + 1}`
-                      : titleLabel.replace(new RegExp(`^${series.title}\\s+`, "i"), "");
+const compactTitleLabel = titleLabel.replace(new RegExp(`^${series.title}\\s+`, "i"), "").trim();
+  const displayTitle = /^(?:(?:chapter|chap|ch|episode|ep)\\s*[._#-]*\\d+(?:\\.\\d+)?\\s*)+$/i.test(compactTitleLabel)
+  ? `Chapter ${chapter.number ?? chapterIndex + 1}`
+  : compactTitleLabel;
                     const progressPercent = progress
                       ? progress.completedAt
                         ? 100
@@ -1072,7 +1073,7 @@ export function SeriesPage() {
                           >
                             <span className="chapterTitleLine">
                               <strong>
-                                <span className="chapterTitleText" title={compactTitleLabel}>{compactTitleLabel}</span>
+                                <span className="chapterTitleText" title={displayTitle}>{displayTitle}</span>
                                 {progress?.completedAt ? <StatusBadge status="completed" /> : progress?.pageIndex ? <StatusBadge status="in-progress" /> : mostRecentChapter?.id === chapter.id ? <StatusBadge status="in-progress" /> : <StatusBadge status="unread" />}
 
                               </strong>
