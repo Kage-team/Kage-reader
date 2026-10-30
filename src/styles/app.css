@@ -12564,11 +12564,12 @@ main
   }
 
   .seriesPage .seriesCover {
-    width: 96px !important;
-    height: 144px !important;
-    flex: 0 0 96px !important;
-    min-width: 96px !important;
-    border-radius: 8px !important;
+    width: 112px !important;
+    height: auto !important;
+    aspect-ratio: 3 / 4 !important;
+    flex: 0 0 112px !important;
+    min-width: 112px !important;
+    border-radius: 12px !important;
     overflow: hidden !important;
   }
 

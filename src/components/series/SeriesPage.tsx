@@ -371,7 +371,7 @@ export function SeriesPage() {
 
   if (isSeriesLoading) {
     return (
-      <main className="seriesPage" style={styles.page}>
+      <main className="seriesPage pb-24" style={styles.page}>
         <section style={styles.panel}>
           <LoadingSkeleton label="Loading series" lines={6} className="seriesLoadingSkeleton" />
         </section>
@@ -381,7 +381,7 @@ export function SeriesPage() {
 
   if (!series) {
     return (
-      <main className="seriesPage" style={styles.page}>
+      <main className="seriesPage pb-24" style={styles.page}>
         <section style={styles.panel}>
           <p style={styles.emptyText}>Series not found.</p>
           <Link to="/?view=all" style={styles.linkButton}>
@@ -417,7 +417,7 @@ export function SeriesPage() {
   );
 
   return (
-    <main className="seriesPage" style={styles.page}>
+    <main className="seriesPage pb-24" style={styles.page}>
       <section style={styles.panel}>
         <header style={styles.headerRow}>
           <Link to="/?view=all" style={styles.backLink}>
@@ -508,7 +508,7 @@ export function SeriesPage() {
         />
 
         <section className="flex flex-col md:flex-row gap-4 items-start md:items-center w-full mb-8 seriesHero" style={{ ...styles.seriesHero, display: "flex" }}>
-          <div className="seriesCover" style={styles.seriesCover}>
+          <div className="w-28 h-auto rounded-xl shadow-lg seriesCover" style={styles.seriesCover}>
             {coverPreviewUrl || coverUrl ? (
                     <img
                       className="seriesCoverImage"
@@ -530,7 +530,7 @@ export function SeriesPage() {
               {series.type} <span aria-hidden="true">/</span> {chapters.length}{" "}
               chapters
             </p>
-            <h1 style={styles.title} title={displaySeriesTitle}>{displaySeriesTitle}</h1>
+            <h1 className="text-2xl font-bold mt-1" style={styles.title} title={displaySeriesTitle}>{displaySeriesTitle}</h1>
             <div style={styles.heroFacts}>
               {series.writer ? <span>{series.writer}</span> : null}
               {series.ageRating ? <span>{series.ageRating}</span> : null}
@@ -567,7 +567,7 @@ export function SeriesPage() {
             {featuredChapter ? (
               <Link
                 to={`/read/${encodeURIComponent(featuredChapter.id)}`}
-                className="h-10 px-4 text-sm font-medium w-auto startReadingButton"
+                className="h-10 px-4 text-sm font-semibold bg-white text-black rounded-lg w-auto startReadingButton"
   style={styles.startReadingButton}
               >
                 <Play size={15} fill="currentColor" />
@@ -889,8 +889,8 @@ export function SeriesPage() {
         </p>
       ) : null}
           {exportMessage ? <p role="status">{exportMessage}</p> : null}
-          <header className="seriesChapterHeader" style={styles.chapterHeader}>
-            <h2 className="seriesChapterHeading" style={styles.chapterHeading}>Chapters ({chapters.length})</h2>
+          <header className="flex justify-between items-center mb-4 seriesChapterHeader" style={styles.chapterHeader}>
+            <h2 className="text-lg font-semibold text-white seriesChapterHeading" style={styles.chapterHeading}>Chapters ({chapters.length})</h2>
             <div className="seriesChapterActions">
               <button
                 type="button"
@@ -916,20 +916,20 @@ export function SeriesPage() {
             </div>
           ) : (
             <>
-              <div className="flex flex-row items-center gap-2 w-full mb-4 px-4">
+              <div className="flex flex-row items-center gap-2 w-full mb-6 mt-2">
                 <div className="relative flex-1 min-w-0">
                   <input
                     type="text"
                     value={chapterQuery}
                     onChange={(event) => setChapterQuery(event.currentTarget.value)}
-                    placeholder="Search..."
+                    placeholder="Search chapters..."
                     aria-label="Search chapters"
-                    className="w-full h-9 bg-transparent border border-gray-700 rounded-md px-3 text-sm text-white focus:outline-none focus:border-gray-500"
+                    className="w-full h-10 bg-transparent border border-gray-800 rounded-lg px-3 text-sm text-white focus:outline-none focus:border-gray-500 placeholder-gray-500"
                   />
                 </div>
                 <button
                   type="button"
-                  className="h-9 px-3 flex items-center justify-center bg-transparent border border-gray-700 rounded-md shrink-0"
+                  className="h-10 px-4 flex items-center justify-center bg-transparent border border-gray-800 rounded-lg shrink-0 text-sm font-medium text-gray-300 hover:text-white"
                   aria-label="Select all visible chapters"
                   aria-pressed={visibleChapters.length > 0 && visibleChapters.every((chapter) => selectedChapterIds.has(chapter.id))}
                   onClick={() => {
@@ -941,7 +941,7 @@ export function SeriesPage() {
                 </button>
                 <button
                   type="button"
-                  className="h-9 px-3 flex items-center justify-center bg-transparent border border-gray-700 rounded-md shrink-0"
+                  className="h-10 px-4 flex items-center justify-center bg-transparent border border-gray-800 rounded-lg shrink-0 text-sm font-medium text-gray-300 hover:text-white"
                   aria-label="Change chapter sort"
                   onClick={() => setChapterSortMode(chapterSortMode === "oldest" ? "newest" : "oldest")}
                 >
@@ -979,12 +979,12 @@ const compactTitleLabel = titleLabel.replace(new RegExp(`^${displaySeriesTitle}\
                     return (
                       <>
                         {startsVolumeGroup && volumeLabel ? <div className="chapterVolumeGroup" aria-label={volumeLabel}>{volumeLabel}</div> : null}
-                      <Link to={`/read/${encodeURIComponent(chapter.id)}`} className="flex flex-row items-center justify-between w-full py-3 border-b border-gray-800/50">
+                      <Link to={`/read/${encodeURIComponent(chapter.id)}`} className="flex flex-row items-center justify-between w-full py-4 border-b border-gray-800/40 hover:bg-gray-900/30 transition-colors">
                         <div className="flex flex-col flex-1 min-w-0 pr-4">
-                          <span className="text-sm font-medium text-white truncate">{displayTitle}</span>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-gray-400">{chapter.pageCount} pages</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-700 text-gray-300">
+                          <span className="text-[15px] font-medium text-white truncate">{displayTitle}</span>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className="text-xs text-gray-400 font-medium">{chapter.pageCount} pages</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-md border border-gray-700/50 text-gray-400 bg-gray-800/30">
                               {progress?.completedAt ? "Completed" : progress?.pageIndex || mostRecentChapter?.id === chapter.id ? "In progress" : "Unread"}
                             </span>
                           </div>
