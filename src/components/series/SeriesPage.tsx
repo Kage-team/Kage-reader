@@ -581,7 +581,7 @@ export function SeriesPage() {
                       src={coverPreviewUrl || coverUrl}
                       alt={`${displaySeriesTitle} cover`}
                       onError={(event) => {
-                        event.currentTarget.style.display = "none";
+                        event.currentTarget.remove();
                       }}
                       style={styles.seriesCoverImage}
                     />
@@ -610,7 +610,7 @@ export function SeriesPage() {
             </div>
             {series.notes ? <p className="seriesNotes" title={series.notes}>{series.notes}</p> : null}
             {series.tags?.length ? (
-              <ul style={styles.tagList} aria-label="Series tags">
+              <ul className="seriesTagList" style={styles.tagList} aria-label="Series tags">
                 {series.tags.map((tag) => (
                   <li key={tag} style={styles.tag}>
                     {tag}
@@ -981,8 +981,8 @@ export function SeriesPage() {
             </div>
           ) : (
             <>
-              <div className="seriesChapterTools">
-                <label className="seriesChapterSelectAll">
+              <div className="seriesChapterTools seriesMobileToolbar">
+                <label className="seriesChapterSelectAll seriesMobileSelect">
                   <input
                     type="checkbox"
                     checked={visibleChapters.length > 0 && visibleChapters.every((chapter) => selectedChapterIds.has(chapter.id))}
@@ -990,7 +990,7 @@ export function SeriesPage() {
                   />
                   <span>Select</span>
                 </label>
-                <label className="seriesChapterSearch">
+                <label className="seriesChapterSearch seriesMobileSearch">
                   <Search size={15} aria-hidden="true" />
                   <span className="sr-only">Search chapters</span>
                   <input value={chapterQuery} onChange={(event) => setChapterQuery(event.currentTarget.value)} placeholder="Search chapters" />
@@ -1001,7 +1001,7 @@ export function SeriesPage() {
                     <button type="button" onClick={() => void markSelectedChapters(false)}>Mark unread</button>
                   </div>
                 ) : null}
-                <label className="seriesChapterSortControl">
+                <label className="seriesChapterSortControl seriesMobileSort">
                   <span className="sr-only">Sort chapters</span>
                   <select value={chapterSortMode} onChange={(event) => setChapterSortMode(event.currentTarget.value as typeof chapterSortMode)}>
                     <option value="oldest">Sort: Ascending</option>
@@ -1085,6 +1085,18 @@ const compactTitleLabel = titleLabel.replace(new RegExp(`^${displaySeriesTitle}\
                             <span className="chapterPageCount">
                               {chapter.pageCount} pages
                             </span>
+                            {progress ? (
+                              <div
+                                className="seriesChapterProgress"
+                                role="progressbar"
+                                aria-label={`${titleLabel} reading progress`}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-valuenow={Math.round(progressPercent)}
+                              >
+                                <span style={{ width: `${progressPercent}%` }} />
+                              </div>
+                            ) : null}
                           </Link>
                           <button
                             type="button"
@@ -1105,18 +1117,6 @@ const compactTitleLabel = titleLabel.replace(new RegExp(`^${displaySeriesTitle}\
                             </span>
                           </button>
                         </div>
-                        {progress ? (
-                          <div
-                            className="seriesChapterProgress"
-                            role="progressbar"
-                            aria-label={`${titleLabel} reading progress`}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                            aria-valuenow={Math.round(progressPercent)}
-                          >
-                            <span style={{ width: `${progressPercent}%` }} />
-                          </div>
-                        ) : null}
                       </div>
                       </>
                     );

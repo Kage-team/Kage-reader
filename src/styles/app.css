@@ -12551,4 +12551,190 @@ main
     box-sizing: border-box !important;
     padding: 0 34px 0 12px !important;
   }
+
+  .seriesPage .seriesHero {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 16px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 0 16px !important;
+  }
+
+  .seriesPage .seriesCover {
+    width: 96px !important;
+    height: 144px !important;
+    flex: 0 0 96px !important;
+    min-width: 96px !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+  }
+
+  .seriesPage .seriesHeroContent {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: auto !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+  }
+
+  .seriesPage .seriesHeroContent h1,
+  .seriesPage .seriesHeroContent .kicker,
+  .seriesPage .seriesHeroContent .heroFacts {
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    text-align: left !important;
+  }
+
+  .seriesPage .startReadingButton {
+    width: auto !important;
+    max-width: 100% !important;
+    min-height: 36px !important;
+    margin: 8px 0 0 !important;
+    padding: 8px 16px !important;
+    font-size: 14px !important;
+    white-space: normal !important;
+  }
+
+  .seriesPage .seriesMobileToolbar {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin: 0 0 12px !important;
+  }
+
+  .seriesPage .seriesMobileSearch {
+    order: 1 !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: 36px !important;
+  }
+
+  .seriesPage .seriesMobileSelect,
+  .seriesPage .seriesMobileSort {
+    order: 2 !important;
+    flex: 0 0 36px !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+  }
+
+  .seriesPage .seriesMobileSort {
+    order: 3 !important;
+    width: 128px !important;
+    flex-basis: 128px !important;
+  }
+
+  .seriesPage .seriesMobileSelect span {
+    display: none !important;
+  }
+
+  .seriesPage .seriesMobileSelect input {
+    margin: 0 !important;
+  }
+
+  .seriesPage .seriesChapterRow {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 8px 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(55, 65, 65, 0.5) !important;
+  }
+
+  .seriesPage .chapterLink {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    min-width: 0 !important;
+    gap: 3px !important;
+  }
+
+  .seriesPage .chapterTitleLine,
+  .seriesPage .chapterTitleLine strong {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .seriesPage .chapterTitleLine strong {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+  }
+
+  .seriesPage .chapterTitleText {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .seriesPage .chapterPageCount {
+    position: static !important;
+    display: block !important;
+    margin: 0 !important;
+    color: #9ca3af !important;
+    font-size: 12px !important;
+  }
+
+  .seriesPage .seriesChapterProgress {
+    width: 100% !important;
+    max-width: 100px !important;
+    height: 4px !important;
+    margin-top: 1px !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+    background: #202727 !important;
+  }
+
+  .seriesPage .chapterStatusToggle {
+    display: flex !important;
+    flex: 0 0 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+    padding: 0 !important;
+  }
+
+  .seriesPage .chapterStatusActionText {
+    display: none !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .seriesPage .seriesNotes,
+  .seriesPage .seriesSynopsis,
+  .seriesPage .seriesHeroContent > ul,
+  .seriesPage .seriesHeroContent ul,
+  .seriesPage .seriesTagList { 
+    display: none !important;
+  }
+
+  .seriesPage .seriesCoverImage {
+    color: transparent !important;
+    font-size: 0 !important;
+  }
+
+  .seriesPage .seriesChapterSection {
+    margin-top: 8px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .seriesPage .seriesMobileSort {
+    width: 96px !important;
+    flex-basis: 96px !important;
+  }
 }
