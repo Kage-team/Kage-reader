@@ -12458,3 +12458,70 @@ main
     font-size: 12px !important;
   }
 }
+
+/* Mobile controls must be isolated boxes, never overlapping siblings. */
+@media (max-width: 680px) {
+  .seriesPage .seriesChapterTools {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: repeat(3, 36px) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .seriesPage .seriesChapterSearch,
+  .seriesPage .seriesChapterSelectAll,
+  .seriesPage .seriesChapterSortControl {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    transform: none !important;
+  }
+
+  .seriesPage .seriesChapterSearch {
+    grid-row: 1 !important;
+  }
+
+  .seriesPage .seriesChapterSelectAll {
+    grid-row: 2 !important;
+    justify-content: flex-start !important;
+  }
+
+  .seriesPage .seriesChapterSortControl {
+    grid-row: 3 !important;
+  }
+
+  .seriesPage .seriesChapterSearch input {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 34px !important;
+    box-sizing: border-box !important;
+    padding: 0 12px 0 42px !important;
+  }
+
+  .seriesPage .seriesChapterSearch svg {
+    position: absolute !important;
+    z-index: 2 !important;
+    left: 14px !important;
+    top: 50% !important;
+    width: 16px !important;
+    height: 16px !important;
+    transform: translateY(-50%) !important;
+    pointer-events: none !important;
+  }
+
+  .seriesPage .seriesChapterSortControl select {
+    width: 100% !important;
+    max-width: none !important;
+    height: 34px !important;
+    box-sizing: border-box !important;
+    padding: 0 34px 0 12px !important;
+  }
+}
