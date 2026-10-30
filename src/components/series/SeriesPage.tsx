@@ -4,13 +4,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
-  CheckSquare,
-  ChevronDown,
-  ChevronRight,
   BookOpen,
   Download,
   MoreVertical,
-  Search,
   Play,
   Plus,
   Settings2,
@@ -24,7 +20,6 @@ import { OverlayShell } from "../ui/OverlayShell";
 import { LoadingSkeleton } from "../ui/LoadingSkeleton";
 import type { ImportProgressEvent } from "../../lib/import/types";
 import {
-  SCHEMA_VERSION,
   type Chapter,
   type Progress,
   type ReaderMode,
@@ -41,7 +36,6 @@ import {
   listProgress,
   saveBlob,
   putSeries,
-  putProgress,
 } from "../../lib/storage/db";
 import { createSeriesExport } from "../../lib/storage/export";
 import { filterAndSortChapters, getChapterDisplayTitle, type ChapterSortMode } from "./chapterList";
@@ -373,22 +367,6 @@ export function SeriesPage() {
     } finally {
       setIsExporting(false);
     }
-  }
-
-  async function toggleChapterCompletion(chapter: Chapter): Promise<void> {
-    const existing = progressByChapter[chapter.id];
-    const updated: Progress = {
-      ...existing,
-      schemaVersion: SCHEMA_VERSION,
-      chapterId: chapter.id,
-      pageIndex: existing?.pageIndex ?? Math.max(0, chapter.pageCount - 1),
-      scrollRatio: existing?.scrollRatio ?? 0,
-      updatedAt: Date.now(),
-      timeSpentSeconds: existing?.timeSpentSeconds ?? 0,
-      completedAt: existing?.completedAt ? undefined : Date.now(),
-    };
-    await putProgress(updated);
-    setProgressByChapter((current) => ({ ...current, [chapter.id]: updated }));
   }
 
   if (isSeriesLoading) {
@@ -938,21 +916,20 @@ export function SeriesPage() {
             </div>
           ) : (
             <>
-              <div className="flex flex-row items-center gap-2 w-full mb-4">
+              <div className="flex flex-row items-center gap-2 w-full mb-4 px-4">
                 <div className="relative flex-1 min-w-0">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
                   <input
                     type="text"
                     value={chapterQuery}
                     onChange={(event) => setChapterQuery(event.currentTarget.value)}
                     placeholder="Search..."
                     aria-label="Search chapters"
-                    className="w-full h-9 bg-black border border-gray-800 rounded-md pl-9 pr-2 text-sm text-white focus:outline-none focus:border-gray-500"
+                    className="w-full h-9 bg-transparent border border-gray-700 rounded-md px-3 text-sm text-white focus:outline-none focus:border-gray-500"
                   />
                 </div>
                 <button
                   type="button"
-                  className="h-9 w-9 flex items-center justify-center bg-black border border-gray-800 rounded-md shrink-0 hover:bg-gray-900"
+                  className="h-9 px-3 flex items-center justify-center bg-transparent border border-gray-700 rounded-md shrink-0"
                   aria-label="Select all visible chapters"
                   aria-pressed={visibleChapters.length > 0 && visibleChapters.every((chapter) => selectedChapterIds.has(chapter.id))}
                   onClick={() => {
@@ -960,16 +937,15 @@ export function SeriesPage() {
                     setSelectedChapterIds(allSelected ? new Set() : new Set(visibleChapters.map((chapter) => chapter.id)));
                   }}
                 >
-                  <CheckSquare className="w-4 h-4 text-gray-400" aria-hidden="true" />
+                  <span className="text-xs font-medium text-white">Select</span>
                 </button>
                 <button
                   type="button"
-                  className="h-9 px-3 flex items-center justify-center gap-1 bg-black border border-gray-800 rounded-md shrink-0 hover:bg-gray-900"
+                  className="h-9 px-3 flex items-center justify-center bg-transparent border border-gray-700 rounded-md shrink-0"
                   aria-label="Change chapter sort"
                   onClick={() => setChapterSortMode(chapterSortMode === "oldest" ? "newest" : "oldest")}
                 >
-                  <span className="text-xs font-medium text-gray-300">Sort</span>
-                  <ChevronDown className="w-3 h-3 text-gray-500" aria-hidden="true" />
+                  <span className="text-xs font-medium text-white">Sort</span>
                 </button>
               </div>
               {visibleChapters.length === 0 ? (
@@ -1003,28 +979,20 @@ const compactTitleLabel = titleLabel.replace(new RegExp(`^${displaySeriesTitle}\
                     return (
                       <>
                         {startsVolumeGroup && volumeLabel ? <div className="chapterVolumeGroup" aria-label={volumeLabel}>{volumeLabel}</div> : null}
-                      <div className="flex flex-row items-center justify-between w-full py-3 border-b border-gray-800/50 hover:bg-gray-900/30 transition-colors">
-                        <Link
-                          to={`/read/${encodeURIComponent(chapter.id)}`}
-                          className="flex flex-col flex-1 min-w-0 pr-4"
-                        >
+                      <Link to={`/read/${encodeURIComponent(chapter.id)}`} className="flex flex-row items-center justify-between w-full py-3 border-b border-gray-800/50">
+                        <div className="flex flex-col flex-1 min-w-0 pr-4">
                           <span className="text-sm font-medium text-white truncate">{displayTitle}</span>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-gray-400">{chapter.pageCount} pages</span>
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-800 text-gray-300 border border-gray-700">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-700 text-gray-300">
                               {progress?.completedAt ? "Completed" : progress?.pageIndex || mostRecentChapter?.id === chapter.id ? "In progress" : "Unread"}
                             </span>
                           </div>
-                        </Link>
-                        <button
-                          type="button"
-                          className="flex items-center justify-center shrink-0 w-8 h-8"
-                          aria-label={`${progress?.completedAt ? "Mark unread" : "Mark read"}: ${titleLabel}`}
-                          onClick={() => void toggleChapterCompletion(chapter)}
-                        >
-                          <ChevronRight className="w-4 h-4 text-gray-500" aria-hidden="true" />
-                        </button>
-                      </div>
+                        </div>
+                        <div className="shrink-0 flex items-center justify-center w-6 h-6">
+                          <span className="text-gray-500 text-lg leading-none">›</span>
+                        </div>
+                      </Link>
                       </>
                     );
                   })()}

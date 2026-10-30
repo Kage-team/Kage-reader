@@ -12740,18 +12740,3 @@ main
   }
 }
 
-.seriesPage .seriesChapterSection > .flex.flex-row.items-center.gap-2.w-full.mb-4 input {
-  background: #000 !important;
-  color: #fff !important;
-  border: 1px solid #1f2937 !important;
-}
-
-.seriesPage .seriesChapterSection > .flex.flex-row.items-center.gap-2.w-full.mb-4 button {
-  background: #000 !important;
-  color: #d1d5db !important;
-  border: 1px solid #1f2937 !important;
-}
-
-.seriesPage .seriesChapterSection > .flex.flex-row.items-center.gap-2.w-full.mb-4 button svg {
-  color: #9ca3af !important;
-}
