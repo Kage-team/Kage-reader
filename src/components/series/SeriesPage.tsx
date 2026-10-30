@@ -371,7 +371,7 @@ export function SeriesPage() {
 
   if (isSeriesLoading) {
     return (
-      <main className="seriesPage pb-24" style={styles.page}>
+      <main className="seriesPage pb-32" style={{ ...styles.page, minHeight: "auto", display: "flex", flexDirection: "column", gap: 0 }}>
         <section style={styles.panel}>
           <LoadingSkeleton label="Loading series" lines={6} className="seriesLoadingSkeleton" />
         </section>
@@ -381,7 +381,7 @@ export function SeriesPage() {
 
   if (!series) {
     return (
-      <main className="seriesPage pb-24" style={styles.page}>
+      <main className="seriesPage pb-32" style={{ ...styles.page, minHeight: "auto", display: "flex", flexDirection: "column", gap: 0 }}>
         <section style={styles.panel}>
           <p style={styles.emptyText}>Series not found.</p>
           <Link to="/?view=all" style={styles.linkButton}>
@@ -417,7 +417,7 @@ export function SeriesPage() {
   );
 
   return (
-    <main className="seriesPage pb-24" style={styles.page}>
+    <main className="seriesPage pb-32" style={{ ...styles.page, minHeight: "auto", display: "flex", flexDirection: "column", gap: 0 }}>
       <section style={styles.panel}>
         <header style={styles.headerRow}>
           <Link to="/?view=all" style={styles.backLink}>
@@ -507,7 +507,7 @@ export function SeriesPage() {
           style={styles.hiddenInput}
         />
 
-        <section className="flex flex-col md:flex-row gap-4 items-start md:items-center w-full mb-8 seriesHero" style={{ ...styles.seriesHero, display: "flex" }}>
+        <section className="flex flex-col md:flex-row gap-4 items-start md:items-center w-full mb-6 seriesHero" style={{ ...styles.seriesHero, display: "flex" }}>
           <div className="w-28 h-auto rounded-xl shadow-lg seriesCover" style={styles.seriesCover}>
             {coverPreviewUrl || coverUrl ? (
                     <img
@@ -916,37 +916,46 @@ export function SeriesPage() {
             </div>
           ) : (
             <>
-              <div className="flex flex-row items-center gap-2 w-full mb-6 mt-2">
-                <div className="relative flex-1 min-w-0">
+              <div className="flex flex-col sm:flex-row items-center gap-2 w-full mb-6">
+                <div className="relative flex-1 w-full">
                   <input
                     type="text"
                     value={chapterQuery}
                     onChange={(event) => setChapterQuery(event.currentTarget.value)}
                     placeholder="Search chapters..."
                     aria-label="Search chapters"
-                    className="w-full h-10 bg-transparent border border-gray-800 rounded-lg px-3 text-sm text-white focus:outline-none focus:border-gray-500 placeholder-gray-500"
+                    className="w-full h-10 bg-transparent border border-gray-800 rounded-lg px-3 text-sm text-white focus:outline-none focus:border-gray-600 placeholder-gray-500"
                   />
                 </div>
-                <button
-                  type="button"
-                  className="h-10 px-4 flex items-center justify-center bg-transparent border border-gray-800 rounded-lg shrink-0 text-sm font-medium text-gray-300 hover:text-white"
-                  aria-label="Select all visible chapters"
-                  aria-pressed={visibleChapters.length > 0 && visibleChapters.every((chapter) => selectedChapterIds.has(chapter.id))}
-                  onClick={() => {
-                    const allSelected = visibleChapters.length > 0 && visibleChapters.every((chapter) => selectedChapterIds.has(chapter.id));
-                    setSelectedChapterIds(allSelected ? new Set() : new Set(visibleChapters.map((chapter) => chapter.id)));
-                  }}
-                >
-                  <span className="text-xs font-medium text-white">Select</span>
-                </button>
-                <button
-                  type="button"
-                  className="h-10 px-4 flex items-center justify-center bg-transparent border border-gray-800 rounded-lg shrink-0 text-sm font-medium text-gray-300 hover:text-white"
-                  aria-label="Change chapter sort"
-                  onClick={() => setChapterSortMode(chapterSortMode === "oldest" ? "newest" : "oldest")}
-                >
-                  <span className="text-xs font-medium text-white">Sort</span>
-                </button>
+                <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    className="flex-1 sm:flex-none h-10 px-4 flex items-center justify-center bg-transparent border border-gray-800 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:border-gray-600"
+                    aria-label="Select all visible chapters"
+                    aria-pressed={visibleChapters.length > 0 && visibleChapters.every((chapter) => selectedChapterIds.has(chapter.id))}
+                    onClick={() => {
+                      const allSelected = visibleChapters.length > 0 && visibleChapters.every((chapter) => selectedChapterIds.has(chapter.id));
+                      setSelectedChapterIds(allSelected ? new Set() : new Set(visibleChapters.map((chapter) => chapter.id)));
+                    }}
+                  >
+                    Select
+                  </button>
+                  <div className="relative flex-1 sm:flex-none">
+                    <select
+                      value={chapterSortMode === "oldest" ? "asc" : chapterSortMode === "newest" ? "desc" : chapterSortMode}
+                      onChange={(event) => setChapterSortMode(event.currentTarget.value === "asc" ? "oldest" : event.currentTarget.value === "desc" ? "newest" : event.currentTarget.value as typeof chapterSortMode)}
+                      aria-label="Sort chapters"
+                      className="w-full h-10 pl-3 pr-8 bg-transparent border border-gray-800 rounded-lg text-sm font-medium text-gray-300 appearance-none focus:outline-none focus:border-gray-600 cursor-pointer"
+                    >
+                      <option value="asc" className="bg-gray-900 text-white">Sort: Ascending</option>
+                      <option value="desc" className="bg-gray-900 text-white">Sort: Descending</option>
+                      <option value="unread" className="bg-gray-900 text-white">Sort: Unread</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 text-xs">▼</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               {visibleChapters.length === 0 ? (
                 <div className="seriesEmptyState">

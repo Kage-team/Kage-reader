@@ -12741,3 +12741,32 @@ main
   }
 }
 
+@media (max-width: 680px) {
+  .seriesPage {
+    min-height: auto !important;
+    padding-bottom: 8rem !important;
+  }
+
+  .seriesPage > section {
+    margin-block: 0 !important;
+  }
+
+  .seriesPage .seriesHero {
+    min-height: 0 !important;
+    height: auto !important;
+    margin-bottom: 1.5rem !important;
+    padding-bottom: 0 !important;
+  }
+
+  .seriesPage .seriesChapterSection {
+    min-height: 0 !important;
+    height: auto !important;
+    margin-top: -4rem !important;
+  }
+
+  .seriesPage .seriesChapterSection > .flex.flex-col.w-full {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+  }
+}
+

@@ -109,7 +109,7 @@ export function AppFrame({ children }: PropsWithChildren) {
           </div>
 
         </header>
-        <div className="appView pb-24" id="main-content">{children}</div>
+        <div className="appView pb-32" id="main-content">{children}</div>
         <GlobalCommandCenter />
         </div>
     </div>
