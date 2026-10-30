@@ -132,10 +132,13 @@ export function ImportPage() {
     }
   }
 
-  function cancelImport(): void {
-    importControllerRef.current?.abort();
-    if (pausedRef.current) toggleImportPause();
-  }
+function cancelImport(): void {
+  importControllerRef.current?.abort();
+  pausedRef.current = false;
+  setIsPaused(false);
+  setIsImporting(false);
+  resumeWaitersRef.current.splice(0).forEach((resume) => resume());
+}
 
   async function retryImport(index: number): Promise<void> {
     const source = latestSourcesRef.current[index - 1];
