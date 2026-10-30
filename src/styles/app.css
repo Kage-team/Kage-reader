@@ -8441,26 +8441,27 @@ main
 }
 .appMobileAdd {
   display: grid !important;
-  width: 56px;
-  height: 56px;
+  width: auto !important;
+  height: auto !important;
+  min-height: 44px;
   align-content: center;
   justify-items: center;
   gap: 2px;
-  margin: 0 auto;
-  transform: translateY(-10px);
-  border: 3px solid var(--app-bg) !important;
-  border-radius: 50% !important;
-  background: var(--app-lime) !important;
-  color: var(--app-ink) !important;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--app-lime) 18%, transparent);
+  margin: 0;
+  transform: none;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--app-muted) !important;
+  box-shadow: none;
 }
 .appMobileAdd span {
-  color: #10130f;
+  color: inherit;
   font-size: 10px;
   font-weight: 800;
 }
 .appMobileAdd svg {
-  color: #10130f;
+  color: inherit;
 }
 @media (max-width: 720px) {
   .homePage {

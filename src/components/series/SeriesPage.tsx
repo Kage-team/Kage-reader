@@ -1028,7 +1028,9 @@ export function SeriesPage() {
                   const startsVolumeGroup = chapterIndex === 0 || previousChapter?.volume !== chapter.volume;
                   const volumeLabel = chapter.volume !== undefined ? `Volume ${chapter.volume}` : "";
   const titleLabel = getChapterDisplayTitle(chapter, chapterIndex + 1);
-                    const compactTitleLabel = titleLabel.replace(new RegExp(`^${series.title}\\s+`, "i"), "");
+                    const compactTitleLabel = /^(?:(?:chapter|chap|ch|episode|ep)\\s*[._#-]*\\d+(?:\\.\\d+)?\\s*)+$/i.test(titleLabel)
+                      ? `Chapter ${chapter.number ?? chapterIndex + 1}`
+                      : titleLabel.replace(new RegExp(`^${series.title}\\s+`, "i"), "");
                     const progressPercent = progress
                       ? progress.completedAt
                         ? 100
