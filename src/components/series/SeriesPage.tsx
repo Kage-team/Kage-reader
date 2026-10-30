@@ -576,6 +576,9 @@ export function SeriesPage() {
                       className="seriesCoverImage"
                       src={coverPreviewUrl || coverUrl}
                       alt={`${series.title} cover`}
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
                       style={styles.seriesCoverImage}
                     />
             ) : (
